@@ -4,4 +4,4 @@ from ringsentinel.data.generator import SyntheticPaymentGenerator
 from ringsentinel.data.schema import GenerationConfig
 
 __all__ = ["GenerationConfig", "SyntheticPaymentGenerator"]
-__version__ = "0.2.0"
+__version__ = "0.3.0"

@@ -2,11 +2,12 @@
 
 Temporal network intelligence for coordinated payment abuse.
 
-This repository contains the synthetic payment world and the **Phase 2 coordinated-abuse detection
+This repository contains the synthetic payment world and the **Phase 3 validated coordinated-abuse
 pipeline**. It builds a temporal heterogeneous graph, extracts causal transaction/network features,
-compares fixed transaction rules, a static graph heuristic, transaction-only boosted trees, and a
-network-aware boosted-tree detector, then groups suspicious events into evidence-backed ring candidates.
-It does not yet contain a frontend, investigation agent, API, or GNN.
+benchmarks simple and network-aware detectors, runs feature ablations and held-archetype tests, and
+groups suspicious events into evidence-backed ring candidates. A deterministic evidence-query layer and
+chronological replay simulator are ready for the future investigator/dashboard. It does not contain a
+frontend, investigation agent, HTTP API, or GNN.
 
 ## Quick start
 
@@ -30,6 +31,16 @@ uv run python -m ringsentinel.experiments.run --transactions 5000
 
 Measured fold, scenario, hard-negative, candidate, exposure, threshold, and runtime outputs are written
 to `results/phase2/`.
+
+Run the Phase 3 validation suite:
+
+```powershell
+uv run ringsentinel-phase3 --transactions 5000
+```
+
+This writes controlled feature ablations, held-archetype generalization, permutation importance,
+feature-distribution checks, exposure error, a hardened before/after benchmark, and replay milestones to
+`results/phase3/`.
 
 Generated datasets contain JSON Lines entity, event, and label tables plus ring and benign-community
 ground truth, a manifest, and SHA-256 checksums. `--transactions` counts payment/capture events;

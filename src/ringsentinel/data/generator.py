@@ -35,7 +35,7 @@ from ringsentinel.data.validation import (
 )
 
 LOGGER = logging.getLogger(__name__)
-GENERATOR_VERSION = "0.1.1"
+GENERATOR_VERSION = "0.1.2"
 SCHEMA_VERSION = "1.1.0"
 
 
@@ -94,12 +94,24 @@ class SyntheticPaymentGenerator:
         )
         fraud_payments = min(fraud_payments, self.config.transactions - 1)
         legitimate_payments = self.config.transactions - fraud_payments
+        # Ring-controlled merchants need ordinary customers and history too. Without this,
+        # low merchant degree is an unrealistically strong proxy for the generated target.
+        ring_merchant_background = min(
+            round(self.config.transactions * 0.04),
+            max(0, legitimate_payments - 1),
+        )
 
-        self._build_legitimate_world(legitimate_payments)
+        self._build_legitimate_world(legitimate_payments - ring_merchant_background)
         extra_budget, remainder = divmod(fraud_payments - sum(minimum_budgets.values()), len(specs))
+        background_budget, background_remainder = divmod(ring_merchant_background, len(specs))
         for index, spec in enumerate(specs):
             payment_budget = minimum_budgets[spec.archetype] + extra_budget
-            self._inject_ring(spec, payment_budget + (1 if index < remainder else 0), index)
+            self._inject_ring(
+                spec,
+                payment_budget + (1 if index < remainder else 0),
+                index,
+                background_budget + (1 if index < background_remainder else 0),
+            )
 
         bundle = self._finalize_bundle()
         validate_dataset(bundle)
@@ -444,7 +456,13 @@ class SyntheticPaymentGenerator:
                 round(original.amount_minor * self.rng.uniform(0.4, 1.0)),
             )
 
-    def _inject_ring(self, spec: ScenarioSpec, payment_budget: int, index: int) -> None:
+    def _inject_ring(
+        self,
+        spec: ScenarioSpec,
+        payment_budget: int,
+        index: int,
+        background_payment_budget: int = 0,
+    ) -> None:
         ring_id = f"RING_{spec.code}01"
         start = self.config.start_time + timedelta(
             days=2 + index * 2,
@@ -527,6 +545,37 @@ class SyntheticPaymentGenerator:
                 else None
             )
             merchants.append(self._create_merchant(entity_created, bank_id=common_bank))
+
+        # Seed each ring merchant with label-free, ordinary customer activity. Most of this
+        # history predates the attack and the remainder is interleaved across the observation
+        # window. These events count toward the configured payment total.
+        for background_index in range(background_payment_budget):
+            profile = self.rng.choice(self._legitimate_profiles)
+            merchant = merchants[background_index % len(merchants)]
+            if background_index < round(background_payment_budget * 0.75):
+                available_seconds = max(
+                    1,
+                    round((start - self.config.start_time).total_seconds()),
+                )
+                timestamp = self.config.start_time + timedelta(
+                    seconds=self.rng.randrange(available_seconds)
+                )
+            else:
+                timestamp = self.config.start_time + timedelta(
+                    seconds=self.rng.randrange(self.config.duration_days * 86_400)
+                )
+            self._add_payment(
+                profile,
+                merchant,
+                timestamp,
+                self._sample_amount(is_fraud=False),
+                metadata=self._event_metadata(),
+                status=(
+                    PaymentStatus.FAILED
+                    if self.rng.random() < 0.035
+                    else PaymentStatus.CAPTURED
+                ),
+            )
 
         profiles: list[dict[str, str]] = []
         for member_index in range(member_count):

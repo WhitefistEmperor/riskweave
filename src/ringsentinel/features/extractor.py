@@ -26,20 +26,27 @@ TRANSACTION_FEATURES = (
     "retry_count",
 )
 
-NETWORK_FEATURES = (
+INFRASTRUCTURE_SHARING_FEATURES = (
     "shared_device_customers",
     "shared_ip_customers",
     "shared_card_customers",
     "shared_address_customers",
     "payout_merchants",
-    "merchant_customer_degree",
-    "customer_merchant_degree",
     "infrastructure_customer_max",
     "shared_infrastructure_concentration",
+)
+
+STRUCTURAL_GRAPH_FEATURES = (
+    "merchant_customer_degree",
+    "customer_merchant_degree",
     "shared_neighbor_count",
     "multi_shared_neighbor_count",
     "customer_component_size",
     "customer_local_density",
+    "customer_merchant_concentration",
+)
+
+TEMPORAL_NETWORK_FEATURES = (
     "device_events_15m",
     "ip_events_15m",
     "merchant_events_15m",
@@ -47,8 +54,13 @@ NETWORK_FEATURES = (
     "infrastructure_events_24h",
     "device_refund_ratio_24h",
     "merchant_refund_ratio_24h",
-    "customer_merchant_concentration",
     "repeated_device_ip_events",
+)
+
+NETWORK_FEATURES = (
+    INFRASTRUCTURE_SHARING_FEATURES
+    + STRUCTURAL_GRAPH_FEATURES
+    + TEMPORAL_NETWORK_FEATURES
 )
 
 

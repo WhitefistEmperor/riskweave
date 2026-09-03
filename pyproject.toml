@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ringsentinel"
-version = "0.2.0"
+version = "0.3.0"
 description = "Temporal network intelligence for coordinated payment abuse"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -21,6 +21,7 @@ dev = ["pytest>=8.2", "pytest-cov>=5", "ruff>=0.6"]
 
 [project.scripts]
 ringsentinel-generate = "ringsentinel.generate:main"
+ringsentinel-phase3 = "ringsentinel.experiments.phase3:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ringsentinel"]
