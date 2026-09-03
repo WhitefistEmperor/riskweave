@@ -1,0 +1,98 @@
+# Phase 2 benchmark results
+
+Seeds: `[101, 102, 103, 104, 105]`; transactions per seed: `5000`.
+
+Thresholds are fixed at 0.25 for rules and 0.50 for the graph heuristic; ML thresholds are selected by maximum F1 on a separate validation seed for each fold.
+
+## Aggregate event and ring metrics
+
+| Model | Precision | Recall | F1 | PR-AUC | FPR | Ring detection | Exposure recall |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| graph_heuristic | 0.339 +/- 0.008 | 0.287 +/- 0.000 | 0.311 +/- 0.003 | 0.316 +/- 0.002 | 0.026 +/- 0.001 | 0.400 +/- 0.000 | 0.425 +/- 0.036 |
+| network_aware_hgb | 0.977 +/- 0.020 | 0.923 +/- 0.006 | 0.949 +/- 0.010 | 0.979 +/- 0.004 | 0.001 +/- 0.001 | 1.000 +/- 0.000 | 1.000 +/- 0.000 |
+| rules | 0.123 +/- 0.008 | 0.058 +/- 0.003 | 0.079 +/- 0.005 | 0.055 +/- 0.002 | 0.020 +/- 0.000 | 0.100 +/- 0.000 | 0.058 +/- 0.010 |
+| transaction_hgb | 0.512 +/- 0.185 | 0.163 +/- 0.019 | 0.236 +/- 0.012 | 0.196 +/- 0.013 | 0.010 +/- 0.008 | 0.340 +/- 0.080 | 0.314 +/- 0.071 |
+
+## Scenario breakdown
+
+| Model | Archetype | Ring detection | Fraud-event recall | Delay hours |
+|---|---|---:|---:|---:|
+| graph_heuristic | adversarial_camouflage | 0.000 | 0.000 | - |
+| graph_heuristic | cooperating_rings | 1.000 | 0.192 | 189.00 |
+| graph_heuristic | device_sharing | 1.000 | 0.840 | 0.27 |
+| graph_heuristic | fragmented | 0.000 | 0.000 | - |
+| graph_heuristic | merchant_collusion | 0.000 | 0.000 | - |
+| graph_heuristic | obvious_coordinated | 1.000 | 0.840 | 0.27 |
+| graph_heuristic | refund_abuse | 0.000 | 0.000 | - |
+| graph_heuristic | ring_expansion | 0.000 | 0.000 | - |
+| graph_heuristic | slow_burn | 0.000 | 0.000 | - |
+| graph_heuristic | synthetic_identities | 1.000 | 0.760 | 18.00 |
+| network_aware_hgb | adversarial_camouflage | 1.000 | 0.938 | 12.52 |
+| network_aware_hgb | cooperating_rings | 1.000 | 0.931 | 3.07 |
+| network_aware_hgb | device_sharing | 1.000 | 0.968 | 0.05 |
+| network_aware_hgb | fragmented | 1.000 | 0.792 | 2.09 |
+| network_aware_hgb | merchant_collusion | 1.000 | 0.960 | 5.00 |
+| network_aware_hgb | obvious_coordinated | 1.000 | 0.952 | 0.08 |
+| network_aware_hgb | refund_abuse | 1.000 | 1.000 | 115.20 |
+| network_aware_hgb | ring_expansion | 1.000 | 0.888 | 0.80 |
+| network_aware_hgb | slow_burn | 1.000 | 0.880 | 45.00 |
+| network_aware_hgb | synthetic_identities | 1.000 | 0.968 | 2.40 |
+| rules | adversarial_camouflage | 0.000 | 0.000 | - |
+| rules | cooperating_rings | 0.000 | 0.000 | - |
+| rules | device_sharing | 0.000 | 0.016 | - |
+| rules | fragmented | 0.000 | 0.000 | - |
+| rules | merchant_collusion | 0.000 | 0.000 | - |
+| rules | obvious_coordinated | 0.000 | 0.000 | - |
+| rules | refund_abuse | 1.000 | 1.000 | 120.00 |
+| rules | ring_expansion | 0.000 | 0.000 | - |
+| rules | slow_burn | 0.000 | 0.000 | - |
+| rules | synthetic_identities | 0.000 | 0.000 | - |
+| transaction_hgb | adversarial_camouflage | 0.000 | 0.013 | - |
+| transaction_hgb | cooperating_rings | 0.000 | 0.000 | - |
+| transaction_hgb | device_sharing | 1.000 | 0.536 | 0.64 |
+| transaction_hgb | fragmented | 0.000 | 0.008 | - |
+| transaction_hgb | merchant_collusion | 0.200 | 0.064 | 5.00 |
+| transaction_hgb | obvious_coordinated | 1.000 | 0.528 | 0.68 |
+| transaction_hgb | refund_abuse | 1.000 | 0.538 | 120.24 |
+| transaction_hgb | ring_expansion | 0.200 | 0.040 | 1.00 |
+| transaction_hgb | slow_burn | 0.000 | 0.016 | - |
+| transaction_hgb | synthetic_identities | 0.000 | 0.016 | - |
+
+## Benign hard negatives
+
+| Model | Community | Flagged seeds | False-positive rate | Max overlap |
+|---|---|---:|---:|---:|
+| graph_heuristic | campus | 5 | 1.000 | 25 |
+| graph_heuristic | common_merchant | 0 | 0.000 | 0 |
+| graph_heuristic | family | 5 | 1.000 | 15 |
+| graph_heuristic | hostel | 5 | 1.000 | 23 |
+| graph_heuristic | office | 5 | 1.000 | 14 |
+| graph_heuristic | shared_wifi | 5 | 1.000 | 16 |
+| network_aware_hgb | campus | 0 | 0.000 | 0 |
+| network_aware_hgb | common_merchant | 0 | 0.000 | 0 |
+| network_aware_hgb | family | 0 | 0.000 | 0 |
+| network_aware_hgb | hostel | 0 | 0.000 | 2 |
+| network_aware_hgb | office | 0 | 0.000 | 2 |
+| network_aware_hgb | shared_wifi | 0 | 0.000 | 3 |
+| rules | campus | 0 | 0.000 | 2 |
+| rules | common_merchant | 0 | 0.000 | 3 |
+| rules | family | 0 | 0.000 | 1 |
+| rules | hostel | 0 | 0.000 | 2 |
+| rules | office | 0 | 0.000 | 1 |
+| rules | shared_wifi | 0 | 0.000 | 1 |
+| transaction_hgb | campus | 0 | 0.000 | 0 |
+| transaction_hgb | common_merchant | 0 | 0.000 | 3 |
+| transaction_hgb | family | 0 | 0.000 | 0 |
+| transaction_hgb | hostel | 0 | 0.000 | 1 |
+| transaction_hgb | office | 0 | 0.000 | 0 |
+| transaction_hgb | shared_wifi | 0 | 0.000 | 0 |
+
+## Runtime
+
+Total benchmark runtime: `26.92` seconds.
+
+All values are measured outputs. Full fold, scenario, hard-negative, candidate, threshold, evidence, exposure, and runtime records are in `phase2_benchmark.json`.
+
+## Limitations
+
+Results are measured on synthetic ecosystems generated by one implementation. The very strong network-aware score should be challenged with more scenario variation and ablation tests before making external performance claims. Expected-loss rates remain assumptions, and model probabilities are not calibrated.
