@@ -12,7 +12,7 @@ import { type Benchmark, type Metrics, money } from '@/lib/api';
 const labels: Record<string, string> = {
   transaction_hgb: 'Transaction-only ML',
   graph_heuristic: 'Graph heuristic',
-  network_aware_hgb: 'RingSentinel network-aware',
+  network_aware_hgb: 'RiskWeave network-aware',
   transaction_only: 'Transaction only',
   transaction_plus_infrastructure: '+ Infrastructure sharing',
   transaction_plus_temporal: '+ Temporal context',

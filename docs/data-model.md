@@ -1,6 +1,6 @@
 # Phase 1 data model
 
-RingSentinel models payment activity as immutable entities plus temporal events. All identifiers and
+RiskWeave models payment activity as immutable entities plus temporal events. All identifiers and
 attributes are synthetic. Dates are timezone-aware UTC values and money is stored as integer minor units
 (paise for INR).
 

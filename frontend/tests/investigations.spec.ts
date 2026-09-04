@@ -19,6 +19,8 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
     { cwd: resolve('..'), maxBuffer: 10_000_000 },
   );
   await page.goto('/investigations');
+  await expect(page).toHaveTitle('RiskWeave | Network Risk Operations');
+  await expect(page.getByRole('link', { name: 'RiskWeave ANALYST WORKSPACE' })).toBeVisible();
   const name = `Browser verification ${Date.now()}`;
   await page.getByLabel('Investigation name').fill(name);
   await page.getByRole('button', { name: 'Create investigation' }).click();

@@ -1,17 +1,18 @@
-# Submission metadata
+# RiskWeave submission metadata
 
 ## GitHub About field
 
 Suggested description:
 
-> Network-aware payment-abuse detection with reviewable ring evidence, timelines, and grounded investigation.
+> RiskWeave: network-aware payment-abuse detection with reviewable ring evidence, timelines, and grounded investigation.
 
 Suggested topics (select those useful to the submission):
 
 `fraud-detection`, `graph-analysis`, `fintech`, `synthetic-data`, `explainable-ai`,
 `fastapi`, `react`, `typescript`, `scikit-learn`, `hackathon`.
 
-Title: **RingSentinel**. The package already has a meaningful project description.
+Title: **RiskWeave**. The internal package name remains `ringsentinel`; package metadata
+and commands are intentionally unchanged. Historical reports retain the former RingSentinel brand.
 No Git remote is configured in the inspected checkout, so no repository URL, live CI badge,
 GitHub settings change, or push is claimed. Apply the description/topics in GitHub after
 the owner selects the submission repository.

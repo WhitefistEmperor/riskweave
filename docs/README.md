@@ -1,4 +1,8 @@
-# Documentation
+# RiskWeave documentation
+
+RiskWeave is the current public product name. Historical phase reports, audit records,
+license attribution, and benchmark artifacts retain RingSentinel where appropriate.
+The internal `ringsentinel` package, commands, environment variables, and API paths are unchanged.
 
 ## Start here
 

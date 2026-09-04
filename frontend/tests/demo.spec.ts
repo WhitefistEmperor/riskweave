@@ -23,6 +23,7 @@ test('small-screen navigation and optional WebMCP contract', async ({
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/demo');
+  await expect(page).toHaveTitle('RiskWeave | Network Risk Operations');
   await expect(
     page.getByRole('heading', {
       name: 'See the ring. Not just the transaction.',

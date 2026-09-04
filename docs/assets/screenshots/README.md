@@ -1,6 +1,7 @@
-# RingSentinel screenshots
+# RiskWeave screenshots
 
-Captured on 2026-09-04 from the unchanged Phase 5C application, at 1440 × 1050.
+Refreshed on 2026-09-04 after the public RiskWeave rename, at 1440 × 1050.
+Only display branding changed; the Phase 5C application behavior and saved analysis are unchanged.
 These are real local browser captures—not mockups, altered evidence, or fixture responses.
 The Sites skill guided preservation of the existing interface and local visual review;
 no site was registered or deployed.

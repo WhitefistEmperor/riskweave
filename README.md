@@ -1,13 +1,16 @@
-# RingSentinel
+# RiskWeave
 
 Network-aware payment-abuse detection, with evidence an analyst can inspect.
 
-Coordinated abuse can hide inside individually ordinary payments. RingSentinel connects
+Coordinated abuse can hide inside individually ordinary payments. RiskWeave connects
 transactions through shared infrastructure and activity patterns, ranks suspicious candidate
 rings, and makes the relationships, timeline, and financial exposure reviewable.
 
 **Evidence, not verdicts.** This is a working local analyst product with a synthetic-trained
 detector—not a real-payment-validated fraud service. No GNN or paid API key is required.
+
+Previously branded RingSentinel. The internal `ringsentinel` package, CLI commands,
+configuration names, API paths, and historical benchmark artifacts are unchanged.
 
 ![Ring Explorer showing observed customer and infrastructure relationships](docs/assets/screenshots/ring-explorer.png)
 

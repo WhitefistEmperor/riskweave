@@ -144,7 +144,7 @@ test('oversized and malformed uploads give actionable errors without starting an
     .getByRole('button', { name: 'Upload dataset', exact: true })
     .click();
   await expect(page.getByRole('alert')).toContainText(
-    'valid RingSentinel DatasetBundle',
+    'valid RiskWeave DatasetBundle',
   );
   await expect(page.getByRole('alert')).toContainText('upload-fixture');
 });

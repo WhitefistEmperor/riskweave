@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'RingSentinel | Network Risk Operations',
+  title: 'RiskWeave | Network Risk Operations',
   icons: { icon: '/favicon.svg' },
   description:
     'Evidence-grounded coordinated-abuse investigation console. Synthetic demo.',

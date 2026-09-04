@@ -44,7 +44,7 @@ export function ProductShell({ children }: { children: ReactNode }) {
           <Link href="/investigations">
             <Hexagon size={25} strokeWidth={1.6} />
             <span>
-              RingSentinel<small>ANALYST WORKSPACE</small>
+              RiskWeave<small>ANALYST WORKSPACE</small>
             </span>
           </Link>
         </SidebarHeader>

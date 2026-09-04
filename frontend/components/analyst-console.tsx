@@ -167,7 +167,7 @@ export function AnalystConsole() {
             <GitFork size={23} />
           </div>
           <div>
-            <strong>RingSentinel</strong>
+            <strong>RiskWeave</strong>
             <span>NETWORK RISK INTELLIGENCE</span>
           </div>
         </SidebarHeader>
@@ -238,7 +238,7 @@ export function AnalystConsole() {
           {!data ? (
             <>
               <div className="page-heading">
-                <p className="eyebrow">RINGSENTINEL WORKSPACE</p>
+                <p className="eyebrow">RISKWEAVE WORKSPACE</p>
                 <h1>
                   {error
                     ? 'Backend connection unavailable'

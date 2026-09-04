@@ -68,7 +68,7 @@ export function Failure({
         : api?.status === 413
           ? 'Use a smaller DatasetBundle JSON file within the configured upload limit. No analysis was started.'
           : api?.status === 400 || api?.status === 422
-            ? 'Check that the file is a valid RingSentinel DatasetBundle JSON export, then upload it again. Arbitrary payment exports are not supported.'
+            ? 'Check that the file is a valid RiskWeave DatasetBundle JSON export, then upload it again. Arbitrary payment exports are not supported.'
             : 'Your saved investigation is retained. Check the API connection or share the request ID with the operator.';
   return (
     <Card className="panel p-5 failure-state" role="alert">

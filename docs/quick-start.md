@@ -1,4 +1,7 @@
-# Local quick start
+# RiskWeave local quick start
+
+The public product was previously named RingSentinel. Commands and internal configuration
+still use `ringsentinel` / `RINGSENTINEL_*`; do not rename them when following this guide.
 
 This runs the existing application on your own computer. It does not deploy anything.
 Use a repository checkout, Python 3.11+ with uv, and Node.js 22.13+ with npm.

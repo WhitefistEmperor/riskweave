@@ -92,7 +92,7 @@ def create_app(
             database.engine.dispose()
 
     application = FastAPI(
-        title="RingSentinel API",
+        title="RiskWeave API",
         description="Persisted investigations with a separate synthetic demonstration surface.",
         version=__version__,
         lifespan=lifespan,

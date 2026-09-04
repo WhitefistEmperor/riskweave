@@ -1,4 +1,4 @@
-name: RingSentinel validation
+name: RiskWeave validation
 
 on:
   pull_request:

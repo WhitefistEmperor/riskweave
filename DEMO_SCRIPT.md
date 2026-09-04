@@ -1,4 +1,4 @@
-# RingSentinel — 3-minute demo script
+# RiskWeave — 3-minute demo script
 
 ## Before recording
 
@@ -15,7 +15,7 @@
 ## 0:00–0:25 — The problem
 
 “A payment can look ordinary on its own and still be part of coordinated abuse.
-RingSentinel connects activity across accounts and shared infrastructure, then gives
+RiskWeave connects activity across accounts and shared infrastructure, then gives
 an analyst the evidence to investigate. It surfaces candidates for review—not fraud verdicts.”
 
 Show Investigations. Create **Shared infrastructure review**.
@@ -69,7 +69,7 @@ These numbers do not establish real-payment performance.”
 
 Return to the saved investigation.
 
-“RingSentinel brings detection, relationship evidence, timelines, and grounded explanation
+“RiskWeave brings detection, relationship evidence, timelines, and grounded explanation
 into one reviewable workflow. The next step is real-data validation—not automatic blocking.”
 
 End on the product. Add the final recording URL to the README's **Demo video** section.

@@ -1,4 +1,4 @@
-# RingSentinel analyst console
+# RiskWeave analyst console
 
 React/TypeScript, Vinext, Tailwind/shadcn, and Cytoscape. The root route opens the
 persisted investigation worklist; `/demo` is the separate synthetic replay workspace.

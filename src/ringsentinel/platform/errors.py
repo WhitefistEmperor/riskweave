@@ -10,7 +10,7 @@ ERRORS = {
     "NOT_FOUND": (404, "Resource not found."),
     "CONFLICT": (409, "The request conflicts with the current resource state."),
     "UPLOAD_TOO_LARGE": (413, "The dataset exceeds the configured upload limit."),
-    "INVALID_DATASET": (422, "Supply a valid RingSentinel DatasetBundle JSON file."),
+    "INVALID_DATASET": (422, "Supply a valid RiskWeave DatasetBundle JSON file."),
     "ANALYSIS_FAILED": (500, "Analysis could not be completed."),
     "ANALYSIS_TIMEOUT": (504, "Analysis exceeded its execution time limit."),
     "WORKER_INTERRUPTED": (503, "Analysis was interrupted. Start a new run to retry."),
