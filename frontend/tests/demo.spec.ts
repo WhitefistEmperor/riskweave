@@ -22,7 +22,7 @@ test('small-screen navigation and optional WebMCP contract', async ({
     });
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/demo');
   await expect(
     page.getByRole('heading', {
       name: 'See the ring. Not just the transaction.',
@@ -61,7 +61,7 @@ test('small-screen navigation and optional WebMCP contract', async ({
 test('measured benchmark and benign sharing outcomes are visible', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/demo');
   await expect(
     page.getByRole('heading', {
       name: 'See the ring. Not just the transaction.',
@@ -101,7 +101,7 @@ test('measured benchmark and benign sharing outcomes are visible', async ({
 test('grounded investigator cites evidence and handles unsupported questions', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/demo');
   await expect(
     page.getByRole('heading', {
       name: 'See the ring. Not just the transaction.',
@@ -138,7 +138,7 @@ test('real replay starts, pauses, steps, and resets without future candidate evi
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/demo');
   await expect(
     page.getByRole('heading', {
       name: 'See the ring. Not just the transaction.',
@@ -164,7 +164,7 @@ test('candidate opens prefix-only explorer, interactive graph, evidence, and tim
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/demo');
   await page.getByRole('button', { name: 'Start replay', exact: true }).click();
   await page
     .getByRole('button', { name: 'Open Ring Explorer', exact: true })

@@ -1,5 +1,5 @@
-import { AnalystConsole } from '@/components/analyst-console';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <AnalystConsole />;
+  redirect('/investigations');
 }

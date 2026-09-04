@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ProductShell as Workspace } from '@/components/product-shell';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -29,42 +30,7 @@ import {
   type AnalysisRun,
   type ArtifactRecord,
   type AnalysisResult,
-  type Session,
 } from '@/lib/platform-api';
-
-function Workspace({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  useEffect(() => {
-    let active = true;
-    platformApi
-      .session()
-      .then((value) => {
-        if (active) setSession(value);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-  return (
-    <main className="p-6 md:p-10 max-w-7xl mx-auto space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <Link href="/" className="cyan">
-          RingSentinel · Demo console
-        </Link>
-        <Link href="/investigations" className="cyan">
-          Investigations
-        </Link>
-        <p className="muted text-sm">
-          {session
-            ? `${session.user_id} · Development identity only`
-            : 'Session unavailable'}
-        </p>
-      </header>
-      {children}
-    </main>
-  );
-}
 
 function Failure({ error }: { error: unknown }) {
   if (!error) return null;
