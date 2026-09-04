@@ -2,10 +2,11 @@
 
 import hashlib
 import json
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 
 from ringsentinel import __version__
@@ -27,6 +28,20 @@ class InvestigationService:
     def __init__(self, database: Database, storage: StorageBackend, settings: Settings):
         self.database, self.storage, self.settings = database, storage, settings
 
+    @contextmanager
+    def _write(self):
+        with self.database.session.begin() as session:
+            if self.database.engine.dialect.name == "sqlite":
+                session.connection().exec_driver_sql("BEGIN IMMEDIATE")
+            else:
+                session.execute(text("SELECT pg_advisory_xact_lock(593002)"))
+            yield session
+
+    @staticmethod
+    def _quota(session, model, limit, *conditions):
+        if session.scalar(select(func.count()).select_from(model).where(*conditions)) >= limit:
+            raise ProductError("QUOTA_EXCEEDED")
+
     def _owned(self, session, principal: Principal, investigation_id: str):
         item = session.scalar(
             select(Investigation).where(
@@ -38,16 +53,17 @@ class InvestigationService:
         return item
 
     def create(self, principal: Principal, name: str) -> Investigation:
-        # Separate get-or-create transaction handles concurrent first requests safely.
-        try:
-            with self.database.session.begin() as session:
-                if session.get(User, principal.user_id) is None:
-                    session.add(User(id=principal.user_id))
-        except IntegrityError:
-            with self.database.session() as session:
-                if session.get(User, principal.user_id) is None:
-                    raise
-        with self.database.session.begin() as session:
+        with self._write() as session:
+            self._quota(session, Investigation, self.settings.max_investigations_total)
+            self._quota(
+                session,
+                Investigation,
+                self.settings.max_investigations_per_owner,
+                Investigation.owner_id == principal.user_id,
+            )
+            if session.get(User, principal.user_id) is None:
+                session.add(User(id=principal.user_id))
+                session.flush()
             item = Investigation(owner_id=principal.user_id, name=name, status=Status.CREATED)
             session.add(item)
         return item
@@ -100,7 +116,7 @@ class InvestigationService:
         checksum = hashlib.sha256(content).hexdigest()
         saved = None
         try:
-            with self.database.session.begin() as session:
+            with self._write() as session:
                 item = self._owned(session, principal, investigation_id)
                 previous_status = item.status
                 self._lock_idle(session, item.id, Status.UPLOADING)
@@ -116,6 +132,12 @@ class InvestigationService:
                         .values(status=previous_status)
                     )
                     return existing
+                self._quota(
+                    session,
+                    Artifact,
+                    self.settings.max_artifacts_per_investigation,
+                    Artifact.investigation_id == item.id,
+                )
                 saved = self.storage.save(content)
                 safe_name = PurePosixPath(name.replace("\\", "/")).name
                 safe_name = "".join(c for c in safe_name if c.isprintable())[:200] or "dataset.json"
@@ -155,7 +177,7 @@ class InvestigationService:
         self, principal: Principal, investigation_id: str, artifact_id: str, idempotency_key: str
     ) -> AnalysisRun:
         try:
-            with self.database.session.begin() as session:
+            with self._write() as session:
                 self._owned(session, principal, investigation_id)
                 existing = session.scalar(
                     select(AnalysisRun).where(
@@ -170,6 +192,18 @@ class InvestigationService:
                 artifact = session.get(Artifact, artifact_id)
                 if artifact is None or artifact.investigation_id != investigation_id:
                     raise ProductError("NOT_FOUND")
+                self._quota(
+                    session,
+                    AnalysisRun,
+                    self.settings.max_runs_per_investigation,
+                    AnalysisRun.investigation_id == investigation_id,
+                )
+                self._quota(
+                    session,
+                    AnalysisRun,
+                    self.settings.max_pending_runs,
+                    AnalysisRun.status.in_([Status.QUEUED, Status.RUNNING]),
+                )
                 self._lock_idle(session, investigation_id, Status.QUEUED)
                 run = AnalysisRun(
                     investigation_id=investigation_id,
@@ -257,11 +291,12 @@ class InvestigationService:
         saved = None
         try:
             if result is not None:
-                saved = self.storage.save(
-                    json.dumps(
-                        result, sort_keys=True, allow_nan=False, separators=(",", ":")
-                    ).encode()
-                )
+                content = json.dumps(
+                    result, sort_keys=True, allow_nan=False, separators=(",", ":")
+                ).encode()
+                if len(content) > self.settings.result_limit_bytes:
+                    raise ProductError("QUOTA_EXCEEDED")
+                saved = self.storage.save(content)
             with self.database.session.begin() as session:
                 run = session.get(AnalysisRun, run_id)
                 if run is None or run.status != Status.RUNNING:

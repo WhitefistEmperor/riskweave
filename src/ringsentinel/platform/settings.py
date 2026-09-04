@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     jobs_enabled: bool = True
     upload_limit_bytes: int = Field(default=25_000_000, ge=1024, le=100_000_000)
     analysis_timeout_seconds: int = Field(default=300, ge=1, le=3600)
+    max_investigations_per_owner: int = Field(default=1000, ge=1, le=10000)
+    max_investigations_total: int = Field(default=10000, ge=1, le=100000)
+    max_artifacts_per_investigation: int = Field(default=20, ge=1, le=1000)
+    max_runs_per_investigation: int = Field(default=50, ge=1, le=1000)
+    max_pending_runs: int = Field(default=100, ge=1, le=10000)
+    storage_limit_bytes: int = Field(default=2_000_000_000, ge=1024)
+    result_limit_bytes: int = Field(default=100_000_000, ge=1024, le=500_000_000)
+    retention_days: int = Field(default=90, ge=1, le=3650)
     llm_provider: Literal["disabled", "deterministic", "openai"] = "deterministic"
     openai_api_key: SecretStr = Field(
         default=SecretStr(""), validation_alias="OPENAI_API_KEY", repr=False

@@ -1,6 +1,7 @@
 """Public errors never contain internal exception strings."""
 
 ERRORS = {
+    "QUOTA_EXCEEDED": (429, "An operational limit was reached. Contact the operator."),
     "INVALID_REQUEST": (400, "The request is not permitted."),
     "METHOD_NOT_ALLOWED": (405, "This HTTP method is not supported."),
     "VALIDATION_ERROR": (422, "Request validation failed."),

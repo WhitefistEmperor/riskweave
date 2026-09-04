@@ -11,7 +11,13 @@ from ringsentinel.platform.settings import Settings
 
 
 def make_engine(url: str):
-    engine = create_engine(url, pool_pre_ping=True)
+    connect_args = {}
+    if url.startswith("postgresql"):
+        connect_args = {
+            "connect_timeout": 5,
+            "options": "-c statement_timeout=5000 -c lock_timeout=5000",
+        }
+    engine = create_engine(url, pool_pre_ping=True, connect_args=connect_args)
     if engine.dialect.name == "sqlite":
 
         @event.listens_for(engine, "connect")

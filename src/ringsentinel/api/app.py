@@ -55,7 +55,9 @@ def create_app(
 ) -> FastAPI:
     settings = settings or Settings()
     database = Database(settings.database_url.get_secret_value())
-    platform = InvestigationService(database, LocalStorageBackend(settings.storage_root), settings)
+    platform = InvestigationService(
+        database, LocalStorageBackend(settings.storage_root, settings.storage_limit_bytes), settings
+    )
     executor = LocalJobExecutor(platform)
 
     @asynccontextmanager

@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
+from ringsentinel.platform.errors import ProductError
+from ringsentinel.platform.locking import FileLock
+
 
 @dataclass(frozen=True)
 class StoredObject:
@@ -25,8 +28,9 @@ class StorageBackend(Protocol):
 
 
 class LocalStorageBackend:
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, limit_bytes: int = 2_000_000_000):
         self.root = root.resolve()
+        self.limit_bytes = limit_bytes
 
     def _path(self, key: str) -> Path:
         if not re.fullmatch(r"[a-f0-9]{32}\.json", key):
@@ -38,6 +42,17 @@ class LocalStorageBackend:
 
     def save(self, content: bytes) -> StoredObject:
         self.root.mkdir(parents=True, exist_ok=True)
+        # Serializes byte-budget admission across API and child processes.
+        try:
+            with FileLock(self.root / ".write.lock"):
+                used = sum(p.stat().st_size for p in self.root.glob("*.json") if p.is_file())
+                if used + len(content) > self.limit_bytes:
+                    raise ProductError("QUOTA_EXCEEDED")
+                return self._save(content)
+        except RuntimeError:
+            raise ProductError("CONFLICT") from None
+
+    def _save(self, content: bytes) -> StoredObject:
         key = f"{uuid4().hex}.json"
         path = self._path(key)
         # If exclusive creation fails, this caller does not own the existing object.
@@ -69,5 +84,5 @@ class LocalStorageBackend:
             valid = self.read(obj.key) == b"{}"
             self.delete(obj.key)
             return valid
-        except OSError:
+        except (OSError, ProductError):
             return False

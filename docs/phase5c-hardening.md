@@ -43,7 +43,30 @@ Gateway must repeat security headers on its own errors and enforce TLS/body/head
 Implementation references: [PyJWT verification](https://pyjwt.readthedocs.io/en/stable/usage.html)
 and [OWASP REST security](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html).
 
+## Operational limits and process safety
+
+One API worker/replica and one local analysis child are supported. The scheduler acquires a
+PostgreSQL session advisory lock (or a SQLite adjacent OS lock) plus a storage-root OS lock before
+recovery. Another scheduler fails startup. A separate analysis lock prevents startup recovery while
+an orphan child is still working. Children have a final watchdog (configured timeout + 5 seconds);
+normal timeout/shutdown still kills and waits from the parent. Stale lock files are harmless and
+must not be deleted to bypass ownership. Local disk only; NFS/SMB and multi-host topology unsupported.
+Lost PostgreSQL lease sessions stop the scheduler; readiness fails when its thread exits. Database
+operations use bounded connect/statement/lock timeouts. No automatic retry of interrupted runs.
+
+Limits default to 1,000 investigations/owner, 10,000 total, 20 artifacts/investigation,
+50 runs/investigation, 100 globally pending runs, 2 GB object storage, 100 MB per serialized result,
+and the existing 25 MB upload limit. Quota admission is serialized in SQL; duplicate inputs and
+idempotent run repeats are checked before quotas. Storage byte admission uses a cross-process OS
+lock and includes orphan JSON objects. Quota errors use a documented new safe 429 `QUOTA_EXCEEDED`;
+storage-lock contention uses 409, permitting deliberate retry. No data is automatically deleted.
+The 90-day retention setting is a review policy, not an erasure promise. OS/disk quotas, gateway
+rate/concurrency limits and a finite log rotation policy remain operator responsibilities.
+
 ## Verification log (in progress)
+
+- Operational milestone: 20 quota/lifecycle/API tests passed, including real subprocess completion,
+  timeout, worker failure, graceful shutdown and restart. Ruff passed.
 
 - Before edits: 20 baseline API/persistence/provider tests passed, 2 upstream warnings.
 - Initial sandbox Python/cache access failed; authorized installed-runtime execution succeeded.
