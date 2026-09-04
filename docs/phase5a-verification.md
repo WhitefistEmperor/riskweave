@@ -26,3 +26,15 @@ an actual timed-out child observed to exit, real worker failure and interruption
 concurrent-start exclusion, owner isolation, idempotency, checksums, upload limits,
 and reopening results through a new database engine. No model outputs were mocked
 in the subprocess tests. The scheduler remains deliberately single-process.
+
+## Milestones 3–4: API, ownership, configuration and optional provider
+
+64 Python tests passed in 77.50 seconds; Ruff passed. Two upstream TestClient
+deprecation warnings remain (httpx and anyio compatibility aliases).
+The HTTP tests use real lifespan schedulers and child processes for successful
+completion and timeout failure. Typed evidence, grounded investigator calls,
+new-app restart persistence, every owner-scoped endpoint, safe errors, CORS,
+request correlation, readiness without migrations, upload limits and idempotency
+passed. Separate provider tests check disabled mode, explicit opt-in, missing-key
+fallback, transient retries, authentication failures and timeout/token settings.
+Provider transport tests use fixtures; no live paid model request was made.

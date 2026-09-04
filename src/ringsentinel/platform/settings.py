@@ -8,7 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="RINGSENTINEL_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="RINGSENTINEL_", extra="ignore", populate_by_name=True
+    )
 
     environment: Literal["development", "test", "production"] = "development"
     database_url: SecretStr = SecretStr("sqlite:///./work/ringsentinel.db")
@@ -24,6 +26,9 @@ class Settings(BaseSettings):
     upload_limit_bytes: int = Field(default=25_000_000, ge=1024, le=100_000_000)
     analysis_timeout_seconds: int = Field(default=300, ge=1, le=3600)
     llm_provider: Literal["disabled", "deterministic", "openai"] = "deterministic"
+    openai_api_key: SecretStr = Field(
+        default=SecretStr(""), validation_alias="OPENAI_API_KEY", repr=False
+    )
     openai_model: str = "gpt-5.4-mini"
     llm_timeout_seconds: float = Field(default=20, gt=0, le=60)
     llm_retry_count: int = Field(default=0, ge=0, le=2)
