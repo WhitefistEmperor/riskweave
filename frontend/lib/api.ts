@@ -1,3 +1,5 @@
+import { apiRequest } from '@/lib/client';
+
 export type Metric = { mean: number; std: number };
 export type Metrics = Record<string, Metric>;
 export type Benchmark = {
@@ -120,10 +122,7 @@ export type RingSnapshot = {
   } | null;
 };
 export async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`/api${path}`);
-  if (!response.ok)
-    throw new Error(`Request failed (${response.status}): ${path}`);
-  return response.json() as Promise<T>;
+  return apiRequest<T>(path);
 }
 export async function loadConsoleData(): Promise<ConsoleData> {
   // Warm the single local runtime before issuing concurrent queries.

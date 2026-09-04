@@ -50,7 +50,10 @@ export default defineConfig(async () => {
       host: '127.0.0.1',
       port: 5173,
       strictPort: true,
-      proxy: { '/api': 'http://127.0.0.1:8000' },
+      proxy: {
+        '/api':
+          process.env.RINGSENTINEL_API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
+      },
       ...(isCodexSeatbeltSandbox
         ? { watch: { useFsEvents: false, usePolling: true } }
         : {}),

@@ -38,3 +38,19 @@ request correlation, readiness without migrations, upload limits and idempotency
 passed. Separate provider tests check disabled mode, explicit opt-in, missing-key
 fallback, transient retries, authentication failures and timeout/token settings.
 Provider transport tests use fixtures; no live paid model request was made.
+
+## Milestone 5: minimal persisted frontend and dependency remediation
+
+Frontend lint, TypeScript and production build passed on the updated lockfile.
+All 8 production-browser tests passed in 1.5 minutes: the 5 original Phase 4
+checks plus real upload/enqueue/poll/evidence/investigator/reload and two controlled
+UI failure-state tests. The real browser workflow uses generated data and the
+actual backend; only error/empty UI states use explicit transport fixtures.
+The first attempt passed 7 tests but the real-upload fixture was blocked by
+sandbox access to uv's cache. The approved rerun passed all 8 without relaxing
+assertions. No visual redesign or benchmark response substitution was performed.
+
+Security updates are recorded in dependency-audit.md. The build retains existing
+large-chunk and Vinext route-classification warnings plus a forward-looking Vite
+JSON-import warning. These are warnings, not failed checks. No pending npm install
+script permission was bypassed; production build succeeded with installed binaries.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { RingExplorer } from '@/components/ring-explorer';
 import { BenchmarkView } from '@/components/benchmark-view';
 import { HardNegatives } from '@/components/hard-negatives';
@@ -188,6 +189,16 @@ export function AnalystConsole() {
                 </WorkspaceButton>
               </SidebarMenuItem>
             ))}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={
+                  <Link href="/investigations" aria-label="Investigations" />
+                }
+              >
+                <GitFork />
+                <span>Investigations</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
           <div className="sidebar-note">
             <Activity size={16} />

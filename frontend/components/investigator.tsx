@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/accordion';
 import { EvidenceValue, humanize } from '@/components/evidence-value';
 import type { JsonValue } from '@/lib/api';
+import { apiRequest } from '@/lib/client';
 
 type Answer = {
   provider: string;
@@ -33,9 +34,11 @@ const suggestions = [
 export function Investigator({
   candidateId,
   eventCount,
+  runId,
 }: {
   candidateId: string;
   eventCount?: number;
+  runId?: string;
 }) {
   const [question, setQuestion] = useState(suggestions[0]);
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -46,18 +49,25 @@ export function Investigator({
     setError('');
     setAnswer(null);
     try {
-      const response = await fetch('/api/investigate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          candidate_id: candidateId,
-          question,
-          event_count: eventCount ?? null,
-        }),
-      });
-      if (!response.ok)
-        throw new Error(`Investigator request failed (${response.status})`);
-      setAnswer((await response.json()) as Answer);
+      const result = await apiRequest<Answer>(
+        runId
+          ? `/v1/runs/${encodeURIComponent(runId)}/rings/${encodeURIComponent(candidateId)}/investigate`
+          : '/investigate',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(
+            runId
+              ? { question }
+              : {
+                  candidate_id: candidateId,
+                  question,
+                  event_count: eventCount ?? null,
+                },
+          ),
+        },
+      );
+      setAnswer(result);
     } catch (reason: unknown) {
       setError(String(reason));
     } finally {
@@ -127,9 +137,11 @@ export function Investigator({
         {answer && (
           <>
             <span className="status-chip cyan">
-              {answer.provider === 'deterministic_evidence_fallback'
-                ? 'Deterministic evidence fallback · no LLM'
-                : 'OpenAI · extractive evidence summary'}
+              {answer.provider === 'openai_extractive_summary'
+                ? 'OpenAI · extractive evidence summary'
+                : answer.provider === 'disabled_evidence_only'
+                  ? 'LLM disabled · computed evidence only'
+                  : 'Deterministic evidence fallback · no LLM'}
             </span>
             <p className="muted text-sm my-4">
               Every sentence below is rendered from computed facts. The optional
