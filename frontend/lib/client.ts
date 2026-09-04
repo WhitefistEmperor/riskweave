@@ -52,9 +52,11 @@ export async function apiRequest<T>(
         ? body.error
         : {};
     throw new ApiError(
-      'message' in detail && typeof detail.message === 'string'
-        ? detail.message
-        : `Request failed (${response.status}).`,
+      response.status >= 500
+        ? 'The service could not complete this request. Retry or contact the operator.'
+        : 'message' in detail && typeof detail.message === 'string'
+          ? detail.message
+          : `Request failed (${response.status}).`,
       response.status,
       'code' in detail && typeof detail.code === 'string'
         ? detail.code

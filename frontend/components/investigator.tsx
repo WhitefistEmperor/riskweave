@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles, ArrowUpRight, FileCheck2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,6 +14,8 @@ import {
 import { EvidenceValue, humanize } from '@/components/evidence-value';
 import type { JsonValue } from '@/lib/api';
 import { apiRequest } from '@/lib/client';
+import { Failure, LoadingState } from '@/components/workspace-states';
+import { object, strings } from '@/lib/response-validation';
 
 type Answer = {
   provider: string;
@@ -30,6 +32,27 @@ const suggestions = [
   'How does this differ from a legitimate hostel?',
   'Show the activity chronologically.',
 ];
+function validAnswer(value: unknown): boolean {
+  return (
+    object(value) &&
+    typeof value.provider === 'string' &&
+    Array.isArray(value.statements) &&
+    value.statements.every(
+      (item) =>
+        object(item) &&
+        ['id', 'text', 'query', 'path'].every(
+          (key) => typeof item[key] === 'string',
+        ),
+    ) &&
+    Array.isArray(value.sources) &&
+    value.sources.every(
+      (item) =>
+        object(item) && typeof item.query === 'string' && 'result' in item,
+    ) &&
+    strings(value.limitations) &&
+    (value.warning === null || typeof value.warning === 'string')
+  );
+}
 
 export function Investigator({
   candidateId,
@@ -43,11 +66,20 @@ export function Investigator({
   const [question, setQuestion] = useState(suggestions[0]);
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<unknown>(null);
+  const [openSources, setOpenSources] = useState<string[]>([]);
+  const request = useRef<AbortController | null>(null);
+  const inFlight = useRef(false);
+  useEffect(() => () => request.current?.abort(), []);
   async function ask() {
+    if (inFlight.current || !question.trim()) return;
+    inFlight.current = true;
+    const controller = new AbortController();
+    request.current = controller;
     setBusy(true);
-    setError('');
+    setError(null);
     setAnswer(null);
+    setOpenSources([]);
     try {
       const result = await apiRequest<Answer>(
         runId
@@ -55,6 +87,7 @@ export function Investigator({
           : '/investigate',
         {
           method: 'POST',
+          signal: controller.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(
             runId
@@ -66,12 +99,14 @@ export function Investigator({
                 },
           ),
         },
+        validAnswer,
       );
-      setAnswer(result);
+      if (!controller.signal.aborted) setAnswer(result);
     } catch (reason: unknown) {
-      setError(String(reason));
+      if (!controller.signal.aborted) setError(reason);
     } finally {
-      setBusy(false);
+      if (!controller.signal.aborted) setBusy(false);
+      inFlight.current = false;
     }
   }
   return (
@@ -92,6 +127,7 @@ export function Investigator({
           id="analyst-question"
           value={question}
           maxLength={1000}
+          disabled={busy}
           onChange={(event) => setQuestion(event.target.value)}
           className="mt-2 min-h-28"
         />
@@ -111,6 +147,7 @@ export function Investigator({
               variant="outline"
               className="suggestion-button"
               onClick={() => setQuestion(suggestion)}
+              disabled={busy}
             >
               {suggestion}
             </Button>
@@ -122,12 +159,11 @@ export function Investigator({
           <h2>Evidence-backed response</h2>
           <FileCheck2 size={19} className="muted" />
         </div>
-        {error && (
-          <p className="amber" role="alert">
-            {error}
-          </p>
+        <Failure error={error} />
+        {busy && (
+          <LoadingState label="Retrieving the selected candidate’s computed evidence…" />
         )}
-        {!answer && (
+        {!answer && !busy && !error && (
           <p className="muted py-10">
             {busy
               ? 'Retrieving the selected candidate’s computed evidence…'
@@ -157,6 +193,11 @@ export function Investigator({
                   <a
                     href={`#source-${statement.query}`}
                     className="evidence-citation"
+                    onClick={() =>
+                      setOpenSources((current) => [
+                        ...new Set([...current, statement.query]),
+                      ])
+                    }
                   >
                     [{statement.id}] {statement.query} · {statement.path}
                   </a>
@@ -168,7 +209,12 @@ export function Investigator({
                 <p key={text}>{text}</p>
               ))}
             </div>
-            <Accordion multiple className="mt-5">
+            <Accordion
+              multiple
+              value={openSources}
+              onValueChange={(value) => setOpenSources(value as string[])}
+              className="mt-5"
+            >
               {answer.sources.map((source) => (
                 <AccordionItem
                   key={source.query}

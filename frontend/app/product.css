@@ -532,6 +532,53 @@
   border-top: 1px solid var(--border);
   padding-top: 18px;
 }
+.product-shell .investigator-grid {
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.product-shell .investigator-grid .suggestion-button {
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 10px 12px;
+  min-height: 40px;
+  height: auto;
+  white-space: normal;
+  text-align: left;
+  justify-content: flex-start;
+}
+.product-shell .investigator-grid .eyebrow {
+  color: #a4b2c3;
+}
+.product-shell .answer-statements li {
+  font-size: 14px;
+  line-height: 1.9;
+  padding: 16px 0;
+}
+.product-shell .evidence-citation {
+  color: #bad5f6;
+  font-size: 11px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  display: inline-block;
+  padding: 5px 0;
+}
+.product-shell .trust-box {
+  color: #b7c5d6;
+  font-size: 12px;
+  line-height: 1.8;
+  background: #1b2838;
+  border-color: #3b516b;
+}
+.product-shell .investigator-grid .status-chip {
+  font-size: 11px;
+  white-space: normal;
+}
+@media (max-width: 1100px) {
+  .product-shell .investigator-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .evidence-network {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -675,8 +722,16 @@
 .event-detail > * + * {
   margin-top: 12px;
 }
-.product-shell .event-detail .evidence-object { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-@media (max-width: 767px) { .product-shell .event-detail .evidence-object { grid-template-columns: 1fr; } }
+.product-shell .event-detail .evidence-object {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+@media (max-width: 767px) {
+  .product-shell .event-detail .evidence-object {
+    grid-template-columns: 1fr;
+  }
+}
 .evidence-id {
   max-width: 320px;
 }
