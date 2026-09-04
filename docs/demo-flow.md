@@ -1,11 +1,17 @@
-# Three-to-five-minute live demo
+# Historical replay demo — three to five minutes
+
+This is the original Phase 4 **synthetic replay** walkthrough, retained for the separate
+`/demo` route. The primary product now opens persisted investigations. For the submission
+recording, use the current [2–4 minute demo script](../DEMO_SCRIPT.md) and
+[local setup](quick-start.md). Replay timing claims below describe one example, not the
+retrospective uploaded-dataset workflow or average detection latency.
 
 ## Before presenting
 
 Install once with `uv sync --extra dev` and `cd frontend; npm ci` (run commands
 on separate lines if preferred). Start `uv run ringsentinel-api` in the repository
 root and `npm run dev` inside `frontend`. Open http://127.0.0.1:5173 and wait for
-the actual data to load. No API key is needed. Keep the API terminal running.
+the actual data to load, then open `/demo`. No API key is needed. Keep the API terminal running.
 Do not start a second process on an occupied port; stop the existing one with Ctrl+C.
 
 For stable presentation without hot reload, `npm run build` then `npm start`

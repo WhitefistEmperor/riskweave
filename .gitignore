@@ -5,6 +5,15 @@
 *.db
 *.sqlite
 *.sqlite3
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.log
+.DS_Store
+Thumbs.db
 *.dump
 secrets/
 backups/

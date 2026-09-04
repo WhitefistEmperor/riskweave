@@ -1,262 +1,200 @@
 # RingSentinel
 
-Temporal network intelligence for coordinated payment abuse.
+Network-aware payment-abuse detection, with evidence an analyst can inspect.
 
-RingSentinel is a working local analyst console for finding coordinated payment abuse that individual
-transaction models can miss. It combines causal transaction, infrastructure, temporal, and graph
-features, groups suspicious events into candidate rings, and exposes computed evidence to analysts.
-The application includes FastAPI, a React/TypeScript dashboard, chronological simulation,
-interactive network exploration, and an evidence-grounded investigator. Phase 5A adds persisted,
-owner-scoped investigations, asynchronous runs, and a versioned API. Phase 5B makes this the primary
-analyst workspace, with ranked findings, an evidence-linked graph, timeline and grounded investigator.
-**No GNN is used.**
+Coordinated abuse can hide inside individually ordinary payments. RingSentinel connects
+transactions through shared infrastructure and activity patterns, ranks suspicious candidate
+rings, and makes the relationships, timeline, and financial exposure reviewable.
 
-Phase 5C adds verified access-token authentication, security headers, operational quotas,
-single-executor ownership and offline backup/restore. See [hardening and verification](docs/phase5c-hardening.md),
-[backup procedure](docs/backup-restore.md) and [remaining container/PostgreSQL gates](docs/phase5c-container-verification.md).
-This is **not a staging/public deployment approval**: a real identity gateway and container/PostgreSQL
-runtime verification remain required. Default development identity must stay local-only.
+**Evidence, not verdicts.** This is a working local analyst product with a synthetic-trained
+detector—not a real-payment-validated fraud service. No GNN or paid API key is required.
 
-The key insight: a payment can look ordinary alone but suspicious in its network context. Sharing alone
-is also insufficient: legitimate families, offices, and hostels are explicit benchmark hard negatives.
+![Ring Explorer showing observed customer and infrastructure relationships](docs/assets/screenshots/ring-explorer.png)
 
-## Run the analyst workspace
+[Quick start](#quick-start) · [Screenshots](docs/assets/screenshots/README.md) ·
+[Validation](#measured-validation) · [Demo script](DEMO_SCRIPT.md)
 
-Requirements: Python 3.11+, uv, Node 22.13+ (tested with Node 24.19), npm.
-Run from this repository checkout. First setup needs internet for dependencies and fonts.
+## What it does
 
-Terminal 1, repository root:
+- **Find coordinated activity:** combines transaction, infrastructure-sharing, temporal, and
+  structural graph features in a histogram-gradient-boosting model.
+- **Keep investigations reproducible:** upload a validated dataset, run asynchronous analysis,
+  and revisit saved findings with input/result checksums and run history.
+- **Inspect evidence:** explore explicit network links, shared resources, merchant
+  relationships, event timelines, and candidate-associated exposure.
+- **Ask grounded questions:** the investigator cites computed facts. An optional LLM can
+  select/order those facts; it cannot invent evidence or change detection decisions.
+- **Compare simpler approaches:** a separate demo/replay workspace includes measured
+  transaction and graph baselines, feature ablations, and legitimate hard-negative communities.
 
-```powershell
-uv sync --locked --extra dev
-uv run ringsentinel-migrate
-uv run ringsentinel-api
+This helps an analyst move from a suspicious score to a reviewable case, while making the
+limits of the evidence visible.
+
+## Reviewer flow
+
+**Create investigation → upload DatasetBundle → run analysis → review candidate rings →
+inspect graph/evidence → read grounded investigator summary.**
+
+The main workspace analyzes an uploaded dataset retrospectively. The separate `/demo` route
+replays synthetic events chronologically; it is not a live payment integration.
+
+![Completed investigation with ranked candidate rings](docs/assets/screenshots/completed-investigation.png)
+
+## How the pieces fit
+
+```mermaid
+flowchart TB
+    UI[Analyst frontend] --> API[FastAPI: owner-scoped API]
+    API --> RUN[Investigation and run lifecycle]
+    RUN --> DET[Causal features and network-aware detector]
+    DET --> EV[Candidate rings and computed evidence]
+    RUN <--> DB[(Database: cases and run metadata)]
+    EV <--> STORE[(Local storage: inputs and results)]
+    EV --> API
+    API --> INV[Grounded investigator]
+    INV -. optional fact selection .-> LLM[LLM provider]
+    INV --> ANSWER[Cited deterministic statements]
+    ANSWER --> UI
 ```
 
-Terminal 2:
+The **detector** scores events and groups candidates. The **evidence service** exposes only
+computed graph/event information. The **investigator** explains that evidence using cited,
+server-rendered statements—not free-form model-written findings.
 
-```powershell
+**Stack:** Python, FastAPI, Pydantic, scikit-learn, NetworkX, SQLAlchemy/Alembic;
+React/TypeScript, Vinext, Tailwind/shadcn, Cytoscape; pytest, Playwright, Ruff, Oxlint.
+Local startup uses SQLite and filesystem storage. PostgreSQL support exists, but live
+PostgreSQL/container verification remains outstanding. See [architecture](docs/architecture.md).
+
+## Quick start
+
+Prerequisites: a repository checkout, **Python 3.11+**, **uv**, and **Node.js 22.13+ with npm**.
+The latest local verification used Python 3.14.6 and Node.js 24.19. Run from the repository root.
+
+**Terminal 1 — install, migrate, and start the backend:**
+
+```sh
+uv sync --locked --extra dev
+uv run --locked ringsentinel-migrate
+uv run --locked ringsentinel-api
+```
+
+**Terminal 2 — install and start the frontend:**
+
+```sh
 cd frontend
 npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. API docs: http://127.0.0.1:8000/docs.
-These `uv` and `npm` commands also work from a Linux shell. Run migration explicitly before startup;
-the API never creates tables implicitly. Settings come from the launching environment, not automatic
-`.env` loading. The defaults use SQLite `work/ringsentinel.db` and local objects in `work/storage`.
-The primary page is the persisted investigation worklist. The separate **/demo** route may take
-roughly 20–40 seconds on its first data request to reproduce the held-out seed-105 fold.
-Use localhost only; this is not a hardened public deployment. Ctrl+C stops each terminal.
-Stop the backend before changing Python package metadata/installing: Windows locks running launchers.
+Open [the analyst workspace](http://127.0.0.1:5173/investigations).
+[API documentation](http://127.0.0.1:8000/docs) is available in development mode.
 
-For a local production-build preview, stop the frontend dev server and run `npm run build`, then
-`npm start` from `frontend`. Both modes forward `/api` to the local Python process.
-The migration initializes the local database. No generated dataset, paid account, or LLM key is
-required for the synthetic demo. Uploaded investigations use the separate persisted workflow below.
+**Terminal 3 — generate a reproducible upload from the repository root:**
 
-Open **http://127.0.0.1:5173/demo** to start replay, watch the first focus candidate appear, open Ring Explorer, inspect its graph/timeline,
-ask “Why was this ring flagged?”, then visit Benchmark and Hard negatives. Follow the
-[3–5 minute demo script](docs/demo-flow.md). Replay speed compresses waiting, not event timestamps.
-The first live candidate is an observed-prefix snapshot; the sidebar Explorer is retrospective.
-
-## Persisted investigations
-
-Open **http://127.0.0.1:5173/investigations** to create an investigation, upload a sample, start analysis,
-and revisit its persisted results. Generate a single uploadable JSON bundle from the repository root:
-
-```powershell
-uv run python scripts/make_upload_sample.py --output work/sample.json --transactions 1000 --seed 105
+```sh
+uv run --locked python scripts/make_upload_sample.py --output work/sample.json --transactions 1000 --seed 105
 ```
 
-The upload contract is a complete synthetic `DatasetBundle` JSON object, not CSV, a ZIP, or a single
-JSONL table from the older generator CLI. Labels are part of the validated input format but never
-participate in fitting/scoring uploaded events. The detector is still synthetic-trained and uncalibrated.
-Inputs are limited to 25 MB by default. Generated samples, databases, and stored evidence stay ignored.
+Create an investigation, select `work/sample.json`, click **Upload dataset**, then **Start
+analysis**. Wait for **Completed**, open a candidate, and try Network, Evidence, Timeline,
+and Investigator. Sample creation refuses to overwrite an existing file; reuse it or
+choose another output filename. First analysis may take tens of seconds on a laptop.
 
-The local development session defaults to `local-analyst`. `X-Development-User` allows integration
-tests/local requests to exercise different owners; it is **not authentication**. Keep the app local.
-Production mode rejects this mechanism and denies protected routes until a real identity adapter exists.
+No `.env` or API key is needed. Defaults use local development identity, SQLite at
+`work/ringsentinel.db`, and objects at `work/storage`. Keep both servers on loopback.
+`.env.example` documents settings but is **not automatically loaded**; pre-existing shell
+overrides still apply. Ingestion accepts a complete **DatasetBundle JSON**, not arbitrary CSV
+or a single exported table. See [data contract](docs/data-model.md).
 
-A PowerShell API example, with the backend already running:
+For build/preview commands, browser dependencies, and troubleshooting, see
+[local setup](docs/quick-start.md). Do not expose development identity to a network.
 
-```powershell
-$api = 'http://127.0.0.1:8000/api/v1'
-$owner = @{ 'X-Development-User' = 'local-analyst' }
-$investigation = Invoke-RestMethod "$api/investigations" -Method Post -Headers $owner -ContentType 'application/json' -Body '{"name":"Sample review"}'
-$artifact = Invoke-RestMethod "$api/investigations/$($investigation.id)/artifacts" -Method Post -Headers $owner -ContentType 'application/json' -InFile work/sample.json
-$runHeaders = @{ 'X-Development-User' = 'local-analyst'; 'Idempotency-Key' = [guid]::NewGuid().ToString() }
-$body = @{ artifact_id = $artifact.id } | ConvertTo-Json
-$run = Invoke-RestMethod "$api/investigations/$($investigation.id)/runs" -Method Post -Headers $runHeaders -ContentType 'application/json' -Body $body
-Invoke-RestMethod "$api/runs/$($run.id)" -Headers $owner
+## Measured validation
+
+Phase 3 used five held-out synthetic ecosystems (seeds 101–105; 5,000 payments each, plus
+refunds). Each fold trained on three seeds, selected its threshold on another, and tested on
+the fifth. These are preserved experiment results, **not a new Phase 6 benchmark run**.
+
+| Model | Precision | Recall | F1 | PR-AUC |
+|---|---:|---:|---:|---:|
+| Transaction rules | 0.126 | 0.058 | 0.080 | 0.056 |
+| Transaction-only HGB | 0.627 | 0.154 | 0.243 | 0.199 |
+| Static graph heuristic | 0.331 | 0.287 | 0.307 | 0.321 |
+| Network-aware HGB | 0.964 | 0.939 | 0.951 | 0.971 |
+
+Values are fold means. Network PR-AUC was **0.971 ± 0.005**; ring detection was **50/50** under
+the benchmark's matching definition—not perfect member recovery. Exposure mean relative
+error was **8.14%**, with **4.44% aggregate underestimation**. Detection and exposure accuracy
+are separate measures.
+
+The leakage audit found and corrected an unrealistic merchant-history shortcut; PR-AUC fell
+from 0.979 to 0.971. Held-out merchant collusion was weaker and variable (**0.803 ± 0.143
+PR-AUC**). Full ablations, false-positive rates, distributions, and weak results remain in the
+[measured report](results/phase3/phase3_summary.md), [JSON artifact](results/phase3/phase3_results.json),
+and [methodology](docs/benchmark-methodology.md).
+
+Submission checks: **94 Python tests**, **27 frontend tests**, Ruff, frontend lint, TypeScript,
+and production build passed. [Verification details](docs/submission-validation.md) record the
+date, warnings, preserved SHA-256, and separately dated dependency audits.
+
+### Run the checks
+
+From the root:
+
+```sh
+uv run --locked --extra dev pytest -q
+uv run --locked --extra dev ruff check .
 ```
 
-Repeat only the final GET to poll `queued` → `running` → `completed`/`failed`. Once completed, GET
-`/api/v1/runs/{id}/rings` or `/api/v1/runs/{id}/results`. An empty ring list is a valid completed result.
-Reuse the same idempotency key if an enqueue response is lost; do not generate a new key for a retry.
-Historical investigations survive backend restarts when the database and storage location are retained.
-Run **one API worker**: the local database queue executes one killable child at a time, with a default
-300-second timeout. This is not a distributed worker system.
+With both local servers running in the default deterministic investigator mode,
+run in `frontend`:
 
-Frontend transport is centralized. `NEXT_PUBLIC_RINGSENTINEL_API_BASE_URL` is an optional build-time
-API origin (no `/api` suffix); empty uses same origin. `RINGSENTINEL_API_PROXY_TARGET` controls the
-server-side proxy; set it when building and starting if the backend is not `http://127.0.0.1:8000`.
-Configure matching explicit `RINGSENTINEL_FRONTEND_ORIGINS` on the backend for cross-origin use.
-Persisted detail links use `/investigations/{id}?run={run_id}&ring={candidate_id}&view={tab}`.
-Completed runs open a ranked candidate queue. Select a ring, inspect Network / Evidence / Timeline,
-then ask the grounded Investigator. Dataset setup collapses after completion. The network is a
-projection of explicit evidence-query relationships, not a reconstruction of missing event links.
-The persisted timeline is retrospective; only the separate demo replay makes prefix-safe observations.
-See [Phase 5B frontend architecture and verification](docs/phase5b-frontend.md).
-
-Health: `/api/v1/health`; readiness: `/api/v1/ready`. Errors carry safe codes/messages and an
-`X-Request-ID`; request logs use the same ID without logging uploads or evidence. See
-[production architecture](docs/PRODUCTION_ARCHITECTURE.md) and [.env.example](.env.example) for settings,
-ownership, all endpoint contracts, execution limits, and remaining deployment gates.
-
-## Local container recipe
-
-Docker is optional. The Compose recipe builds the backend and production frontend, migrates PostgreSQL,
-and binds application ports to loopback only. Supply an untracked local database password via the shell:
-
-```powershell
-$env:RINGSENTINEL_DB_PASSWORD = 'replace-with-a-local-only-password'
-docker compose config --quiet
-docker compose build
-docker compose up --wait
-```
-
-On Linux use `export RINGSENTINEL_DB_PASSWORD='replace-with-a-local-only-password'` first, then the same
-Compose commands. The stack explicitly uses development identity for local testing; it is not a secure
-public deployment. Keep named database/artifact volumes to preserve investigations.
-Docker/Podman/WSL were unavailable on the development host: image builds, live PostgreSQL, and the
-container investigation smoke test remain unverified locally. Do not interpret these recipes as a
-successful container run. See [container verification](docs/container-verification.md). GitHub Actions
-includes validation jobs but must actually run after pushing.
-
-## Measured synthetic benchmark
-
-Post-hardening Phase 3 means over five held-out ecosystems; unchanged in Phases 4, 5A and 5B:
-
-| Model | PR-AUC | Precision | Recall | F1 | Event FPR | Ring detection |
-|---|---:|---:|---:|---:|---:|---:|
-| Transaction-only HGB | 0.199 | 0.627 | 0.154 | 0.243 | 0.55% | 30% |
-| Graph heuristic | 0.321 | 0.331 | 0.287 | 0.307 | 2.75% | 28% |
-| Network-aware HGB | 0.971 | 0.964 | 0.939 | 0.951 | 0.17% | 100% |
-
-Exposure mean relative error: **8.14%**; aggregate underestimation: **4.44%** over 50 matched rings.
-Detection recall does not establish valuation accuracy. Expected-loss rates are synthetic assumptions,
-and scores are not calibrated probabilities. The eight-minute seed-105 example is not average latency:
-the benchmark mean early-warning delay is about 20.95 hours. An earlier isolated threshold alert is
-explicitly disclosed in the compact replay.
-
-Validated on synthetic ecosystems; **not a production fraud-rate claim**. Distribution shift is unknown.
-Merchant-collusion held-out PR-AUC varies (0.803 ± 0.143). Production needs retraining and monitoring.
-Full results, standard deviations, ablations, and before/after hardening are preserved in
-[Phase 3 results](results/phase3/phase3_summary.md) and [methodology](docs/benchmark-methodology.md).
-
-## Investigator trust boundary
-
-The question selects controlled evidence queries. The investigator never classifies fraud, invents
-missing evidence, or changes the detector. Default mode is deterministic, with cited observations and
-inspectable source data. Optional OpenAI extractive summarization selects/orders computed facts; it
-cannot introduce free-form claims. Errors or invalid selections fall back safely. Configure server-side
-environment variables from `.env.example` only if desired; `.env` is not auto-loaded.
-See [investigator design](docs/investigator-design.md). Live paid-provider verification is not claimed.
-
-## Screenshots
-
-Browser-generated screenshots are in [docs/screenshots](docs/screenshots). Repeatable UI tests also
-write current captures to ignored `outputs/phase4-*.png`.
-
-![RingSentinel overview](docs/screenshots/phase4-overview.png)
-
-## Checks
-
-```powershell
-uv run pytest -q
-uv run ruff check .
-uv build
-cd frontend
+```sh
+npx playwright install chromium
+npm test
 npm run lint
 npm run typecheck
 npm run build
-npx playwright install chromium
-npm test
 ```
 
-Browser tests require both servers running and use actual API data, not mocked benchmark responses.
-The new upload/revisit test generates a real dataset through the installed Python environment.
-Two additional transport-fixture tests cover unauthorized/offline/empty/failed UI states only.
-The optional WebMCP contract is tested with an emulated registry; native browser support is not assumed.
-Bundled shadcn catalog lint findings are excluded from application lint; all TypeScript is typechecked.
-Phase 4's dependency audit found 8 high, 2 moderate, and 1 low advisory. Phase 5A reviews safe updates
-without changing the detector; consult the current [dependency review](docs/dependency-audit.md) and
-[verification log](docs/phase5a-verification.md) for measured outcomes and unresolved findings rather
-than treating the historical count as current. A large-chunk build warning is not a fraud-model result.
-Keep the application local until the documented security and deployment gates are met.
+Browser tests create local test investigations; use a separate local database/storage pair
+to keep your presentation worklist uncluttered. See [setup details](docs/quick-start.md).
 
-## Repository map
+## Limitations and responsible use
+
+- Synthetic-trained and synthetic-evaluated only. Distribution shift and real-payment
+  performance are unknown; model scores are **not calibrated fraud probabilities**.
+- Shared infrastructure can be legitimate. Candidates need human review; the application
+  does not establish guilt or recommend automatic blocking.
+- Exposure is candidate-associated value, **not confirmed loss**. Refund value replaces
+  purchase value for the same original payment; synthetic expected-loss rates are assumptions.
+- The investigator cannot establish model causality from an observed link. Default mode is
+  visibly deterministic; optional paid-provider integration has not been live-verified.
+- This is a single-host/local-storage foundation, not production approval. JWT verification
+  is implemented, but real identity-gateway/TLS integration and live infrastructure checks
+  remain unverified. Vinext is beta. See [Phase 5C verification and gates](docs/phase5c-final.md).
+
+## Repository guide
 
 ```text
-src/ringsentinel/  generation, schemas, causal features, models, evaluation
-  api/            FastAPI + deterministic held-out demo runtime
-  platform/       owned persistence, migrations, storage, subprocess lifecycle, settings
-  investigation/  read-only evidence + constrained investigator providers
-  simulation/     chronological candidate replay
-frontend/         React/TypeScript operations console + browser tests
-tests/            schema, leakage, benchmark, evidence, replay, persistence/API/provider tests
-results/phase3/   preserved measured validation artifacts
-docs/             architecture, methodology, evidence contract, demo script
-Dockerfile*       production-compatible backend/frontend image recipes
-compose.yaml      local-only PostgreSQL, migration, backend, frontend recipe
-.github/          validation CI; no deployment automation
+src/ringsentinel/  Generation, features, detection, evaluation, evidence,
+                  simulation, API, and persisted investigation lifecycle
+frontend/         Analyst workspace and browser tests
+tests/            Python unit and integration tests
+scripts/          Validated upload sample and local API smoke test
+results/phase3/   Frozen measured benchmark JSON and report
+docs/             Setup, architecture, methodology, security history, screenshots
+DEMO_SCRIPT.md    2–4 minute recording plan
 ```
 
-See [production architecture](docs/PRODUCTION_ARCHITECTURE.md),
-[foundation ADR](docs/adr/0001-persisted-analysis-foundation.md), the original
-[detection architecture](docs/architecture.md), and [snapshot evidence contract](docs/evidence-ui.md).
+Start with [local setup](docs/quick-start.md), [screenshot gallery](docs/assets/screenshots/README.md),
+or the [documentation index](docs/README.md). Historical reports and Phase 2 artifacts are retained.
 
-## Synthetic data and experiment CLI
+## Demo video and project metadata
 
-```powershell
-uv sync --locked --extra dev
-uv run ringsentinel-generate --seed 42 --transactions 1000 --output data/generated/demo
-uv run pytest
-```
+**Demo video: not recorded yet.** Replace this sentence with the final recording link before
+submission. The [demo script](DEMO_SCRIPT.md) is ready; no hosted demo is claimed.
 
-Equivalent module invocation:
-
-```powershell
-uv run python -m ringsentinel.generate --seed 42 --transactions 1000
-```
-
-For a separate research run only, the five-seed benchmark command is:
-
-```powershell
-uv run python -m ringsentinel.experiments.run --transactions 5000
-```
-
-Measured fold, scenario, hard-negative, candidate, exposure, threshold, and runtime outputs are written
-to `results/phase2/`.
-
-The Phase 3 validation suite's historical reproduction command is:
-
-```powershell
-uv run ringsentinel-phase3 --transactions 5000
-```
-
-Do not run it against the preserved Phase 3 result directory during architecture/UI work. It writes
-controlled feature ablations, held-archetype generalization, permutation importance,
-feature-distribution checks, exposure error, a hardened before/after benchmark, and replay milestones to
-`results/phase3/`.
-
-Generated datasets contain JSON Lines entity, event, and label tables plus ring and benign-community
-ground truth, a manifest, and SHA-256 checksums. `--transactions` counts payment/capture events;
-refund events are additional linked events.
-
-The default ring-payment budget is 5% of payment volume while retaining all ten archetypes. Because
-refund-abuse setup purchases and camouflage activity are not fraud-labeled, actual event prevalence is
-measured from generated labels and may differ slightly. Override the budget with `--fraud-ratio`.
-
-See [docs/data-model.md](docs/data-model.md) for the schema and ground-truth contract.
+Suggested GitHub description and topics are in [submission metadata](docs/submission-metadata.md).
+Licensed under the existing [MIT License](LICENSE), credited to RingSentinel contributors.

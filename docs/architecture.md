@@ -1,5 +1,24 @@
 # Architecture
 
+## Current product: persisted investigations
+
+The primary `/investigations` workflow is a React/TypeScript frontend over a FastAPI
+owner-scoped API. Uploaded DatasetBundle files are validated and stored locally;
+SQLAlchemy/Alembic persists investigation and run metadata. One executor runs analysis
+in an owned subprocess and persists results for later evidence queries and review.
+SQLite is the verified local quick-start path; live PostgreSQL/container verification
+remains outstanding. No deployment is claimed.
+
+The detector, computed evidence service, and optional fact-selecting investigator are
+separate boundaries. See the [README diagram](../README.md#how-the-pieces-fit),
+[local setup](quick-start.md), [production foundation](PRODUCTION_ARCHITECTURE.md), and
+[Phase 5C validation/gates](phase5c-final.md).
+
+The sections below preserve the earlier data/detection and replay architecture. Statements
+about an in-memory runtime apply to the separate `/demo` path, not the persisted product.
+
+## Original data foundation
+
 Phase 1 is intentionally a single installable Python package with clear data boundaries:
 
 1. `schema.py` owns strict, versionable records.
@@ -48,8 +67,8 @@ keeps the trained model fixed during replay. A lock protects concurrent cold-sta
 dataset preparation. Scores and thresholds are converted to native Python scalars
 at the API boundary to ensure real JSON serialization.
 
-FastAPI calls the Python package directly. No database, queue, authentication stack,
-microservices, or GNN is involved. React uses the existing Sites/Vinext scaffold,
+In the original replay path, FastAPI calls the Python package directly without the
+persisted investigation lifecycle. No microservices or GNN is involved. React uses the existing Sites/Vinext scaffold,
 shadcn primitives, Recharts, and Cytoscape. Both local dev and production-preview
 servers proxy `/api` to FastAPI on 127.0.0.1:8000. The project is not hosted.
 

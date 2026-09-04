@@ -1,41 +1,51 @@
-# RingSentinel console
+# RingSentinel analyst console
 
-Local React/TypeScript analyst application using the Sites/Vinext scaffold and
-bundled shadcn UI components. No hosted service is required.
+React/TypeScript, Vinext, Tailwind/shadcn, and Cytoscape. The root route opens the
+persisted investigation worklist; `/demo` is the separate synthetic replay workspace.
 
-From the repository root, run `uv sync --locked --extra dev`, `uv run ringsentinel-migrate`, then `uv run ringsentinel-api`.
-In another terminal: `cd frontend`, `npm ci`, then `npm run dev`.
-Open http://127.0.0.1:5173. The root redirects to the persisted investigation worklist.
-Create an investigation, upload a complete DatasetBundle JSON, start analysis and review the saved findings.
-Generate a sample with `uv run python scripts/make_upload_sample.py --output work/sample.json --transactions 1000 --seed 105` from the repository root.
+Follow the repository's [quick start](../docs/quick-start.md) for backend installation,
+migrations, a sample upload, frontend startup, browser dependencies, and production-preview
+commands. No hosted service or paid model key is required for the default local workflow.
 
-For production-preview mode, stop the dev server, run `npm run build`, then
-`npm start`. The Next-compatible rewrite forwards API requests to the same backend.
-No Cloudflare account or deployment is needed. The Python source distribution is
-backend-only; use the repository checkout for the frontend source and lockfile.
+From this directory, with the backend already running:
 
-Checks: `npm run lint`, `npm run typecheck`, `npm run build`.
+```sh
+npm ci
+npm run dev
+```
+
+Open http://127.0.0.1:5173. Browser API requests use the same-origin proxy to FastAPI.
+Do not expose the development server or development identity publicly.
+
+## Checks
+
+```sh
+npx playwright install chromium
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
+
+`npm test` needs both local servers running with demo enabled and the default deterministic
+investigator. It includes real upload/analysis/evidence/revisit checks and explicitly labeled
+rare-state transport fixtures. Set `RINGSENTINEL_UI_URL` to use a different local frontend URL.
+Generated test screenshots remain ignored; curated submission captures are in
+[the gallery](../docs/assets/screenshots/README.md).
+
 Application code is linted. The unchanged bundled `components/ui` catalog and
-`hooks/use-mobile.ts` are excluded from Oxlint because the scaffold has upstream
-accessibility/compiler lint findings; all TypeScript is still typechecked.
+`hooks/use-mobile.ts` remain excluded from Oxlint for upstream scaffold findings;
+all TypeScript is typechecked. Latest measured checks and dated audits are in
+[submission validation](../docs/submission-validation.md), not a live CI status badge.
 
-The separate `/demo` route contains the payment feed and chronological observed-prefix snapshots.
-Risk scores are uncalibrated; benchmark values come from measured Phase 3 artifacts.
-UI playback accelerates event gaps without changing the original UTC timestamps.
+## Code map
 
-`npm test` runs real-data Playwright checks plus explicitly labelled rare-state transport fixtures against the running local servers.
-The original eight regressions remain; the persisted happy path now also exercises real malformed-upload rejection,
-navigation while analysis is active, graph node/edge inspection, timeline reload, citations and saved-list revisit.
-Set `RINGSENTINEL_UI_URL` to test a different local frontend port.
-Screenshots go to ignored `../outputs/`; the old Phase 4 curated copies under `docs/screenshots` are historical.
+- `lib/client.ts`: shared transport; `lib/platform-api.ts` and `lib/evidence.ts`: contracts.
+- `lib/response-validation.ts`: runtime response checks.
+- `hooks/use-investigation.ts`: server-backed investigation lifecycle.
+- `components/`: worklist, run setup, findings, network, timeline, and investigator views.
 
-Phase 5B boundaries: `lib/client.ts` is the shared transport; `lib/platform-api.ts` and
-`lib/evidence.ts` hold typed contracts; `lib/response-validation.ts` rejects malformed responses;
-`hooks/use-investigation.ts` owns server-backed lifecycle. Presentation is split into shell, worklist,
-run setup, findings, graph, timeline and investigator. No backend/model/benchmark changes were required.
-The evidence graph only projects query-provided pairs, with source links. It never fills missing edges.
-Investigation histories, bounded candidate/evidence pages, terminal polling cessation and lazy graph loading
-keep the interface lightweight. No new dependency, frontend database, auth provider or hosting was added.
-
-The locked scaffold dependencies have npm audit findings. This is a localhost-only
-hackathon app, not a deployment/security approval. Do not expose the dev server.
+The evidence graph renders query-provided relationships only; it never fills missing edges.
+Scores are uncalibrated and sharing alone is not proof of abuse. See the
+[Phase 5B frontend notes](../docs/phase5b-frontend.md) for implementation history and
+[Phase 5C gates](../docs/phase5c-final.md) for unresolved production risks.
