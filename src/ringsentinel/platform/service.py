@@ -1,5 +1,7 @@
 """Owner-scoped transactional application service, independent of HTTP and execution."""
 
+from __future__ import annotations
+
 import hashlib
 import json
 from contextlib import contextmanager
