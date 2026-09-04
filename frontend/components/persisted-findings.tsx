@@ -100,6 +100,16 @@ export function PersistedFindings({
           ?.scrollIntoView({ block: 'start' }),
       );
   }
+  function openCandidate(id: string) {
+    navigate(id);
+    requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(
+        '.candidate-workspace',
+      );
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: 'start' });
+    });
+  }
   const selected = ranked.find(
     (item) => item.candidate.candidate_id === ringId,
   );
@@ -184,7 +194,7 @@ export function PersistedFindings({
                       <TableCell>
                         <button
                           className="candidate-link"
-                          onClick={() => navigate(candidate.candidate_id)}
+                          onClick={() => openCandidate(candidate.candidate_id)}
                           aria-label={`Inspect candidate ${shortId(candidate.candidate_id)}`}
                         >
                           <span className="rank-number">
@@ -230,7 +240,7 @@ export function PersistedFindings({
                           variant="ghost"
                           size="icon-sm"
                           aria-label={`Open ring ${shortId(candidate.candidate_id)}`}
-                          onClick={() => navigate(candidate.candidate_id)}
+                          onClick={() => openCandidate(candidate.candidate_id)}
                         >
                           <ArrowUpRight size={16} />
                         </Button>
@@ -275,6 +285,7 @@ export function PersistedFindings({
             <section
               className="candidate-workspace"
               aria-label="Selected candidate"
+              tabIndex={-1}
             >
               <div className="candidate-heading">
                 <div>

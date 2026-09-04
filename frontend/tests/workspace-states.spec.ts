@@ -44,6 +44,21 @@ test('malformed successful responses and internal errors stay safe and include r
   await expect(page.getByRole('alert')).toContainText('internal-fixture');
   await expect(page.getByRole('alert')).not.toContainText('Traceback');
   await expect(page.getByRole('alert')).not.toContainText('secret.py');
+  await page.route(`**/api/v1/runs/${runId}`, (route) =>
+    route.fulfill({
+      headers: { 'X-Request-ID': 'malformed-run' },
+      json: {
+        ...run,
+        status: 'failed',
+        error_message_safe: { unexpected: 'object' },
+      },
+    }),
+  );
+  await page.reload();
+  await expect(page.getByRole('alert')).toContainText(
+    'Response could not be read',
+  );
+  await expect(page.getByRole('alert')).toContainText('malformed-run');
 });
 
 test('missing and mismatched run URLs never display another investigation’s findings', async ({
@@ -100,13 +115,11 @@ test('oversized and malformed uploads give actionable errors without starting an
         : route.fulfill({ json: [] }),
   );
   await page.goto(`/investigations/${investigationId}`);
-  await page
-    .getByLabel('Dataset file')
-    .setInputFiles({
-      name: 'invalid.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from('{'),
-    });
+  await page.getByLabel('Dataset file').setInputFiles({
+    name: 'invalid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{'),
+  });
   await page
     .getByRole('button', { name: 'Upload dataset', exact: true })
     .click();

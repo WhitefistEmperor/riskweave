@@ -23,6 +23,20 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   await page.getByLabel('Investigation name').fill(name);
   await page.getByRole('button', { name: 'Create investigation' }).click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  await page
+    .getByLabel('Dataset file')
+    .setInputFiles({
+      name: 'malformed.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{not valid JSON'),
+    });
+  await page
+    .getByRole('button', { name: 'Upload dataset', exact: true })
+    .click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Start analysis', exact: true }),
+  ).toHaveCount(0);
   await page.getByLabel('Dataset file').setInputFiles({
     name: 'sample.json',
     mimeType: 'application/json',
@@ -36,6 +50,19 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   await expect(page.getByRole('status')).toContainText(
     /Analysis status: (queued|running)/,
   );
+  await page.screenshot({
+    path: '../outputs/phase5b-running.png',
+    fullPage: true,
+  });
+  const activeUrl = page.url();
+  await page
+    .getByRole('navigation', { name: 'Breadcrumb' })
+    .getByRole('link', { name: 'Investigations', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Saved investigations', exact: true }),
+  ).toBeVisible();
+  await page.goto(activeUrl);
   await expect(page.getByRole('status')).toContainText(
     'Analysis status: completed',
   );
@@ -49,19 +76,34 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   await expect(page.getByText(/explicit relationships shown/)).toBeVisible();
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
   await page.getByRole('button', { name: 'Fit graph', exact: true }).click();
-  await page.getByRole('combobox', { name: 'Relationship', exact: true }).click();
+  await page
+    .getByRole('combobox', { name: 'Relationship', exact: true })
+    .click();
   await page.getByRole('option').first().click();
-  await page.getByRole('button', { name: 'Open source evidence', exact: true }).click();
-  await expect(page.getByRole('tab', { name: 'Evidence', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page
+    .getByRole('button', { name: 'Open source evidence', exact: true })
+    .click();
+  await expect(
+    page.getByRole('tab', { name: 'Evidence', exact: true }),
+  ).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('tab', { name: 'Timeline', exact: true }).click();
-  await expect(page.getByRole('columnheader', { name: 'Timestamp (UTC)' })).toBeVisible();
-  await page.getByRole('button', { name: /^Inspect event / }).first().click();
-  await expect(page.locator('.event-detail')).toContainText('model output, not a fraud probability');
+  await expect(
+    page.getByRole('columnheader', { name: 'Timestamp (UTC)' }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: /^Inspect event / })
+    .first()
+    .click();
+  await expect(page.locator('.event-detail')).toContainText(
+    'model output, not a fraud probability',
+  );
   const timelineUrl = page.url();
   expect(timelineUrl).toContain('view=timeline');
   expect(timelineUrl).toContain('&ring=');
   await page.reload();
-  await expect(page.getByRole('tab', { name: 'Timeline', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    page.getByRole('tab', { name: 'Timeline', exact: true }),
+  ).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('tab', { name: 'Evidence', exact: true }).click();
   await page
     .getByRole('button', { name: 'Shared devices', exact: true })
@@ -74,12 +116,34 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
     page.getByText('Deterministic evidence fallback · no LLM'),
   ).toBeVisible();
   await expect(page.locator('.answer-statements li')).not.toHaveCount(0);
+  await page.locator('.evidence-citation').first().click();
+  await expect(
+    page.getByRole('button', { name: /^Source:/ }).first(),
+  ).toHaveAttribute('aria-expanded', 'true');
+  await page.screenshot({
+    path: '../outputs/phase5b-investigator.png',
+    fullPage: true,
+  });
   const savedUrl = page.url();
   expect(savedUrl).toContain('?run=');
   await page.reload();
   await expect(page.getByRole('status')).toContainText(
     'Analysis status: completed',
   );
+  await expect(
+    page.getByRole('heading', { name: 'Persisted findings' }),
+  ).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Breadcrumb' })
+    .getByRole('link', { name: 'Investigations', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Saved investigations', exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole('link', { name: new RegExp(name) })
+    .first()
+    .click();
   await expect(
     page.getByRole('heading', { name: 'Persisted findings' }),
   ).toBeVisible();

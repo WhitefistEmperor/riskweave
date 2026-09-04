@@ -38,6 +38,12 @@ export const validRun = (v: unknown) =>
   status(v.status) &&
   str(v.created_at) &&
   object(v.version_metadata) &&
+  Object.values(v.version_metadata).every(str) &&
+  nullable(v.started_at, str) &&
+  nullable(v.completed_at, str) &&
+  nullable(v.error_code, str) &&
+  nullable(v.error_message_safe, str) &&
+  nullable(v.result_checksum, str) &&
   object(v.configuration_snapshot);
 export const validCandidate = (v: unknown) =>
   object(v) &&

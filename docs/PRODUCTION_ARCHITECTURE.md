@@ -1,5 +1,9 @@
 # Phase 5A: persisted investigation foundation
 
+Phase 5B note: backend architecture and contracts below remain unchanged. The minimal frontend has
+been replaced by the investigation-first analyst UI described in [phase5b-frontend.md](phase5b-frontend.md).
+`/` now redirects to `/investigations`; the original synthetic replay is at `/demo`.
+
 This is an architecture foundation, not a public-production deployment. The Phase 4 analyst demo
 remains available. Phase 5A adds persisted investigations and stable application boundaries without
 changing the validated detector, synthetic generator, feature semantics, thresholds, or benchmark.

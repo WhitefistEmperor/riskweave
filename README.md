@@ -7,12 +7,14 @@ transaction models can miss. It combines causal transaction, infrastructure, tem
 features, groups suspicious events into candidate rings, and exposes computed evidence to analysts.
 The application includes FastAPI, a React/TypeScript dashboard, chronological simulation,
 interactive network exploration, and an evidence-grounded investigator. Phase 5A adds persisted,
-owner-scoped investigations, asynchronous runs, and a versioned API. **No GNN is used.**
+owner-scoped investigations, asynchronous runs, and a versioned API. Phase 5B makes this the primary
+analyst workspace, with ranked findings, an evidence-linked graph, timeline and grounded investigator.
+**No GNN is used.**
 
 The key insight: a payment can look ordinary alone but suspicious in its network context. Sharing alone
 is also insufficient: legitimate families, offices, and hostels are explicit benchmark hard negatives.
 
-## Run the analyst demo
+## Run the analyst workspace
 
 Requirements: Python 3.11+, uv, Node 22.13+ (tested with Node 24.19), npm.
 Run from this repository checkout. First setup needs internet for dependencies and fonts.
@@ -37,7 +39,8 @@ Open **http://127.0.0.1:5173**. API docs: http://127.0.0.1:8000/docs.
 These `uv` and `npm` commands also work from a Linux shell. Run migration explicitly before startup;
 the API never creates tables implicitly. Settings come from the launching environment, not automatic
 `.env` loading. The defaults use SQLite `work/ringsentinel.db` and local objects in `work/storage`.
-Allow roughly 20–40 seconds for the first data request to reproduce the held-out seed-105 fold.
+The primary page is the persisted investigation worklist. The separate **/demo** route may take
+roughly 20–40 seconds on its first data request to reproduce the held-out seed-105 fold.
 Use localhost only; this is not a hardened public deployment. Ctrl+C stops each terminal.
 Stop the backend before changing Python package metadata/installing: Windows locks running launchers.
 
@@ -46,7 +49,7 @@ For a local production-build preview, stop the frontend dev server and run `npm 
 The migration initializes the local database. No generated dataset, paid account, or LLM key is
 required for the synthetic demo. Uploaded investigations use the separate persisted workflow below.
 
-Start replay, watch the first focus candidate appear, open Ring Explorer, inspect its graph/timeline,
+Open **http://127.0.0.1:5173/demo** to start replay, watch the first focus candidate appear, open Ring Explorer, inspect its graph/timeline,
 ask “Why was this ring flagged?”, then visit Benchmark and Hard negatives. Follow the
 [3–5 minute demo script](docs/demo-flow.md). Replay speed compresses waiting, not event timestamps.
 The first live candidate is an observed-prefix snapshot; the sidebar Explorer is retrospective.
@@ -93,7 +96,12 @@ Frontend transport is centralized. `NEXT_PUBLIC_RINGSENTINEL_API_BASE_URL` is an
 API origin (no `/api` suffix); empty uses same origin. `RINGSENTINEL_API_PROXY_TARGET` controls the
 server-side proxy; set it when building and starting if the backend is not `http://127.0.0.1:8000`.
 Configure matching explicit `RINGSENTINEL_FRONTEND_ORIGINS` on the backend for cross-origin use.
-Persisted detail links use `/investigations/{id}?run={run_id}`. No Phase 5B redesign has been performed.
+Persisted detail links use `/investigations/{id}?run={run_id}&ring={candidate_id}&view={tab}`.
+Completed runs open a ranked candidate queue. Select a ring, inspect Network / Evidence / Timeline,
+then ask the grounded Investigator. Dataset setup collapses after completion. The network is a
+projection of explicit evidence-query relationships, not a reconstruction of missing event links.
+The persisted timeline is retrospective; only the separate demo replay makes prefix-safe observations.
+See [Phase 5B frontend architecture and verification](docs/phase5b-frontend.md).
 
 Health: `/api/v1/health`; readiness: `/api/v1/ready`. Errors carry safe codes/messages and an
 `X-Request-ID`; request logs use the same ID without logging uploads or evidence. See
@@ -122,7 +130,7 @@ includes validation jobs but must actually run after pushing.
 
 ## Measured synthetic benchmark
 
-Post-hardening Phase 3 means over five held-out ecosystems; unchanged in Phases 4 and 5A:
+Post-hardening Phase 3 means over five held-out ecosystems; unchanged in Phases 4, 5A and 5B:
 
 | Model | PR-AUC | Precision | Recall | F1 | Event FPR | Ring detection |
 |---|---:|---:|---:|---:|---:|---:|
