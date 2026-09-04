@@ -23,13 +23,11 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   await page.getByLabel('Investigation name').fill(name);
   await page.getByRole('button', { name: 'Create investigation' }).click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
-  await page
-    .getByLabel('Dataset file')
-    .setInputFiles({
-      name: 'sample.json',
-      mimeType: 'application/json',
-      buffer: dataset,
-    });
+  await page.getByLabel('Dataset file').setInputFiles({
+    name: 'sample.json',
+    mimeType: 'application/json',
+    buffer: dataset,
+  });
   await page.getByRole('button', { name: 'Upload dataset' }).click();
   await expect(
     page.getByRole('button', { name: 'Start analysis' }),
@@ -44,10 +42,12 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   await expect(
     page.getByRole('heading', { name: 'Persisted findings' }),
   ).toBeVisible();
+  await page.getByText('Run provenance and integrity', { exact: true }).click();
   await expect(page.getByText(/Result SHA256:/)).toBeVisible();
   await page
-    .getByRole('button', { name: 'get shared devices', exact: true })
+    .getByRole('button', { name: 'Shared devices', exact: true })
     .click();
+  await page.getByRole('tab', { name: 'Investigator', exact: true }).click();
   await page
     .getByRole('button', { name: 'Ask investigator', exact: false })
     .click();
@@ -125,7 +125,13 @@ test('failed and empty-result runs render without invented findings', async ({
   };
   await page.route(`**/api/v1/investigations/${invId}`, (route) =>
     route.fulfill({
-      json: { id: invId, name: 'UI state fixture', status: 'failed', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+      json: {
+        id: invId,
+        name: 'UI state fixture',
+        status: 'failed',
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      },
     }),
   );
   await page.route(`**/api/v1/investigations/${invId}/artifacts`, (route) =>

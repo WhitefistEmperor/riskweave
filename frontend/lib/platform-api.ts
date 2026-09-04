@@ -1,6 +1,14 @@
 import { apiRequest } from '@/lib/client';
 import type { JsonValue } from '@/lib/api';
-import { list, validSession, validInvestigation, validArtifact, validRun, validResult } from '@/lib/response-validation';
+import type { EvidenceQueries } from '@/lib/evidence';
+import {
+  list,
+  validSession,
+  validInvestigation,
+  validArtifact,
+  validRun,
+  validResult,
+} from '@/lib/response-validation';
 
 export type RunStatus =
   | 'created'
@@ -51,6 +59,8 @@ export type PersistedCandidate = {
   member_entity_ids: string[];
   related_event_ids: string[];
   evidence: Record<string, number>;
+  first_suspicious_timestamp: string;
+  suspicious_relationships: string[];
 };
 export type AnalysisResult = {
   schema_version: '1';
@@ -60,7 +70,7 @@ export type AnalysisResult = {
   model_scope: string;
   rings: {
     candidate: PersistedCandidate;
-    queries: Record<string, JsonValue>;
+    queries: EvidenceQueries;
   }[];
 };
 const id = encodeURIComponent;
@@ -71,34 +81,67 @@ const json = (body: unknown) => ({
 });
 export const platformApi = {
   session: () => apiRequest<Session>('/v1/session', {}, validSession),
-  investigations: (signal?: AbortSignal) => apiRequest<InvestigationRecord[]>('/v1/investigations', { signal }, list(validInvestigation)),
+  investigations: (signal?: AbortSignal) =>
+    apiRequest<InvestigationRecord[]>(
+      '/v1/investigations',
+      { signal },
+      list(validInvestigation),
+    ),
   create: (name: string) =>
-    apiRequest<InvestigationRecord>('/v1/investigations', json({ name }), validInvestigation),
+    apiRequest<InvestigationRecord>(
+      '/v1/investigations',
+      json({ name }),
+      validInvestigation,
+    ),
   investigation: (value: string, signal?: AbortSignal) =>
-    apiRequest<InvestigationRecord>(`/v1/investigations/${id(value)}`, { signal }, validInvestigation),
+    apiRequest<InvestigationRecord>(
+      `/v1/investigations/${id(value)}`,
+      { signal },
+      validInvestigation,
+    ),
   artifacts: (value: string, signal?: AbortSignal) =>
-    apiRequest<ArtifactRecord[]>(`/v1/investigations/${id(value)}/artifacts`, { signal }, list(validArtifact)),
+    apiRequest<ArtifactRecord[]>(
+      `/v1/investigations/${id(value)}/artifacts`,
+      { signal },
+      list(validArtifact),
+    ),
   upload: (value: string, file: File) =>
-    apiRequest<ArtifactRecord>(`/v1/investigations/${id(value)}/artifacts`, {
-      method: 'POST',
-      body: file,
-      // HTTP header values cannot carry arbitrary Unicode. This is display metadata only.
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Filename': file.name.replace(/[^\x20-\x7e]/g, '_'),
+    apiRequest<ArtifactRecord>(
+      `/v1/investigations/${id(value)}/artifacts`,
+      {
+        method: 'POST',
+        body: file,
+        // HTTP header values cannot carry arbitrary Unicode. This is display metadata only.
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Filename': file.name.replace(/[^\x20-\x7e]/g, '_'),
+        },
       },
-    }, validArtifact),
+      validArtifact,
+    ),
   runs: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisRun[]>(`/v1/investigations/${id(value)}/runs`, { signal }, list(validRun)),
+    apiRequest<AnalysisRun[]>(
+      `/v1/investigations/${id(value)}/runs`,
+      { signal },
+      list(validRun),
+    ),
   start: (value: string, artifactId: string, key: string) =>
-    apiRequest<AnalysisRun>(`/v1/investigations/${id(value)}/runs`, {
-      ...json({ artifact_id: artifactId }),
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
-    }, validRun),
+    apiRequest<AnalysisRun>(
+      `/v1/investigations/${id(value)}/runs`,
+      {
+        ...json({ artifact_id: artifactId }),
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+      },
+      validRun,
+    ),
   run: (value: string, signal?: AbortSignal) =>
     apiRequest<AnalysisRun>(`/v1/runs/${id(value)}`, { signal }, validRun),
   results: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisResult>(`/v1/runs/${id(value)}/results`, { signal }, validResult),
+    apiRequest<AnalysisResult>(
+      `/v1/runs/${id(value)}/results`,
+      { signal },
+      validResult,
+    ),
 };
 
 /** Poll persisted state only. Never retry a POST or start a second analysis implicitly. */

@@ -64,6 +64,11 @@ export async function apiRequest<T>(
   }
   const value: unknown = await response.json().catch(() => undefined);
   if (value === undefined || (validate && !validate(value)))
-    throw new ApiError('The API returned an unreadable response. Reload or contact the operator with this request ID.', response.status, 'MALFORMED_RESPONSE', returnedId);
+    throw new ApiError(
+      'The API returned an unreadable response. Reload or contact the operator with this request ID.',
+      response.status,
+      'MALFORMED_RESPONSE',
+      returnedId,
+    );
   return value as T;
 }

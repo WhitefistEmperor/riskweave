@@ -1,9 +1,15 @@
 'use client';
-
 import { useState } from 'react';
+import Link from 'next/link';
+import { ChevronRight, FileJson, Upload, ArrowRight } from 'lucide-react';
 import { useInvestigation } from '@/hooks/use-investigation';
-import { ProductShell as Workspace } from '@/components/product-shell';
-import { Failure } from '@/components/workspace-states';
+import { ProductShell } from '@/components/product-shell';
+import {
+  Failure,
+  LoadingState,
+  StatusBadge,
+} from '@/components/workspace-states';
+import { PersistedFindings } from '@/components/persisted-findings';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,18 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Investigator } from '@/components/investigator';
-import { EvidenceValue, humanize } from '@/components/evidence-value';
-import { money, shortId } from '@/lib/api';
-
-
-
+import { dateTime, shortId } from '@/lib/api';
 export { InvestigationList } from '@/components/investigation-list';
 
 export function InvestigationDetail({
@@ -36,191 +31,228 @@ export function InvestigationDetail({
   initialRunId?: string;
 }) {
   const state = useInvestigation(investigationId, initialRunId);
-  const { record, artifacts, artifactId, setArtifactId, runs, runId, run, result, error, busy, activeRun, selectRun, start } = state;
-  const [ringId, setRingId] = useState('');
+  const {
+    record,
+    artifacts,
+    artifactId,
+    runs,
+    runId,
+    run,
+    result,
+    error,
+    busy,
+    activeRun,
+  } = state;
   const [file, setFile] = useState<File | null>(null);
-  const upload = () => file ? state.upload(file) : Promise.resolve();
-  const selected = result?.rings.find(
-    (item) => item.candidate.candidate_id === ringId,
-  ) ?? result?.rings[0];
+  const artifact = artifacts.find((item) => item.id === artifactId);
   return (
-    <Workspace>
-      <h1>{record?.name ?? 'Investigation'}</h1>
-      <Failure error={error} />
-      {Boolean(error) && runId && (
-        <Button
-          variant="outline"
-          onClick={state.retry}
-        >
-          Resume status checks
-        </Button>
-      )}
-      {!record && !error && <output>Loading investigation…</output>}
+    <ProductShell>
+      <nav aria-label="Breadcrumb" className="breadcrumb">
+        <Link href="/investigations">Investigations</Link>
+        <ChevronRight size={14} />
+        <span>{record?.name ?? 'Investigation'}</span>
+      </nav>
+      <div className="workspace-heading">
+        <div>
+          <h1>{record?.name ?? 'Investigation'}</h1>
+          <p className="muted">
+            Persisted dataset analysis · Retrospective, not a live monitor
+          </p>
+        </div>
+        {record && <StatusBadge status={run?.status ?? record.status} />}
+      </div>
+      <Failure error={error} retry={state.retry} />
+      {!record && !error && <LoadingState label="Loading investigation…" />}
       {record && (
         <>
-          <Card className="panel p-5 space-y-4">
-            <h2>Input dataset</h2>
-            <p className="muted text-sm">
-              DatasetBundle JSON only. Uploads are validated and checksummed; an
-              identical upload reuses its artifact.
-            </p>
-            <label htmlFor="dataset-file">Dataset file</label>
-            <Input
-              id="dataset-file"
-              type="file"
-              accept=".json,application/json"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              disabled={!!busy || activeRun}
-            />
-            <Button
-              onClick={() => void upload()}
-              disabled={!file || !!busy || activeRun}
-            >
-              Upload dataset
-            </Button>
-            {artifacts.length > 0 && (
-              <>
-                <label id="artifact-label" htmlFor="artifact-select">
-                  Analysis input
-                </label>
+          {(runs.length > 0 || runId) && (
+            <Card className="panel p-5 run-panel">
+              <div className="section-heading compact">
+                <h2>Analysis runs</h2>
                 <Select
-                  value={artifactId}
-                  onValueChange={(value) => setArtifactId(String(value ?? ''))}
-                  disabled={!!busy || activeRun}
+                  value={runId}
+                  onValueChange={(value) => state.selectRun(String(value))}
                 >
-                  <SelectTrigger
-                    id="artifact-select"
-                    aria-labelledby="artifact-label"
-                  >
+                  <SelectTrigger aria-label="Selected analysis run">
                     <SelectValue>
-                      {
-                        artifacts.find((value) => value.id === artifactId)
-                          ?.original_name
-                      }
+                      {run
+                        ? shortId(run.id) + ' · ' + run.status
+                        : 'Choose a run'}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {artifacts.map((item) => (
-                      <SelectItem value={item.id} key={item.id}>
-                        {item.original_name} ·{' '}
-                        {item.size_bytes.toLocaleString()} bytes
+                    {[...runs].reverse().map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {shortId(item.id)} · {item.status} ·{' '}
+                        {dateTime(item.created_at)} UTC
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button
-                  onClick={() => void start()}
-                  disabled={!artifactId || !!busy || activeRun}
-                >
-                  {busy ? 'Working…' : 'Start analysis'}
-                </Button>
-              </>
-            )}
-          </Card>
-          <Card className="panel p-5 space-y-3">
-            <h2>Analysis runs</h2>
-            {runs.length === 0 && !run && (
-              <p className="muted">No analysis runs yet.</p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              {runs.map((item) => (
-                <Button
-                  variant={runId === item.id ? 'default' : 'outline'}
-                  key={item.id}
-                  onClick={() => selectRun(item.id)}
-                >
-                  {shortId(item.id)} · {item.status}
-                </Button>
-              ))}
-            </div>
-            {runId && !run && !error && <output>Loading run…</output>}
-            {run && (
-              <div className="space-y-2">
-                <output>
-                  Analysis status: <strong>{run.status}</strong>
-                </output>
-                {run.status === 'queued' && (
-                  <p className="muted">
-                    Waiting for the local analysis worker.
-                  </p>
-                )}
-                {run.status === 'running' && (
-                  <p className="muted">
-                    Analysis is running. This page polls persisted status; you
-                    can return later.
-                  </p>
-                )}
-                {run.status === 'failed' && (
-                  <p className="amber" role="alert">
-                    {run.error_message_safe} ({run.error_code})
-                  </p>
-                )}
-                <p className="muted text-sm">
-                  Run {run.id} · App {run.version_metadata.application} ·{' '}
-                  {run.version_metadata.detector}
-                </p>
-                {run.result_checksum && (
-                  <p className="muted text-sm break-all">
-                    Result SHA256: {run.result_checksum}
-                  </p>
-                )}
               </div>
-            )}
-          </Card>
-          {result && (
-            <Card className="panel p-5 space-y-4">
-              <h2>Persisted findings</h2>
-              <p>
-                {result.event_count.toLocaleString()} events ·{' '}
-                {result.entity_count.toLocaleString()} entities ·{' '}
-                {result.rings.length} candidate rings
-              </p>
-              <p className="muted">
-                {result.model_scope}. Threshold {result.threshold.toFixed(2)}.
-              </p>
-              {result.rings.length === 0 && (
-                <p>
-                  No candidate rings were detected. This is not proof of
-                  legitimacy.
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {result.rings.map(({ candidate }) => (
-                  <Button
-                    variant={
-                      candidate.candidate_id === ringId ? 'default' : 'outline'
-                    }
-                    key={candidate.candidate_id}
-                    onClick={() => setRingId(candidate.candidate_id)}
-                  >
-                    {shortId(candidate.candidate_id)} ·{' '}
-                    {money(candidate.estimated_exposure_minor)}
-                  </Button>
-                ))}
-              </div>
-              {selected && (
-                <Accordion multiple>
-                  {Object.entries(selected.queries).map(([query, value]) => (
-                    <AccordionItem key={query} value={query}>
-                      <AccordionTrigger>{humanize(query)}</AccordionTrigger>
-                      <AccordionContent>
-                        <EvidenceValue value={value} />
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+              {runId && !run && !error && <LoadingState label="Loading run…" />}
+              {run && (
+                <div className={'run-state run-state-' + run.status}>
+                  <output>
+                    Analysis status: <strong>{run.status}</strong>
+                  </output>
+                  <p className="muted">
+                    {run.status === 'queued'
+                      ? 'Waiting for the local analysis worker. You can leave this page and return later.'
+                      : run.status === 'running'
+                        ? 'Computing network relationships and evidence. You can return later; no percentage estimate is available.'
+                        : run.status === 'completed'
+                          ? 'Review the candidate rings below. Findings require analyst assessment.'
+                          : 'The run did not produce usable results. Review the error before starting a new run.'}
+                  </p>
+                  {run.status === 'failed' && (
+                    <p className="amber" role="alert">
+                      {run.error_message_safe} ({run.error_code})
+                    </p>
+                  )}
+                  <details className="technical-details">
+                    <summary>Run provenance and integrity</summary>
+                    <p>Run {run.id}</p>
+                    <p>
+                      Created {dateTime(run.created_at)} UTC
+                      {run.started_at &&
+                        ' · Started ' + dateTime(run.started_at) + ' UTC'}
+                      {run.completed_at &&
+                        ' · Finished ' + dateTime(run.completed_at) + ' UTC'}
+                    </p>
+                    <p>
+                      App {run.version_metadata.application} ·{' '}
+                      {run.version_metadata.detector}
+                    </p>
+                    {run.result_checksum && (
+                      <p>Result SHA256: {run.result_checksum}</p>
+                    )}
+                  </details>
+                </div>
               )}
             </Card>
           )}
-          {selected && run && (
-            <Investigator
-              key={`${run.id}-${ringId}`}
-              runId={run.id}
-              candidateId={selected.candidate.candidate_id}
-            />
+          {run?.status === 'completed' && !result && !error && (
+            <LoadingState label="Loading completed findings…" />
           )}
+          {result && run && (
+            <PersistedFindings key={run.id} result={result} runId={run.id} />
+          )}
+          <details
+            key={result ? 'review' : activeRun ? 'active' : 'setup'}
+            open={!result && !activeRun}
+            className="setup-details"
+          >
+            <summary>
+              Dataset &amp; run setup
+              <span>
+                {artifacts.length
+                  ? artifacts.length + ' validated artifact(s)'
+                  : 'Upload a dataset to get started'}
+              </span>
+            </summary>
+            <Card className="panel input-panel">
+              <div className="section-heading">
+                <div>
+                  <h2>
+                    <FileJson size={18} />
+                    Input dataset
+                  </h2>
+                  <p className="muted text-sm">
+                    DatasetBundle JSON only. Arbitrary CSV or payment exports
+                    are not supported.
+                  </p>
+                </div>
+              </div>
+              <div className="input-grid">
+                <div>
+                  <label htmlFor="dataset-file">Dataset file</label>
+                  <Input
+                    id="dataset-file"
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={(event) =>
+                      setFile(event.target.files?.[0] ?? null)
+                    }
+                    disabled={!!busy || activeRun}
+                  />
+                  <p className="muted text-xs">
+                    Validated and checksummed by the API. Identical uploads
+                    reuse the artifact.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => file && void state.upload(file)}
+                    disabled={!file || !!busy || activeRun}
+                  >
+                    <Upload size={15} />
+                    {busy === 'upload'
+                      ? 'Uploading and validating…'
+                      : 'Upload dataset'}
+                  </Button>
+                </div>
+                <div>
+                  {artifacts.length ? (
+                    <>
+                      <label id="artifact-label" htmlFor="artifact-select">
+                        Analysis input
+                      </label>
+                      <Select
+                        value={artifactId}
+                        onValueChange={(value) =>
+                          state.setArtifactId(String(value ?? ''))
+                        }
+                        disabled={!!busy || activeRun}
+                      >
+                        <SelectTrigger
+                          id="artifact-select"
+                          aria-labelledby="artifact-label"
+                        >
+                          <SelectValue>{artifact?.original_name}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {artifacts.map((item) => (
+                            <SelectItem value={item.id} key={item.id}>
+                              {item.original_name} ·{' '}
+                              {item.size_bytes.toLocaleString()} bytes
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="muted text-xs">
+                        Validated artifact ·{' '}
+                        {artifact?.size_bytes.toLocaleString()} bytes
+                      </p>
+                      <Button
+                        onClick={() => void state.start()}
+                        disabled={!artifactId || !!busy || activeRun}
+                      >
+                        {busy === 'start'
+                          ? 'Queuing analysis…'
+                          : 'Start analysis'}
+                        <ArrowRight size={15} />
+                      </Button>
+                      <details className="technical-details">
+                        <summary>Artifact integrity</summary>
+                        <p>Artifact {artifact?.id}</p>
+                        <p>SHA256: {artifact?.checksum}</p>
+                      </details>
+                    </>
+                  ) : (
+                    <div className="input-hint">
+                      <FileJson size={24} />
+                      <p>Upload a dataset to enable analysis.</p>
+                      <span className="muted text-xs">
+                        The server validates the file before accepting it.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </details>
         </>
       )}
-    </Workspace>
+    </ProductShell>
   );
 }
