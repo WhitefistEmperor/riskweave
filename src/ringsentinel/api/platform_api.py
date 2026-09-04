@@ -75,8 +75,11 @@ def readiness(request: Request, service: Service):
 
 
 @router.get("/session", response_model=SessionResponse, tags=["session"])
-def session(principal: CurrentPrincipal):
-    return SessionResponse(user_id=principal.user_id)
+def session(request: Request, principal: CurrentPrincipal):
+    mode = request.app.state.settings.auth_mode
+    return SessionResponse(
+        user_id=principal.user_id, authentication_mode=mode, production_authentication=mode == "jwt"
+    )
 
 
 @router.get("/investigations", response_model=list[InvestigationResponse])

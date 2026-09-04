@@ -76,10 +76,17 @@ def create_app(
         description="Persisted investigations with a separate synthetic demonstration surface.",
         version=__version__,
         lifespan=lifespan,
+        docs_url=None if settings.environment == "production" else "/docs",
+        redoc_url=None if settings.environment == "production" else "/redoc",
+        openapi_url=None if settings.environment == "production" else "/openapi.json",
     )
     application.state.settings = settings
     application.state.platform = platform
     application.state.executor = executor
+    if settings.auth_mode == "jwt":
+        from ringsentinel.api.authentication import TokenVerifier
+
+        application.state.token_verifier = TokenVerifier(settings)
     from ringsentinel.platform.providers import provider_from_settings
 
     application.state.summary_provider = provider_from_settings(settings)
@@ -90,6 +97,7 @@ def create_app(
         allow_methods=["GET", "POST"],
         allow_headers=[
             "Content-Type",
+            "Authorization",
             "X-Development-User",
             "X-Filename",
             "Idempotency-Key",

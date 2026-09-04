@@ -60,7 +60,17 @@ def install_observability(application: FastAPI) -> None:
         request.state.failure_category = None
         start = time.perf_counter()
         try:
+            settings = request.app.state.settings
+            host = request.url.hostname
+            if host not in settings.trusted_hosts:
+                raise ProductError("INVALID_REQUEST")
+            origin = request.headers.get("origin")
+            if origin and origin not in settings.frontend_origins:
+                code = "INVALID_REQUEST" if request.method == "OPTIONS" else "FORBIDDEN"
+                raise ProductError(code)
             response = await call_next(request)
+        except ProductError as error:
+            response = error_response(request, error)
         except Exception:
             # Neither exception strings nor raw request paths are safe logging fields.
             response = error_response(request, ProductError("INTERNAL_ERROR"))
@@ -78,6 +88,19 @@ def install_observability(application: FastAPI) -> None:
                 if key.lower().startswith("access-control-") or key.lower() == "vary":
                     response.headers[key] = value
         response.headers["X-Request-ID"] = request.state.request_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Cache-Control"] = "no-store"
+        if request.url.path.startswith("/api/"):
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; frame-ancestors 'none'"
+            )
+        if request.app.state.settings.environment == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000"
+        if response.status_code == 401:
+            response.headers["WWW-Authenticate"] = "Bearer"
         fields = {
             "event": "http_request",
             "request_id": request.state.request_id,

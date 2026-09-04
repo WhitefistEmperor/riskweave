@@ -19,8 +19,8 @@ export type RunStatus =
   | 'failed';
 export type Session = {
   user_id: string;
-  authentication_mode: 'development';
-  production_authentication: false;
+  authentication_mode: 'development' | 'jwt';
+  production_authentication: boolean;
 };
 export type InvestigationRecord = {
   id: string;

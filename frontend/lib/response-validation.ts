@@ -14,8 +14,8 @@ export const list = (validate: (v: unknown) => boolean) => (v: unknown) =>
 export const validSession = (v: unknown) =>
   object(v) &&
   str(v.user_id) &&
-  v.authentication_mode === 'development' &&
-  v.production_authentication === false;
+  ((v.authentication_mode === 'development' && v.production_authentication === false) ||
+    (v.authentication_mode === 'jwt' && v.production_authentication === true));
 export const validInvestigation = (v: unknown) =>
   object(v) &&
   str(v.id) &&

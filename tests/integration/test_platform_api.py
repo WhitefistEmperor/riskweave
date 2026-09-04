@@ -262,7 +262,7 @@ def test_production_fails_closed_and_cors_is_restricted(settings):
         frontend_origins=["https://analyst.example"],
         jobs_enabled=False,
     )
-    with TestClient(create_app(settings=prod)) as client:
+    with TestClient(create_app(settings=prod), base_url="https://analyst.example") as client:
         assert client.get("/api/v1/health").status_code == 200
         assert_error(
             client.get(

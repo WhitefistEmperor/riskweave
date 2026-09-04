@@ -20,7 +20,13 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8000, ge=1, le=65535)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-    auth_mode: Literal["development", "disabled"] = "development"
+    auth_mode: Literal["development", "disabled", "jwt"] = "development"
+    auth_jwks_path: Path | None = None
+    auth_issuer: str = ""
+    auth_audience: str = ""
+    auth_required_scope: str = "ringsentinel:analyst"
+    auth_max_token_seconds: int = Field(default=900, ge=60, le=3600)
+    trusted_hosts: list[str] = ["localhost", "127.0.0.1", "testserver", "backend"]
     development_user_id: str = Field(default="local-analyst", pattern=r"^[a-zA-Z0-9_-]{1,80}$")
     demo_enabled: bool = True
     jobs_enabled: bool = True
@@ -38,6 +44,24 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def deployment_boundary(self) -> "Settings":
+        if any(not host or any(c in host for c in "/*:@ ") for host in self.trusted_hosts):
+            raise ValueError("Trusted hosts must be explicit hostnames without ports")
+        if self.auth_mode == "jwt":
+            issuer = urlsplit(self.auth_issuer)
+            if (
+                not self.auth_jwks_path
+                or issuer.scheme != "https"
+                or not issuer.hostname
+                or issuer.username
+                or issuer.password
+                or issuer.query
+                or issuer.fragment
+                or not self.auth_audience.strip()
+                or not self.auth_required_scope.strip()
+            ):
+                raise ValueError(
+                    "JWT authentication requires public JWKS, HTTPS issuer, audience and scope"
+                )
         for origin in self.frontend_origins:
             parsed = urlsplit(origin)
             if (
@@ -59,4 +83,7 @@ class Settings(BaseSettings):
                 not origin.startswith("https://") for origin in self.frontend_origins
             ):
                 raise ValueError("Production requires explicit HTTPS origins")
+            if "trusted_hosts" not in self.model_fields_set:
+                self.trusted_hosts = [urlsplit(o).hostname for o in self.frontend_origins]
+                self.trusted_hosts += ["127.0.0.1", "localhost"]  # Private health probes.
         return self

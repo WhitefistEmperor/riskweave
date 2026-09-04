@@ -82,7 +82,9 @@ export function ProductShell({ children }: { children: ReactNode }) {
           </div>
           <span className="product-session">
             {session
-              ? `${session.user_id} · Development identity`
+              ? session.production_authentication
+                ? 'Verified analyst session'
+                : `${session.user_id} · Development identity`
               : sessionFailed
                 ? 'Session unavailable · check API connection'
                 : 'Checking session…'}

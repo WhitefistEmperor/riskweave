@@ -35,8 +35,8 @@ class ReadinessResponse(Contract):
 
 class SessionResponse(Contract):
     user_id: str
-    authentication_mode: Literal["development"] = "development"
-    production_authentication: Literal[False] = False
+    authentication_mode: Literal["development", "jwt"] = "development"
+    production_authentication: bool = False
 
 
 class InvestigationCreate(Contract):

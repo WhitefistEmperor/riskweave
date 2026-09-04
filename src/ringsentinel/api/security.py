@@ -10,6 +10,8 @@ from ringsentinel.platform.service import Principal
 
 def current_principal(request: Request) -> Principal:
     settings = request.app.state.settings
+    if settings.auth_mode == "jwt":
+        return request.app.state.token_verifier.verify(request.headers.get("Authorization", ""))
     if settings.environment not in {"development", "test"} or settings.auth_mode != "development":
         raise ProductError("UNAUTHORIZED")
     user_id = request.headers.get("X-Development-User", settings.development_user_id)
