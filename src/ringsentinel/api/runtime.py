@@ -23,6 +23,8 @@ from ringsentinel.models.tabular import BoostedTreeDetector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 PHASE3_RESULT_PATH = PROJECT_ROOT / "results" / "phase3" / "phase3_results.json"
+if not PHASE3_RESULT_PATH.exists():
+    PHASE3_RESULT_PATH = Path(__file__).resolve().parents[1] / "resources" / "phase3_results.json"
 DEMO_SEEDS = (101, 102, 103, 104, 105)
 DEMO_TEST_SEED = 105
 
@@ -468,6 +470,9 @@ class DemoRuntime:
             "window_start_index": start_index,
             "attack_start_timestamp": attack_start.isoformat(),
             "first_alert_timestamp": detection_time.isoformat(),
+            "earlier_isolated_alert_timestamp": datetime.fromisoformat(
+                stream["first_suspicious_timestamp"]
+            ).isoformat(),
             "detection_delay_minutes": overlay["candidate_detection_delay_minutes"],
             "candidate_id": focus_candidate.candidate_id,
             "events": events,

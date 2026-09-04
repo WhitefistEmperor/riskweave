@@ -1,5 +1,63 @@
 import { test, expect } from '@playwright/test';
 
+test('small-screen navigation and optional WebMCP contract', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const registry: Record<string, { execute: (input: unknown) => unknown }> =
+      {};
+    Object.defineProperty(window, '__testTools', { value: registry });
+    Object.defineProperty(document, 'modelContext', {
+      value: {
+        registerTool(
+          tool: { name: string; execute: (input: unknown) => unknown },
+          options: { signal: AbortSignal },
+        ) {
+          registry[tool.name] = tool;
+          options.signal.addEventListener('abort', () => {
+            delete registry[tool.name];
+          });
+        },
+      },
+    });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', {
+      name: 'See the ring. Not just the transaction.',
+    }),
+  ).toBeVisible();
+  const result = await page.evaluate(() => {
+    const registry = (
+      window as unknown as {
+        __testTools: Record<string, { execute: (input: unknown) => unknown }>;
+      }
+    ).__testTools;
+    const before = registry.read_ring_console.execute({});
+    let invalidRejected = false;
+    try {
+      registry.control_ring_replay.execute({ action: 'delete' });
+    } catch {
+      invalidRejected = true;
+    }
+    registry.control_ring_replay.execute({ action: 'step' });
+    return { names: Object.keys(registry).sort(), invalidRejected, before };
+  });
+  expect(result.names).toEqual([
+    'control_ring_replay',
+    'navigate_ring_workspace',
+    'read_ring_console',
+  ]);
+  expect(result.invalidRejected).toBe(true);
+  await expect(page.getByText('2 / 104 window events')).toBeVisible();
+  await page.getByRole('button', { name: 'Toggle Sidebar' }).click();
+  await page.getByRole('button', { name: 'Benchmark', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'The benchmark, with the caveats.' }),
+  ).toBeVisible();
+});
+
 test('measured benchmark and benign sharing outcomes are visible', async ({
   page,
 }) => {
@@ -15,7 +73,9 @@ test('measured benchmark and benign sharing outcomes are visible', async ({
   ).toBeVisible();
   await expect(page.getByText('8.14%', { exact: true })).toBeVisible();
   await expect(page.getByText('4.44%', { exact: true })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Benign-community flag rate' })).toBeVisible();
+  await expect(
+    page.getByRole('columnheader', { name: 'Benign-community flag rate' }),
+  ).toBeVisible();
   await page.screenshot({
     path: '../outputs/phase4-benchmark.png',
     fullPage: true,

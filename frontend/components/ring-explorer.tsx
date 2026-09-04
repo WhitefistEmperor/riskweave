@@ -65,6 +65,10 @@ export function RingExplorer({
     );
   if (!snapshot) return <Skeleton className="h-96 w-full" />;
   const detail = snapshot.selected;
+  const truth = detail?.candidate.ground_truth_overlay as {
+    detection_delay_hours: number;
+    attack_start_time: string;
+  } | null;
   return (
     <>
       <div className="page-heading">
@@ -176,6 +180,15 @@ export function RingExplorer({
                         UTC
                       </span>
                     </p>
+                    {truth && (
+                      <p className="muted text-sm mt-3">
+                        Demo ground-truth overlay: activation{' '}
+                        {dateTime(truth.attack_start_time)} UTC · first
+                        connected precursor delay{' '}
+                        {(truth.detection_delay_hours * 60).toFixed(1)} min. Not
+                        a detection input.
+                      </p>
+                    )}
                     <EvidenceValue
                       value={
                         detail.candidate.suspicious_relationships as string[]

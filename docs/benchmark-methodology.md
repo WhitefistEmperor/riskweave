@@ -25,7 +25,7 @@ shows observed sharing and must not be interpreted as per-case feature attributi
 
 Exposure error is evaluated against Phase 1 ring exposure: 50 matched rings,
 mean relative error 8.1361%, aggregate estimate 461,382,462 minor units versus
-482,834,643 actual (4.4429% underestimation). Purchases/refunds are counted once
+482,834,643 actual (4.44% underestimation). Purchases/refunds are counted once
 per original payment. Detection recall and exposure-estimation error are distinct.
 
 The Phase 3 audit found an unrealistically low merchant-history shortcut and added

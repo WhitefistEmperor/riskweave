@@ -51,6 +51,7 @@ export type Simulation = {
   window_start_index: number;
   attack_start_timestamp: string;
   first_alert_timestamp: string;
+  earlier_isolated_alert_timestamp: string;
   detection_delay_minutes: number;
   candidate_id: string;
   events: SimulationEvent[];

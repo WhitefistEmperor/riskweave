@@ -11,5 +11,6 @@ dist/
 .coverage
 htmlcov/
 work/
+outputs/
 data/generated/*
 !data/generated/.gitkeep

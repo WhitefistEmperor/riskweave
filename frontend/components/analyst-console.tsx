@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { RingExplorer } from '@/components/ring-explorer';
 import { BenchmarkView } from '@/components/benchmark-view';
 import { HardNegatives } from '@/components/hard-negatives';
+import { useConsoleTools } from '@/hooks/use-console-tools';
 import { Line, LineChart, ReferenceLine, YAxis } from 'recharts';
 import { ChartContainer } from '@/components/ui/chart';
 import {
@@ -47,6 +48,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -113,6 +115,37 @@ export function AnalystConsole() {
   const current = data?.simulation.events[cursor];
   const atEnd = data ? cursor === data.simulation.events.length - 1 : false;
   const live = current?.candidate_state;
+  useConsoleTools(
+    {
+      screen,
+      timestamp: current?.timestamp ?? null,
+      observedEvents: current?.observed_event_count ?? 0,
+      candidateId: live?.candidate_id ?? null,
+      running: running && !atEnd,
+    },
+    (nextScreen) => {
+      setExplorerPrefix(undefined);
+      setExplorerCandidate(undefined);
+      setScreen(nextScreen);
+    },
+    (action) => {
+      if (action === 'reset') {
+        setRunning(false);
+        setCursor(0);
+      }
+      if (action === 'pause') setRunning(false);
+      if (action === 'start') {
+        if (atEnd) setCursor(0);
+        setRunning(true);
+      }
+      if (action === 'step') {
+        setRunning(false);
+        setCursor(
+          Math.min(cursor + 1, (data?.simulation.events.length ?? 1) - 1),
+        );
+      }
+    },
+  );
   const attackActive = Boolean(
     current &&
     data &&
@@ -142,18 +175,17 @@ export function AnalystConsole() {
           <SidebarMenu>
             {navigation.map(({ id, label, icon: Icon }) => (
               <SidebarMenuItem key={id}>
-                <SidebarMenuButton
-                  isActive={screen === id}
+                <WorkspaceButton
+                  active={screen === id}
                   onClick={() => {
                     setExplorerPrefix(undefined);
                     setExplorerCandidate(undefined);
                     setScreen(id);
                   }}
-                  className="nav-item"
                 >
                   <Icon />
                   <span>{label}</span>
-                </SidebarMenuButton>
+                </WorkspaceButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -233,21 +265,6 @@ export function AnalystConsole() {
             <BenchmarkView benchmark={data.benchmark} />
           ) : screen === 'hard-negatives' ? (
             <HardNegatives />
-          ) : screen !== 'overview' ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>
-                  {navigation.find((item) => item.id === screen)?.label}
-                </EmptyTitle>
-                <EmptyDescription>
-                  This workspace is being connected to the evidence service in
-                  the next checkpoint.
-                </EmptyDescription>
-              </EmptyHeader>
-              <Button onClick={() => setScreen('overview')}>
-                Return to live overview
-              </Button>
-            </Empty>
           ) : (
             <>
               <div className="page-heading">
@@ -255,8 +272,9 @@ export function AnalystConsole() {
                   <p className="eyebrow">PAYMENT NETWORK MONITORING</p>
                   <h1>See the ring. Not just the transaction.</h1>
                   <p className="muted">
-                    A chronological replay of coordinated abuse, from first
-                    payment to connected evidence.
+                    A chronological demonstration window: ordinary activity to
+                    connected evidence. Original UTC event timestamps are
+                    preserved.
                   </p>
                 </div>
                 <div className="clock-block">
@@ -292,6 +310,13 @@ export function AnalystConsole() {
                   accent={Boolean(live)}
                 />
               </div>
+              <p className="replay-disclosure">
+                Earlier history: an isolated event crossed threshold at{' '}
+                {dateTime(data.simulation.earlier_isolated_alert_timestamp)}{' '}
+                UTC, but did not form a candidate. This compact window begins
+                later. The eight-minute result describes the first matched focus
+                ring, not average performance.
+              </p>
               <div className="workspace-grid">
                 <div className="space-y-5">
                   <Card className="panel simulation-panel">
@@ -678,5 +703,29 @@ function Metric({
       <strong>{value}</strong>
       <small>{detail}</small>
     </Card>
+  );
+}
+
+function WorkspaceButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const { setOpenMobile } = useSidebar();
+  return (
+    <SidebarMenuButton
+      isActive={active}
+      className="nav-item"
+      onClick={() => {
+        onClick();
+        setOpenMobile(false);
+      }}
+    >
+      {children}
+    </SidebarMenuButton>
   );
 }
