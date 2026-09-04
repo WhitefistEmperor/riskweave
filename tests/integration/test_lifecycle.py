@@ -111,7 +111,9 @@ def test_real_analysis_subprocess_and_timeout(service, dataset_bytes, monkeypatc
     def launch(*args, **kwargs):
         # Observe the REAL OS processes; do not substitute execution or detector output.
         process = actual_popen(*args, **kwargs)
-        children.append(process)
+        # The Windows tree-termination helper is also a subprocess, not an analysis child.
+        if args[0][1:3] == ["-m", "ringsentinel.platform.worker"]:
+            children.append(process)
         return process
 
     monkeypatch.setattr("ringsentinel.platform.jobs.subprocess.Popen", launch)

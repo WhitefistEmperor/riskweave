@@ -14,6 +14,7 @@ from threading import Event, Thread
 from typing import Protocol
 
 from ringsentinel.platform.locking import ExecutorLease, FileLock
+from ringsentinel.platform.processes import terminate_child
 from ringsentinel.platform.service import InvestigationService
 
 logger = logging.getLogger("ringsentinel.jobs")
@@ -97,6 +98,7 @@ class LocalJobExecutor:
                 env=environment,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                start_new_session=os.name != "nt",
             )
             deadline = time.monotonic() + settings.analysis_timeout_seconds
             while process.poll() is None:
@@ -109,16 +111,14 @@ class LocalJobExecutor:
                     error_code = "ANALYSIS_TIMEOUT"
                     break
             if error_code:
-                process.kill()
-                process.wait(timeout=5)
+                terminate_child(process)
             elif process.returncode:
                 error_code = "ANALYSIS_FAILED"
         except Exception:
             error_code = "ANALYSIS_FAILED"
         finally:
             if process is not None and process.poll() is None:
-                process.kill()
-                process.wait(timeout=5)
+                terminate_child(process)
         if error_code:
             from ringsentinel.platform.models import AnalysisRun, Status
 

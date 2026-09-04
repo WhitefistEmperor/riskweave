@@ -1,4 +1,26 @@
-# Phase 5A dependency review
+# Dependency review
+
+## Phase 5C fresh audit — 2026-09-04
+
+Both required fresh scans completed successfully on the Phase 5C dependency state:
+
+- `npm audit --json --fetch-timeout=30000 --fetch-retries=0 --registry=https://registry.npmjs.org`:
+  **0 affected packages**, all severity categories zero; reported tree 702 dependencies
+  (prod 469, dev 146, optional 157, peer 35; categories overlap). Full tree, not omit-dev.
+- `uv run --with pip-audit pip-audit --format json`: **no known vulnerabilities** in audited
+  third-party packages. Includes the audit-tool overlay; unpublished local RingSentinel skipped.
+- New narrowly scoped auth dependency: PyJWT 2.13.0 with cryptography 50.0.1, cffi 2.1.1 and
+  pycparser 3.0. Existing locked packages were not upgraded. Frontend lockfile unchanged.
+- Initial sandbox npm query failed; official-registry retry with authorized network access passed.
+  This supersedes the unavailable post-update scan recorded in the historical Phase 5A section.
+
+No unresolved advisory findings were returned by these scans. Remaining operational risks are
+separate: Vinext beta runtime maturity, inline hydration without nonce-based script CSP, retained
+development tooling in the frontend image, unpinned container base-image digests and no actual
+Linux image/SBOM scan. No container runtime exists here; a package scan is not an image scan or a
+security certification. Do not auto-upgrade frameworks or chase counts with breaking changes.
+
+## Historical Phase 5A review
 
 Measured on 2026-09-04. An advisory scan is not a penetration test, and a clean
 scan is not proof of security. Findings below count affected packages as reported

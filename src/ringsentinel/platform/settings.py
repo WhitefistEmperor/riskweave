@@ -85,6 +85,12 @@ class Settings(BaseSettings):
                 raise ValueError("Explicit HTTP(S) frontend origins without paths are required")
             _ = parsed.port  # Reject malformed/out-of-range port configuration.
         if self.environment == "production":
+            if self.auth_mode == "jwt" and not {"database_url", "storage_root"}.issubset(
+                self.model_fields_set
+            ):
+                raise ValueError(
+                    "Production JWT mode requires explicit database and storage settings"
+                )
             if self.auth_mode == "development" or self.demo_enabled:
                 raise ValueError("Production cannot enable development identity or public demo")
             if not self.frontend_origins or any(

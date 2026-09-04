@@ -6,7 +6,8 @@ RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
 # Vinext resolves rewrites into the production build. This contains no secret.
 ARG RINGSENTINEL_API_PROXY_TARGET=http://backend:8000
-ENV RINGSENTINEL_API_PROXY_TARGET=$RINGSENTINEL_API_PROXY_TARGET
+ENV RINGSENTINEL_API_PROXY_TARGET=$RINGSENTINEL_API_PROXY_TARGET \
+    RINGSENTINEL_ENVIRONMENT=production
 RUN npm run build
 
 FROM node:24.19.0-bookworm-slim AS runtime

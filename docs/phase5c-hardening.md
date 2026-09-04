@@ -63,7 +63,26 @@ storage-lock contention uses 409, permitting deliberate retry. No data is automa
 The 90-day retention setting is a review policy, not an erasure promise. OS/disk quotas, gateway
 rate/concurrency limits and a finite log rotation policy remain operator responsibilities.
 
-## Verification log (in progress)
+## Verification log
+
+- Extended process/auth/PostgreSQL-contract milestone: **30 tests passed**, Ruff passed, including
+  actual cross-process lock exclusion and lock release after Windows process-tree termination.
+
+- Full regression first pass: 91 Python tests passed. Two subsequent additional test-fixture issues
+  were investigated: the JWT library rejects a null issuer at signing time, so missing-claim tests
+  now actually omit the claim; and a real Windows subprocess test found that killing a venv launcher
+  alone can leave its Python child holding a lock. The executor now terminates its owned process
+  tree (`taskkill /PID <owned pid> /T /F` on Windows; a dedicated process group on POSIX).
+  No image-name/global process kill is used. Parent-death watchdog/analysis lock remain defense in depth.
+  The existing subprocess observation test now filters for the actual analysis command, so its
+  unchanged exit assertions do not accidentally inspect the successful `taskkill` helper instead.
+  See [Microsoft process-tree termination](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/taskkill).
+- Browser full-suite first run: 25 passed, one local generator failed because the sandbox denied
+  uv cache access. No assertion was weakened. Authorized rerun: **26 passed**, including the original
+  24 plus two new session/security tests. All UI widths and the real upload/analysis/revisit passed.
+- Python wheel and sdist built; packaged backup module, original migration and frozen benchmark
+  checksum verified. Compose YAML structural/loopback/capability-drop checks passed, explicitly
+  not equivalent to `docker compose config` or actual image execution.
 
 - Backup/observability milestone: 15 backup and security tests passed. Real SQLite restore into
   new targets preserved result hashes, ownership and migration state. PostgreSQL tools unavailable.

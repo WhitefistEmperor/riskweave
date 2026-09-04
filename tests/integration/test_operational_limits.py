@@ -1,3 +1,6 @@
+import os
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -7,6 +10,7 @@ from ringsentinel.platform.database import Database
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.jobs import LocalJobExecutor
 from ringsentinel.platform.locking import FileLock
+from ringsentinel.platform.processes import terminate_child
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
 from ringsentinel.platform.storage import LocalStorageBackend
@@ -121,3 +125,29 @@ def test_exclusive_scheduler_and_orphan_startup_guard(service):
     replacement.start()
     replacement.stop()
     assert not replacement.thread.is_alive()
+
+
+def test_os_lock_is_exclusive_across_processes_and_released_on_exit(tmp_path):
+    path = tmp_path / "cross-process.lock"
+    code = (
+        "import sys,time; from pathlib import Path; "
+        "from ringsentinel.platform.locking import FileLock; "
+        "lock=FileLock(Path(sys.argv[1])).acquire(); "
+        "print('locked',flush=True); time.sleep(15)"
+    )
+    child = subprocess.Popen(
+        [sys.executable, "-c", code, str(path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        start_new_session=os.name != "nt",
+    )
+    try:
+        assert child.stdout.readline().strip() == "locked"
+        with pytest.raises(RuntimeError):
+            FileLock(path).acquire()
+    finally:
+        terminate_child(child)
+        child.stdout.close()
+    with FileLock(path):
+        assert path.exists()

@@ -33,7 +33,7 @@ router = APIRouter(
     prefix="/api/v1",
     responses={
         code: {"model": ErrorResponse}
-        for code in (400, 401, 403, 404, 405, 409, 413, 422, 500, 503)
+        for code in (400, 401, 403, 404, 405, 409, 413, 422, 429, 500, 503)
     },
 )
 CurrentPrincipal = Annotated[Principal, Depends(current_principal)]

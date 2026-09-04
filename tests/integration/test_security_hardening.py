@@ -49,6 +49,7 @@ def authenticated(tmp_path):
             scope="ringsentinel:analyst",
         )
         claims.update(changes)
+        claims = {name: value for name, value in claims.items() if value is not None}
         return jwt.encode(claims, key, algorithm="RS256", headers={"kid": "test-key"})
 
     with TestClient(create_app(settings=settings), base_url="https://analyst.example") as client:
@@ -168,3 +169,42 @@ def test_missing_invalid_auth_configuration_fails_closed(tmp_path):
         create_app(settings=settings)
     with pytest.raises(ValueError):
         Settings(trusted_hosts=["*"])
+
+
+def test_missing_claims_and_unknown_signer_fail_closed(authenticated):
+    client, token, _ = authenticated
+    for field in ("exp", "iat", "nbf", "sub", "iss", "aud"):
+        response = client.get(
+            "/api/v1/session", headers={"Authorization": f"Bearer {token(**{field: None})}"}
+        )
+        assert response.status_code == 401
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    claims = jwt.decode(token(), options={"verify_signature": False})
+    for kid in ("unknown-key", "test-key"):
+        signed = jwt.encode(claims, key, algorithm="RS256", headers={"kid": kid})
+        assert (
+            client.get("/api/v1/session", headers={"Authorization": f"Bearer {signed}"}).status_code
+            == 401
+        )
+
+
+def test_production_explicit_storage_and_startup_log_allowlist(authenticated, caplog):
+    _, _, settings = authenticated
+    with pytest.raises(ValueError, match="explicit database"):
+        Settings(
+            environment="production",
+            auth_mode="jwt",
+            demo_enabled=False,
+            frontend_origins=settings.frontend_origins,
+            auth_jwks_path=settings.auth_jwks_path,
+            auth_issuer=settings.auth_issuer,
+            auth_audience=settings.auth_audience,
+        )
+    caplog.set_level(logging.INFO, logger="ringsentinel.operations")
+    with TestClient(create_app(settings=settings), base_url="https://analyst.example"):
+        pass
+    records = [json.loads(r.message) for r in caplog.records if r.name == "ringsentinel.operations"]
+    assert records[-1]["event"] == "startup"
+    assert records[-1]["authentication"] == "jwt"
+    assert str(settings.storage_root) not in caplog.text
+    assert settings.database_url.get_secret_value() not in caplog.text

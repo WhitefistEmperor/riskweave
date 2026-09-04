@@ -1,5 +1,13 @@
 .venv/
 .env
+*.pem
+*.key
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+secrets/
+backups/
 .env.*
 !.env.example
 __pycache__/
