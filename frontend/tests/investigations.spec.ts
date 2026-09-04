@@ -125,7 +125,7 @@ test('failed and empty-result runs render without invented findings', async ({
   };
   await page.route(`**/api/v1/investigations/${invId}`, (route) =>
     route.fulfill({
-      json: { id: invId, name: 'UI state fixture', status: 'failed' },
+      json: { id: invId, name: 'UI state fixture', status: 'failed', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
     }),
   );
   await page.route(`**/api/v1/investigations/${invId}/artifacts`, (route) =>

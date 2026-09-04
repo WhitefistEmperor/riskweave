@@ -1,5 +1,6 @@
 import { apiRequest } from '@/lib/client';
 import type { JsonValue } from '@/lib/api';
+import { list, validSession, validInvestigation, validArtifact, validRun, validResult } from '@/lib/response-validation';
 
 export type RunStatus =
   | 'created'
@@ -69,14 +70,14 @@ const json = (body: unknown) => ({
   body: JSON.stringify(body),
 });
 export const platformApi = {
-  session: () => apiRequest<Session>('/v1/session'),
-  investigations: () => apiRequest<InvestigationRecord[]>('/v1/investigations'),
+  session: () => apiRequest<Session>('/v1/session', {}, validSession),
+  investigations: (signal?: AbortSignal) => apiRequest<InvestigationRecord[]>('/v1/investigations', { signal }, list(validInvestigation)),
   create: (name: string) =>
-    apiRequest<InvestigationRecord>('/v1/investigations', json({ name })),
-  investigation: (value: string) =>
-    apiRequest<InvestigationRecord>(`/v1/investigations/${id(value)}`),
-  artifacts: (value: string) =>
-    apiRequest<ArtifactRecord[]>(`/v1/investigations/${id(value)}/artifacts`),
+    apiRequest<InvestigationRecord>('/v1/investigations', json({ name }), validInvestigation),
+  investigation: (value: string, signal?: AbortSignal) =>
+    apiRequest<InvestigationRecord>(`/v1/investigations/${id(value)}`, { signal }, validInvestigation),
+  artifacts: (value: string, signal?: AbortSignal) =>
+    apiRequest<ArtifactRecord[]>(`/v1/investigations/${id(value)}/artifacts`, { signal }, list(validArtifact)),
   upload: (value: string, file: File) =>
     apiRequest<ArtifactRecord>(`/v1/investigations/${id(value)}/artifacts`, {
       method: 'POST',
@@ -86,18 +87,18 @@ export const platformApi = {
         'Content-Type': 'application/json',
         'X-Filename': file.name.replace(/[^\x20-\x7e]/g, '_'),
       },
-    }),
-  runs: (value: string) =>
-    apiRequest<AnalysisRun[]>(`/v1/investigations/${id(value)}/runs`),
+    }, validArtifact),
+  runs: (value: string, signal?: AbortSignal) =>
+    apiRequest<AnalysisRun[]>(`/v1/investigations/${id(value)}/runs`, { signal }, list(validRun)),
   start: (value: string, artifactId: string, key: string) =>
     apiRequest<AnalysisRun>(`/v1/investigations/${id(value)}/runs`, {
       ...json({ artifact_id: artifactId }),
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
-    }),
+    }, validRun),
   run: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisRun>(`/v1/runs/${id(value)}`, { signal }),
+    apiRequest<AnalysisRun>(`/v1/runs/${id(value)}`, { signal }, validRun),
   results: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisResult>(`/v1/runs/${id(value)}/results`, { signal }),
+    apiRequest<AnalysisResult>(`/v1/runs/${id(value)}/results`, { signal }, validResult),
 };
 
 /** Poll persisted state only. Never retry a POST or start a second analysis implicitly. */
@@ -110,7 +111,7 @@ export async function pollRun(
     const run = await platformApi.run(value, signal);
     if (signal.aborted) return;
     onUpdate(run);
-    if (run.status === 'completed' || run.status === 'failed') return;
+    if (run.status === 'completed' || run.status === 'failed') return run;
     await new Promise<void>((resolve) => {
       const done = () => {
         clearTimeout(timer);

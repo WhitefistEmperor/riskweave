@@ -18,6 +18,7 @@ export class ApiError extends Error {
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
+  validate?: (value: unknown) => boolean,
 ): Promise<T> {
   const requestId = crypto.randomUUID();
   const headers = new Headers(init.headers);
@@ -61,5 +62,8 @@ export async function apiRequest<T>(
       returnedId,
     );
   }
-  return response.json() as Promise<T>;
+  const value: unknown = await response.json().catch(() => undefined);
+  if (value === undefined || (validate && !validate(value)))
+    throw new ApiError('The API returned an unreadable response. Reload or contact the operator with this request ID.', response.status, 'MALFORMED_RESPONSE', returnedId);
+  return value as T;
 }

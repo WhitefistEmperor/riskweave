@@ -26,3 +26,8 @@ No detector, generator, benchmark, threshold, candidate, exposure or backend API
 6. Responsive/accessibility checks, full regression, screenshots, handoff/report.
 
 Each milestone is checked before committing. Screenshots and generated test data remain ignored local outputs. No Phase 5C work or hosting changes.
+
+## Milestone checks
+
+- Shell: TypeScript, lint and production build passed; existing mobile demo navigation and persisted empty/error tests passed (2/2).
+- Lifecycle: TypeScript/lint/build and all three persisted browser flows passed across targeted runs. Real create/upload/analysis/evidence/investigator/reload passed in 26.2s. Fixed an observed pre-hydration input race by keeping creation input disabled until the initial list read finishes. The first restricted run could not access uv's cache; the authorized rerun used the real generator. Terminal polling now returns the terminal record instead of fetching it twice. Source, not backend behavior, changed.
