@@ -1,5 +1,12 @@
 # Phase 5A: persisted investigation foundation
 
+**Historical Phase 5A architecture below.** Phase 5C supersedes its authentication, operational-limit,
+executor-ownership and backup sections; see [current hardening](phase5c-hardening.md),
+[backup/restore](backup-restore.md), [dependency audit](dependency-audit.md) and
+[container verification status](phase5c-container-verification.md). The original domain schema,
+detector/evidence semantics and investigation endpoint shapes remain; the session auth-mode union
+and safe 429 quota category are explicit additions. No deployment has occurred.
+
 Phase 5B note: backend architecture and contracts below remain unchanged. The minimal frontend has
 been replaced by the investigation-first analyst UI described in [phase5b-frontend.md](phase5b-frontend.md).
 `/` now redirects to `/investigations`; the original synthetic replay is at `/demo`.

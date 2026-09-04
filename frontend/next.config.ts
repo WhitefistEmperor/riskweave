@@ -4,7 +4,12 @@ const production = process.env.RINGSENTINEL_ENVIRONMENT === 'production';
 const target = process.env.RINGSENTINEL_API_PROXY_TARGET;
 if (production) {
   if (!target) throw new Error('Production requires RINGSENTINEL_API_PROXY_TARGET');
-  const parsed = new URL(target);
+  let parsed: URL;
+  try {
+    parsed = new URL(target);
+  } catch {
+    throw new Error('API proxy target must be a valid HTTP(S) origin');
+  }
   if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password ||
       parsed.pathname !== '/' || parsed.search || parsed.hash) {
     throw new Error('API proxy target must be an explicit HTTP(S) origin without credentials');

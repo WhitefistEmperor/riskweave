@@ -65,6 +65,23 @@ rate/concurrency limits and a finite log rotation policy remain operator respons
 
 ## Verification log
 
+- Final frontend suite against the rebuilt production-configured frontend and restarted hardened
+  backend: **27 passed**, 2.7 minutes (22 browser/E2E, 5 non-browser checks). TypeScript and lint passed.
+  Fresh/repeated migration CLI checks passed. Frozen checksum remains unchanged. No public deployment.
+
+- Final Python suite after all worker fixes: **94 passed**, 2 existing dependency deprecation
+  warnings, 86.31 seconds. Ruff passed. Final wheel/sdist rebuilt; process/backup modules,
+  original migrations and packaged frozen benchmark verified.
+- Real optional-LLM-disabled smoke: readiness `ready`; persisted-ring investigation returned
+  `disabled_evidence_only` and six computed, cited statements without a paid call. Running the
+  original browser suite in this alternate mode exposed its intentionally mode-specific expected
+  fallback label (it expects deterministic mode, not the disabled-mode label). That run was stopped;
+  final full browser regression uses the original deterministic configuration. Neither mode's UI
+  label or existing assertion was weakened to hide this configuration mismatch.
+- Final frontend config validation also rejects malformed proxy values with a generic startup
+  error, avoiding accidental credential disclosure in URL parser errors. A separate Node-process
+  test verifies missing/malformed/credential-bearing targets fail and an explicit valid origin passes.
+
 - Extended process/auth/PostgreSQL-contract milestone: **30 tests passed**, Ruff passed, including
   actual cross-process lock exclusion and lock release after Windows process-tree termination.
 

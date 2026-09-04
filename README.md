@@ -11,6 +11,12 @@ owner-scoped investigations, asynchronous runs, and a versioned API. Phase 5B ma
 analyst workspace, with ranked findings, an evidence-linked graph, timeline and grounded investigator.
 **No GNN is used.**
 
+Phase 5C adds verified access-token authentication, security headers, operational quotas,
+single-executor ownership and offline backup/restore. See [hardening and verification](docs/phase5c-hardening.md),
+[backup procedure](docs/backup-restore.md) and [remaining container/PostgreSQL gates](docs/phase5c-container-verification.md).
+This is **not a staging/public deployment approval**: a real identity gateway and container/PostgreSQL
+runtime verification remain required. Default development identity must stay local-only.
+
 The key insight: a payment can look ordinary alone but suspicious in its network context. Sharing alone
 is also insufficient: legitimate families, offices, and hostels are explicit benchmark hard negatives.
 
