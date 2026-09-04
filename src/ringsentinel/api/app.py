@@ -60,6 +60,8 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
+        # Also configure direct uvicorn/Docker startup, not only the console entrypoint.
+        logging.basicConfig(level=settings.log_level, format="%(message)s")
         # Migrations are an explicit operator step; startup never creates/changes schema.
         if settings.jobs_enabled and dependencies_ready(platform):
             executor.start()

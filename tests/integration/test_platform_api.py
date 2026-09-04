@@ -228,6 +228,18 @@ def test_schema_and_missing_or_invalid_session(client):
         "$ref": "#/components/schemas/ErrorResponse",
     }
     assert_error(client.get("/api/v1/investigations/not-a-real-id"), "NOT_FOUND", 404)
+    assert_error(client.put("/api/v1/investigations"), "METHOD_NOT_ALLOWED", 405)
+    assert_error(
+        client.options(
+            "/api/v1/health",
+            headers={
+                "Origin": "https://untrusted.example",
+                "Access-Control-Request-Method": "GET",
+            },
+        ),
+        "INVALID_REQUEST",
+        400,
+    )
     assert_error(
         client.get(
             "/api/v1/session",

@@ -21,6 +21,21 @@ def test_opt_in_disabled_missing_key_and_secrets():
     assert exc.value.code == "PROVIDER_UNAVAILABLE"
 
 
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "*",
+        "https://*",
+        "https://site.test/path",
+        "http://user:pass@site.test",
+        "https://site.test:99999",
+    ],
+)
+def test_origin_configuration_rejects_wildcards_paths_and_credentials(origin):
+    with pytest.raises(ValueError):
+        Settings(frontend_origins=[origin])
+
+
 @pytest.mark.parametrize("status,attempts", [(429, 3), (503, 3), (401, 1), (400, 1)])
 def test_retries_are_bounded_and_do_not_retry_auth(monkeypatch, status, attempts):
     seen = []

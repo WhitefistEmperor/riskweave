@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+FROM node:24.19.0-bookworm-slim AS builder
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+# Vinext resolves rewrites into the production build. This contains no secret.
+ARG RINGSENTINEL_API_PROXY_TARGET=http://backend:8000
+ENV RINGSENTINEL_API_PROXY_TARGET=$RINGSENTINEL_API_PROXY_TARGET
+RUN npm run build
+
+FROM node:24.19.0-bookworm-slim AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+# Preserve the tested Vinext CLI dependency closure, including its tool peers.
+# Runtime pruning is a separate, measured Phase 5C task, not assumed safe here.
+COPY --from=builder --chown=node:node /app/package.json /app/package-lock.json ./
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/public ./public
+USER node
+EXPOSE 5173
+HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:5173/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "node_modules/vinext/dist/cli.js", "start", "--hostname", "0.0.0.0", "--port", "5173"]

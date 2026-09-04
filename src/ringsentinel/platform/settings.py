@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,11 +38,20 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def deployment_boundary(self) -> "Settings":
-        if any(
-            origin == "*" or not origin.startswith(("http://", "https://"))
-            for origin in self.frontend_origins
-        ):
-            raise ValueError("Explicit HTTP(S) frontend origins are required")
+        for origin in self.frontend_origins:
+            parsed = urlsplit(origin)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or "*" in origin
+                or parsed.username is not None
+                or parsed.password is not None
+                or parsed.path
+                or parsed.query
+                or parsed.fragment
+            ):
+                raise ValueError("Explicit HTTP(S) frontend origins without paths are required")
+            _ = parsed.port  # Reject malformed/out-of-range port configuration.
         if self.environment == "production":
             if self.auth_mode == "development" or self.demo_enabled:
                 raise ValueError("Production cannot enable development identity or public demo")

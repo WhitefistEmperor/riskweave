@@ -1,6 +1,8 @@
 """Public errors never contain internal exception strings."""
 
 ERRORS = {
+    "INVALID_REQUEST": (400, "The request is not permitted."),
+    "METHOD_NOT_ALLOWED": (405, "This HTTP method is not supported."),
     "VALIDATION_ERROR": (422, "Request validation failed."),
     "UNAUTHORIZED": (401, "A valid session is required."),
     "FORBIDDEN": (403, "This operation is not permitted."),

@@ -43,9 +43,11 @@ def install_observability(application: FastAPI) -> None:
     @application.exception_handler(HTTPException)
     async def http_error(request: Request, error: HTTPException):
         category = {
+            400: "INVALID_REQUEST",
             401: "UNAUTHORIZED",
             403: "FORBIDDEN",
             404: "NOT_FOUND",
+            405: "METHOD_NOT_ALLOWED",
             409: "CONFLICT",
             413: "UPLOAD_TOO_LARGE",
             422: "VALIDATION_ERROR",
@@ -67,6 +69,14 @@ def install_observability(application: FastAPI) -> None:
                 response.headers["Access-Control-Allow-Origin"] = origin
                 response.headers["Access-Control-Expose-Headers"] = "X-Request-ID"
                 response.headers["Vary"] = "Origin"
+        # CORS rejects preflight before reaching route exception handlers.
+        if response.status_code >= 400 and request.state.failure_category is None:
+            original = response
+            code = "INVALID_REQUEST" if response.status_code == 400 else "INTERNAL_ERROR"
+            response = error_response(request, ProductError(code))
+            for key, value in original.headers.items():
+                if key.lower().startswith("access-control-") or key.lower() == "vary":
+                    response.headers[key] = value
         response.headers["X-Request-ID"] = request.state.request_id
         fields = {
             "event": "http_request",

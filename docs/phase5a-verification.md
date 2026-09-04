@@ -54,3 +54,55 @@ Security updates are recorded in dependency-audit.md. The build retains existing
 large-chunk and Vinext route-classification warnings plus a forward-looking Vite
 JSON-import warning. These are warnings, not failed checks. No pending npm install
 script permission was bypassed; production build succeeded with installed binaries.
+
+## Final local verification and operations foundation
+
+- Full Python suite: **69 passed**, 2 upstream deprecation warnings, 79.42 seconds.
+- Ruff: **passed**, including source, tests, and new smoke/sample scripts.
+- Frontend: lint, TypeScript, production build and **8 browser tests passed**.
+- Wheel and sdist: **built**. The exact current 0.4.0 wheel includes Alembic
+  migrations and the byte-identical frozen Phase 3 JSON. An initial packaging
+  inspection accidentally selected an older 0.1.0 wheel from ignored dist/;
+  the explicit current filename passed. No old artifacts were removed.
+- Fresh SQLite migration, repeat application, foreign keys, new-engine reopening:
+  **passed** in integration tests; explicit CLI migration also started the live API.
+- Additional boundary checks: uniform 400 preflight and 405 method errors,
+  wildcard/path/credential-origin rejection, and logging setup for direct Uvicorn
+  startup. The full suite above includes these changes.
+- Both Dockerfiles parsed (21 and 23 instructions); Compose/workflow YAML and
+  loopback ports, service dependencies, and job topology assertions **passed**.
+  A parser invocation initially treated the frontend Dockerfile name as a
+  directory; passing its file content validated both files. These are static
+  checks, **not image builds**.
+
+### Actual HTTP smoke and process restart
+
+`scripts/smoke_platform.py --base-url http://127.0.0.1:8000` used the unchanged
+generator, seed 105, 1,000 base payments: **2,824 entities and 1,021 events**.
+It observed `queued -> running -> completed`, enqueue time **0.0165 seconds**, and
+end-to-end analysis/evidence checks in **16.06 seconds**, with **7 candidate rings**.
+This small smoke fixture is not the 5,000-payment benchmark and is not a new
+accuracy claim. Computed evidence and the deterministic investigator returned
+successfully. Another owner received **404**; malformed JSON received **422** with
+the safe error envelope. No paid LLM call occurred.
+
+After actually stopping and restarting the local API on the same database and
+storage, `--reopen-run 6a73872a-8471-4b83-b32b-37859b40c767` returned the same 7 rings
+and result SHA256:
+`14329acdff0c2b8785abf037df614aa2efb0b5146433d514aeb58433e39f588a`.
+
+Detector, feature, generator, experiment, evidence-calculation and frozen result
+files have no diff from the Phase 4 baseline. Phase 3 JSON remains SHA256
+`42c0234331f2b467ccc296f6579478d2feaf7c71e9c159387b6674a09b27e976`.
+
+### Explicitly unverified gates
+
+Docker/Podman are absent and WSL is not installed: container image builds, live
+PostgreSQL migration/concurrency, Compose readiness and container investigation
+smoke **could not run**. The original container-build completion criterion is
+therefore not certified. GitHub CI is configured but was not pushed or executed.
+Three bounded post-update npm advisory requests timed out: its fresh remaining
+count is **unavailable**, not zero. Python audit reported no known third-party
+vulnerabilities; frontend baseline was 11 packages (8 high, 2 moderate, 1 low),
+with targeted updates installed and application compatibility verified. See
+dependency-audit.md for exact scope. No public deployment or Phase 5B work began.
