@@ -64,6 +64,25 @@ def test_snapshot_evidence_never_contains_future_events(runtime: DemoRuntime) ->
     )
     assert precursor["risk_score"] is None
     assert precursor["timestamp"] >= detail["candidate"]["first_suspicious_timestamp"]
+    answer = client.post(
+        "/api/investigate",
+        json={
+            "candidate_id": candidate_id,
+            "question": "Show activity chronologically.",
+            "event_count": count,
+        },
+    )
+    assert answer.status_code == 200
+    sources = {source["query"]: source["result"] for source in answer.json()["sources"]}
+    assert all(
+        event["timestamp"] <= snapshot["as_of"] for event in sources["get_transaction_timeline"]
+    )
+    assert (
+        client.post(
+            "/api/investigate", json={"candidate_id": "missing", "question": "Why?"}
+        ).status_code
+        == 404
+    )
     assert client.get("/api/snapshot", params={"event_count": 0}).status_code == 422
     assert client.get("/api/snapshot", params={"event_count": 999999}).status_code == 422
     assert (

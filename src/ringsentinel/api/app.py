@@ -8,8 +8,10 @@ from typing import Any, Protocol
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, ConfigDict, Field
 
 from ringsentinel.api.runtime import get_demo_runtime
+from ringsentinel.investigation.investigator import InvestigatorService
 
 
 class RuntimeProvider(Protocol):
@@ -24,6 +26,14 @@ class RuntimeProvider(Protocol):
     def simulation(self) -> dict[str, Any]: ...
     def hard_negatives(self) -> list[dict[str, Any]]: ...
     def snapshot(self, event_count: int | None, candidate_id: str | None) -> dict[str, Any]: ...
+    def snapshot_view(self, event_count: int | None = None) -> Any: ...
+
+
+class InvestigationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    candidate_id: str = Field(min_length=1, max_length=100)
+    question: str = Field(min_length=1, max_length=1000)
+    event_count: int | None = Field(default=None, ge=1)
 
 
 def create_app(
@@ -103,6 +113,18 @@ def create_app(
     ) -> dict[str, Any]:
         try:
             return runtime_factory().snapshot(event_count, candidate_id)
+        except (KeyError, StopIteration) as error:
+            raise HTTPException(
+                status_code=404, detail="Candidate unavailable in this snapshot"
+            ) from error
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+    @application.post("/api/investigate")
+    def investigate(body: InvestigationRequest) -> dict[str, Any]:
+        try:
+            view = runtime_factory().snapshot_view(body.event_count)
+            return InvestigatorService(view.evidence).answer(body.candidate_id, body.question)
         except (KeyError, StopIteration) as error:
             raise HTTPException(
                 status_code=404, detail="Candidate unavailable in this snapshot"

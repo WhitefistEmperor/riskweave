@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Investigator } from '@/components/investigator';
 import { ArrowLeft, CircleHelp } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -256,13 +257,10 @@ export function RingExplorer({
               </Card>
             </TabsContent>
             <TabsContent value="investigator">
-              <Card className="panel p-5">
-                <h2>Investigator</h2>
-                <p className="muted">
-                  Grounded question answering will be connected in the next
-                  checkpoint.
-                </p>
-              </Card>
+              <Investigator
+                candidateId={detail.candidate.candidate_id}
+                eventCount={eventCount}
+              />
             </TabsContent>
           </Tabs>
         </div>

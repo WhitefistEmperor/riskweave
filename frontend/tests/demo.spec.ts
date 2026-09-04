@@ -1,5 +1,40 @@
 import { test, expect } from '@playwright/test';
 
+test('grounded investigator cites evidence and handles unsupported questions', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', {
+      name: 'See the ring. Not just the transaction.',
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Ring Explorer', exact: true })
+    .click();
+  await page.getByRole('tab', { name: 'Investigator', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Ask investigator', exact: true })
+    .click();
+  await expect(
+    page.getByText('Deterministic evidence fallback · no LLM', { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('.evidence-citation').first()).toBeVisible();
+  await page.screenshot({
+    path: '../outputs/phase4-investigator.png',
+    fullPage: true,
+  });
+  await page
+    .getByLabel('ANALYST QUESTION')
+    .fill('What is the account owner’s real name?');
+  await page
+    .getByRole('button', { name: 'Ask investigator', exact: true })
+    .click();
+  await expect(
+    page.getByText(/outside the supported evidence queries/),
+  ).toBeVisible();
+});
+
 test('real replay starts, pauses, steps, and resets without future candidate evidence', async ({
   page,
 }) => {

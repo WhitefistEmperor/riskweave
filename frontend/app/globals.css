@@ -7,6 +7,55 @@
 .panel.p-5 {
   padding: 20px;
 }
+
+.investigator-grid {
+  display: grid;
+  grid-template-columns: 350px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.suggestion-button {
+  width: 100%;
+  height: auto;
+  white-space: normal;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  font-size: 13px;
+}
+.answer-statements li {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.evidence-citation {
+  display: block;
+  color: #74d2c5;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  margin-top: 7px;
+}
+.trust-box {
+  padding: 16px;
+  margin-top: 20px;
+  border: 1px solid #42483d;
+  background: #24292055;
+  border-radius: 7px;
+  color: #a3b39f;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.trust-box p + p {
+  margin-top: 8px;
+}
+@media (max-width: 1100px) {
+  .investigator-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .panel.p-6 {
   padding: 24px;
 }
