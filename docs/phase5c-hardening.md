@@ -65,6 +65,13 @@ rate/concurrency limits and a finite log rotation policy remain operator respons
 
 ## Verification log (in progress)
 
+- Backup/observability milestone: 15 backup and security tests passed. Real SQLite restore into
+  new targets preserved result hashes, ownership and migration state. PostgreSQL tools unavailable.
+- Structured startup log contains environment, auth mode, database dialect, worker topology,
+  optional provider mode and limits, never configuration values containing credentials/paths.
+  Analysis completion logs now include actual status and duration. HTTP request IDs remain intact.
+  Backup procedure and consistency caveats are in `docs/backup-restore.md`.
+
 - Operational milestone: 20 quota/lifecycle/API tests passed, including real subprocess completion,
   timeout, worker failure, graceful shutdown and restart. Ruff passed.
 

@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="RINGSENTINEL_", extra="ignore", populate_by_name=True
+        env_prefix="RINGSENTINEL_", extra="ignore", populate_by_name=True, hide_input_in_errors=True
     )
 
     environment: Literal["development", "test", "production"] = "development"

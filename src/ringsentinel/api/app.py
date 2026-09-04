@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Callable
 from contextlib import asynccontextmanager
@@ -64,6 +65,23 @@ def create_app(
     async def lifespan(application: FastAPI):
         # Also configure direct uvicorn/Docker startup, not only the console entrypoint.
         logging.basicConfig(level=settings.log_level, format="%(message)s")
+        logging.getLogger("ringsentinel.operations").info(
+            json.dumps(
+                {
+                    "event": "startup",
+                    "environment": settings.environment,
+                    "authentication": settings.auth_mode,
+                    "database": database.engine.dialect.name,
+                    "jobs_enabled": settings.jobs_enabled,
+                    "worker_topology": "single-host-single-worker",
+                    "llm_provider": settings.llm_provider,
+                    "upload_limit_bytes": settings.upload_limit_bytes,
+                    "storage_limit_bytes": settings.storage_limit_bytes,
+                    "build_commit": settings.build_commit,
+                },
+                sort_keys=True,
+            )
+        )
         # Migrations are an explicit operator step; startup never creates/changes schema.
         if settings.jobs_enabled and dependencies_ready(platform):
             executor.start()
