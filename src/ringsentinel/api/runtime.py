@@ -501,6 +501,18 @@ class DemoRuntime:
             community_events = [
                 event for event in self.bundle.events if event.customer_id in member_ids
             ]
+            shared_ids = set(community.shared_entity_ids)
+            shared_edges: Counter[tuple[str, str, str]] = Counter()
+            for event in community_events:
+                for target, relation in (
+                    (event.device_id, "USES_DEVICE"),
+                    (event.ip_id, "CONNECTS_FROM_IP"),
+                    (event.card_id, "USES_CARD"),
+                    (event.address_id, "LOCATED_AT"),
+                    (event.merchant_id, "BUYS_FROM"),
+                ):
+                    if target in shared_ids:
+                        shared_edges[(event.customer_id, target, relation)] += 1
             output.append(
                 {
                     "community_id": community.community_id,
@@ -521,6 +533,28 @@ class DemoRuntime:
                     "network_aware_flagged": network_results[community.community_id]["flagged"],
                     "member_customer_ids": list(community.member_customer_ids),
                     "shared_entity_ids": list(community.shared_entity_ids),
+                    "graph_threshold": float(graph_fold["threshold"]),
+                    "network_threshold": self.model_and_threshold[1],
+                    "graph": {
+                        "nodes": [
+                            {
+                                "id": entity_id,
+                                "type": entity_by_id[entity_id].entity_type.value,
+                                "shared_infrastructure": entity_id in shared_ids,
+                            }
+                            for entity_id in sorted(member_ids | shared_ids)
+                        ],
+                        "edges": [
+                            {
+                                "source": source,
+                                "target": target,
+                                "relationship": relation,
+                                "event_count": count,
+                                "suspicious": False,
+                            }
+                            for (source, target, relation), count in sorted(shared_edges.items())
+                        ],
+                    },
                 }
             )
         return output

@@ -1,5 +1,43 @@
 import { test, expect } from '@playwright/test';
 
+test('measured benchmark and benign sharing outcomes are visible', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', {
+      name: 'See the ring. Not just the transaction.',
+    }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Benchmark', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'The benchmark, with the caveats.' }),
+  ).toBeVisible();
+  await expect(page.getByText('8.14%', { exact: true })).toBeVisible();
+  await expect(page.getByText('4.44%', { exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Benign-community flag rate' })).toBeVisible();
+  await page.screenshot({
+    path: '../outputs/phase4-benchmark.png',
+    fullPage: true,
+  });
+  await page
+    .getByRole('button', { name: 'Hard negatives', exact: true })
+    .click();
+  await expect(
+    page.getByText('Community flagged', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Not flagged', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /hostel/ }).click();
+  await expect(
+    page.getByText('Community flagged', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Not flagged', { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: '../outputs/phase4-hard-negatives.png',
+    fullPage: true,
+  });
+});
+
 test('grounded investigator cites evidence and handles unsupported questions', async ({
   page,
 }) => {

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { RingExplorer } from '@/components/ring-explorer';
+import { BenchmarkView } from '@/components/benchmark-view';
+import { HardNegatives } from '@/components/hard-negatives';
 import { Line, LineChart, ReferenceLine, YAxis } from 'recharts';
 import { ChartContainer } from '@/components/ui/chart';
 import {
@@ -227,6 +229,10 @@ export function AnalystConsole() {
               initialCandidate={explorerCandidate}
               onBack={() => setScreen('overview')}
             />
+          ) : screen === 'benchmark' ? (
+            <BenchmarkView benchmark={data.benchmark} />
+          ) : screen === 'hard-negatives' ? (
+            <HardNegatives />
           ) : screen !== 'overview' ? (
             <Empty>
               <EmptyHeader>
@@ -398,6 +404,18 @@ export function AnalystConsole() {
                       </div>
                     </div>
                     <div className="signal-heading">
+                      <span>
+                        Activation (demo truth):{' '}
+                        {clock(data.simulation.attack_start_timestamp)} UTC
+                      </span>
+                      <span>
+                        First focus alert:{' '}
+                        {live
+                          ? `${clock(data.simulation.first_alert_timestamp)} UTC · ${data.simulation.detection_delay_minutes} min`
+                          : 'Not observed yet'}
+                      </span>
+                    </div>
+                    <div className="signal-heading mt-4">
                       <span>
                         Event risk score <small>uncalibrated</small>
                       </span>
@@ -583,6 +601,40 @@ export function AnalystConsole() {
                         />
                       </div>
                     ))}
+                    <Table className="mt-4">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Metric</TableHead>
+                          <TableHead>Txn</TableHead>
+                          <TableHead>Network</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[
+                          ['recall', 'Recall'],
+                          ['f1', 'F1'],
+                          ['ring_detection_rate', 'Ring detection'],
+                        ].map(([key, label]) => (
+                          <TableRow key={key}>
+                            <TableCell>{label}</TableCell>
+                            <TableCell>
+                              {(
+                                data.benchmark.models.transaction_hgb[key]
+                                  .mean * 100
+                              ).toFixed(1)}
+                              %
+                            </TableCell>
+                            <TableCell>
+                              {(
+                                data.benchmark.models.network_aware_hgb[key]
+                                  .mean * 100
+                              ).toFixed(1)}
+                              %
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                     <Button
                       variant="ghost"
                       className="justify-between w-full"

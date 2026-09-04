@@ -38,6 +38,31 @@ def test_real_runtime_routes_and_replay_prefix(runtime: DemoRuntime) -> None:
         assert client.get(f"/api/candidates/{candidate_id}{suffix}").status_code == 200
 
 
+def test_benchmark_artifact_and_hard_negative_graph_facts(runtime: DemoRuntime) -> None:
+    benchmark = runtime.benchmark()
+    for name, metrics in benchmark["models"].items():
+        assert metrics == runtime.phase3["updated_benchmark"]["aggregate"][name]
+    for name, metrics in benchmark["ablations"].items():
+        assert metrics == runtime.phase3["ablations"]["aggregate"][name]
+    communities = runtime.hard_negatives()
+    assert sum(row["graph_heuristic_flagged"] for row in communities) == 5
+    assert not any(row["network_aware_flagged"] for row in communities)
+    for row in communities:
+        assert row["network_aware_flagged"] == (
+            row["max_network_score"] >= row["network_threshold"]
+        )
+        assert row["graph_heuristic_flagged"] == (
+            row["max_graph_heuristic_score"] >= row["graph_threshold"]
+        )
+        member_ids = set(row["member_customer_ids"])
+        shared_ids = set(row["shared_entity_ids"])
+        assert {node["id"] for node in row["graph"]["nodes"]} == member_ids | shared_ids
+        assert all(
+            edge["source"] in member_ids and edge["target"] in shared_ids
+            for edge in row["graph"]["edges"]
+        )
+
+
 def test_snapshot_evidence_never_contains_future_events(runtime: DemoRuntime) -> None:
     client = TestClient(create_app(lambda: runtime))
     first = next(item for item in runtime.simulation()["events"] if item["candidate_state"])

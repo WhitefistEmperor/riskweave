@@ -179,6 +179,76 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.table-footnote {
+  font-size: 12px;
+  color: #8da1b1;
+  padding: 17px 20px;
+  line-height: 1.8;
+}
+.metric-std {
+  display: block;
+  font-size: 10px;
+  color: #778e9f;
+  margin-top: 5px;
+}
+.highlight-row {
+  background: #243e392b;
+}
+.highlight-row > td:first-child {
+  color: #85dacb;
+}
+.definition-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 22px 0;
+  font-size: 13px;
+}
+.definition-list dt {
+  color: #8da1b1;
+}
+.definition-list dd {
+  text-align: right;
+}
+.limitations-list {
+  padding-left: 17px;
+  margin-top: 18px;
+  list-style-type: disc;
+  color: #a0b1be;
+  font-size: 13px;
+  line-height: 1.9;
+}
+.community-picker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  text-transform: capitalize;
+}
+.model-outcome {
+  margin-top: 17px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+.model-outcome small {
+  grid-column: 1/-1;
+  color: #899dac;
+  font-size: 12px;
+}
+@media (max-width: 1100px) {
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
