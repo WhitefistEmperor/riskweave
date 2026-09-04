@@ -7,6 +7,7 @@ from collections import Counter
 from datetime import datetime, timedelta
 from functools import cached_property, lru_cache
 from pathlib import Path
+from threading import Lock
 from typing import Any
 
 from ringsentinel.baselines.graph_heuristic import GraphHeuristicBaseline
@@ -38,6 +39,8 @@ class DemoRuntime:
         self.seeds = seeds
         self.transactions = transactions
         self.result_path = result_path
+        self._dataset_lock = Lock()
+        self._prepared: tuple[PreparedDataset, ...] | None = None
 
     @cached_property
     def phase3(self) -> dict[str, Any]:
@@ -45,7 +48,11 @@ class DemoRuntime:
 
     @cached_property
     def datasets(self) -> tuple[PreparedDataset, ...]:
-        return tuple(_prepare(seed, self.transactions) for seed in self.seeds)
+        # cached_property alone is not synchronized on Python 3.12+.
+        with self._dataset_lock:
+            if self._prepared is None:
+                self._prepared = tuple(_prepare(seed, self.transactions) for seed in self.seeds)
+            return self._prepared
 
     @cached_property
     def test_dataset(self) -> PreparedDataset:
@@ -53,7 +60,9 @@ class DemoRuntime:
 
     @cached_property
     def model_and_threshold(self) -> tuple[BoostedTreeDetector, float]:
-        test_index = self.datasets.index(self.test_dataset)
+        test_index = next(
+            index for index, dataset in enumerate(self.datasets) if dataset.seed == DEMO_TEST_SEED
+        )
         validation = self.datasets[(test_index + 1) % len(self.datasets)]
         training = tuple(
             dataset
@@ -72,13 +81,13 @@ class DemoRuntime:
             validation.labels,
             model.predict_proba(validation.features),
         )
-        return model, threshold
+        return model, float(threshold)
 
     @cached_property
     def scores(self) -> dict[str, float]:
         model, _ = self.model_and_threshold
         values = model.predict_proba(self.test_dataset.features)
-        return dict(zip(self.test_dataset.features.event_ids, values, strict=True))
+        return dict(zip(self.test_dataset.features.event_ids, map(float, values), strict=True))
 
     @cached_property
     def candidates(self) -> tuple[RingCandidate, ...]:
@@ -343,6 +352,7 @@ class DemoRuntime:
         accumulated_customers: set[str] = set()
         accumulated_devices: set[str] = set()
         accumulated_ips: set[str] = set()
+        ordered_index = {event.event_id: index for index, event in enumerate(ordered)}
         events = []
         for event in window:
             is_focus = event.event_id in focus_ids
@@ -350,6 +360,16 @@ class DemoRuntime:
                 accumulated_customers.add(event.customer_id)
                 accumulated_devices.add(event.device_id)
                 accumulated_ips.add(event.ip_id)
+            prefix_events = tuple(ordered[: ordered_index[event.event_id] + 1])
+            prefix_bundle = self.bundle.model_copy(update={"events": prefix_events})
+            prefix_scores = {item.event_id: self.scores[item.event_id] for item in prefix_events}
+            prefix_candidates = generate_ring_candidates(
+                prefix_bundle, prefix_scores, threshold=self.model_and_threshold[1]
+            )
+            live_candidate = match_candidates_to_truth(
+                self.bundle.model_copy(update={"fraud_rings": (focus_ring,)}),
+                prefix_candidates,
+            ).get(focus_ring.ring_id)
             events.append(
                 {
                     "event_id": event.event_id,
@@ -362,6 +382,18 @@ class DemoRuntime:
                     "ip_id": event.ip_id,
                     "risk_score": self.scores[event.event_id],
                     "threshold_crossed": self.scores[event.event_id] >= self.model_and_threshold[1],
+                    "observed_event_count": ordered_index[event.event_id] + 1,
+                    "candidate_state": (
+                        {
+                            "candidate_id": live_candidate.candidate_id,
+                            "risk_score": live_candidate.risk_score,
+                            "customers": live_candidate.evidence["customers"],
+                            "events": live_candidate.evidence["events"],
+                            "estimated_exposure_minor": live_candidate.estimated_exposure_minor,
+                        }
+                        if live_candidate
+                        else None
+                    ),
                     "demo_truth": {
                         "focus_ring_event": is_focus,
                         "fraud_labeled": event.event_id in fraud_ids,
