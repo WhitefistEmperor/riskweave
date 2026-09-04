@@ -1,6 +1,12 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, Network, ListChecks, MessageSquare } from 'lucide-react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import {
+  ArrowUpRight,
+  Network,
+  ListChecks,
+  MessageSquare,
+  Clock3,
+} from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,9 +26,17 @@ import {
 } from '@/components/ui/accordion';
 import { Investigator } from '@/components/investigator';
 import { EvidenceValue } from '@/components/evidence-value';
-import { evidenceGroups, evidenceLabel, queryValue } from '@/lib/evidence';
+import { EvidenceTimeline } from '@/components/evidence-timeline';
+import { LoadingState } from '@/components/workspace-states';
+import {
+  evidenceGroups,
+  evidenceLabel,
+  queryValue,
+  projectEvidenceGraph,
+} from '@/lib/evidence';
 import { money, shortId } from '@/lib/api';
 import type { AnalysisResult } from '@/lib/platform-api';
+const EvidenceNetwork = lazy(() => import('@/components/evidence-graph'));
 
 export function PersistedFindings({
   result,
@@ -41,7 +55,8 @@ export function PersistedFindings({
     [result],
   );
   const [ringId, setRingId] = useState('');
-  const [view, setView] = useState('evidence');
+  const [view, setView] = useState('network');
+  const [openedQueries, setOpenedQueries] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   useEffect(() => {
     const sync = () => {
@@ -49,7 +64,14 @@ export function PersistedFindings({
       const selected =
         url.searchParams.get('ring') ?? ranked[0]?.candidate.candidate_id ?? '';
       setRingId(selected);
-      setView(url.searchParams.get('view') ?? 'evidence');
+      const requestedView = url.searchParams.get('view') ?? 'network';
+      setView(
+        ['network', 'evidence', 'timeline', 'investigator'].includes(
+          requestedView,
+        )
+          ? requestedView
+          : 'network',
+      );
       // Canonical address of this completed run, including selection. No local-storage database.
       if (!url.searchParams.has('run')) url.searchParams.set('run', runId);
       window.history.replaceState(null, '', url);
@@ -70,9 +92,20 @@ export function PersistedFindings({
     window.history.pushState(null, '', url);
     setRingId(id);
     setView(tab);
+    if (id !== ringId) setOpenedQueries([]);
+    if (id !== ringId)
+      requestAnimationFrame(() =>
+        document
+          .querySelector('.candidate-workspace')
+          ?.scrollIntoView({ block: 'start' }),
+      );
   }
   const selected = ranked.find(
     (item) => item.candidate.candidate_id === ringId,
+  );
+  const graph = useMemo(
+    () => (selected ? projectEvidenceGraph(selected.queries) : null),
+    [selected],
   );
   return (
     <div className="findings-workspace">
@@ -273,16 +306,44 @@ export function PersistedFindings({
                 className="candidate-tabs"
               >
                 <TabsList variant="line">
+                  <TabsTrigger value="network">
+                    <Network size={16} />
+                    Network
+                  </TabsTrigger>
                   <TabsTrigger value="evidence">
                     <ListChecks size={16} />
                     Evidence
+                  </TabsTrigger>
+                  <TabsTrigger value="timeline">
+                    <Clock3 size={16} />
+                    Timeline
                   </TabsTrigger>
                   <TabsTrigger value="investigator">
                     <MessageSquare size={16} />
                     Investigator
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="evidence">
+                <TabsContent value="network" key={`network-${ringId}`}>
+                  {graph && (
+                    <Suspense
+                      fallback={
+                        <LoadingState label="Loading evidence graph…" />
+                      }
+                    >
+                      <EvidenceNetwork
+                        graph={graph}
+                        onEvidence={(key) => {
+                          setOpenedQueries([key]);
+                          navigate(ringId, 'evidence');
+                        }}
+                      />
+                    </Suspense>
+                  )}
+                </TabsContent>
+                <TabsContent value="timeline" key={`timeline-${ringId}`}>
+                  <EvidenceTimeline queries={selected.queries} />
+                </TabsContent>
+                <TabsContent value="evidence" key={`evidence-${ringId}`}>
                   <div className="grouped-evidence">
                     {evidenceGroups.map((group) => (
                       <Card className="panel" key={group.title}>
@@ -292,7 +353,13 @@ export function PersistedFindings({
                             <p className="muted text-xs">{group.description}</p>
                           </div>
                         </div>
-                        <Accordion multiple>
+                        <Accordion
+                          multiple
+                          value={openedQueries}
+                          onValueChange={(value) =>
+                            setOpenedQueries(value as string[])
+                          }
+                        >
                           {group.keys.map((key) => (
                             <AccordionItem key={key} value={key}>
                               <AccordionTrigger>

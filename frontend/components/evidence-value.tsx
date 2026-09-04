@@ -1,3 +1,6 @@
+'use client';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -9,6 +12,8 @@ import {
 import { type JsonValue, money, shortId } from '@/lib/api';
 
 export const humanize = (key: string) => key.replaceAll('_', ' ');
+const fullValue = (value: JsonValue) =>
+  typeof value === 'string' ? value : JSON.stringify(value);
 function scalar(value: JsonValue, key = ''): string {
   if (value === null) return 'Not available';
   if (typeof value === 'number')
@@ -25,6 +30,7 @@ function scalar(value: JsonValue, key = ''): string {
   return String(value);
 }
 export function EvidenceValue({ value }: { value: JsonValue }) {
+  const [page, setPage] = useState(0);
   if (Array.isArray(value)) {
     if (!value.length)
       return (
@@ -52,17 +58,52 @@ export function EvidenceValue({ value }: { value: JsonValue }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.map((record, index) => (
+              {records.slice(page * 25, page * 25 + 25).map((record, index) => (
                 <TableRow key={index}>
                   {keys.map((key) => (
                     <TableCell key={key} title={JSON.stringify(record[key])}>
-                      {scalar(record[key], key)}
+                      {key.endsWith('_id') || key.endsWith('_ids') ? (
+                        <details className="evidence-id">
+                          <summary>{scalar(record[key], key)}</summary>
+                          <span>
+                            {Array.isArray(record[key])
+                              ? record[key].map(fullValue).join(', ')
+                              : fullValue(record[key])}
+                          </span>
+                        </details>
+                      ) : (
+                        scalar(record[key], key)
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          {records.length > 25 && (
+            <div className="list-pagination">
+              <span>
+                {page * 25 + 1}–{Math.min(page * 25 + 25, records.length)} of{' '}
+                {records.length} rows
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!page}
+                onClick={() => setPage((n) => n - 1)}
+              >
+                Previous rows
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={(page + 1) * 25 >= records.length}
+                onClick={() => setPage((n) => n + 1)}
+              >
+                Next rows
+              </Button>
+            </div>
+          )}
         </div>
       );
     }
@@ -77,7 +118,11 @@ export function EvidenceValue({ value }: { value: JsonValue }) {
             {typeof item === 'object' && item !== null ? (
               <EvidenceValue value={item} />
             ) : (
-              <p title={String(item)}>{scalar(item, key)}</p>
+              <p title={String(item)}>
+                {key.endsWith('_id')
+                  ? String(item ?? 'Not available')
+                  : scalar(item, key)}
+              </p>
             )}
           </div>
         ))}

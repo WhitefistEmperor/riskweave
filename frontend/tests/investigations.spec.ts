@@ -44,6 +44,25 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   ).toBeVisible();
   await page.getByText('Run provenance and integrity', { exact: true }).click();
   await expect(page.getByText(/Result SHA256:/)).toBeVisible();
+  await page.getByRole('combobox', { name: 'Entity', exact: true }).click();
+  await page.getByRole('option').first().click();
+  await expect(page.getByText(/explicit relationships shown/)).toBeVisible();
+  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit graph', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Relationship', exact: true }).click();
+  await page.getByRole('option').first().click();
+  await page.getByRole('button', { name: 'Open source evidence', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Evidence', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Timeline', exact: true }).click();
+  await expect(page.getByRole('columnheader', { name: 'Timestamp (UTC)' })).toBeVisible();
+  await page.getByRole('button', { name: /^Inspect event / }).first().click();
+  await expect(page.locator('.event-detail')).toContainText('model output, not a fraud probability');
+  const timelineUrl = page.url();
+  expect(timelineUrl).toContain('view=timeline');
+  expect(timelineUrl).toContain('&ring=');
+  await page.reload();
+  await expect(page.getByRole('tab', { name: 'Timeline', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Evidence', exact: true }).click();
   await page
     .getByRole('button', { name: 'Shared devices', exact: true })
     .click();
