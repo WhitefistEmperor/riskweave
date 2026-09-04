@@ -4,6 +4,130 @@
 
 /* RingSentinel's graphite operations theme overrides the bundled neutral palette. */
 
+.panel.p-5 {
+  padding: 20px;
+}
+.panel.p-6 {
+  padding: 24px;
+}
+.explorer-selection {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 22px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.explorer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 22px;
+}
+.graph-toolbar {
+  padding: 14px 18px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+.network-canvas {
+  height: 470px;
+  background-color: #101820;
+  background-image: radial-gradient(#283743 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.graph-legend {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: #99aebc;
+}
+.graph-legend span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.graph-legend i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.node-inspector {
+  border-top: 1px solid var(--border);
+  padding: 18px;
+}
+.evidence-table {
+  max-height: 350px;
+  overflow: auto;
+}
+.evidence-table td {
+  max-width: 350px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.evidence-object {
+  display: grid;
+  gap: 15px;
+}
+.evidence-object h4 {
+  text-transform: capitalize;
+  color: #8a9fac;
+  font-size: 11px;
+  margin: 10px 0 5px;
+}
+.evidence-object p {
+  overflow-wrap: anywhere;
+}
+.empty-evidence {
+  color: #8296a5;
+  padding: 12px 0;
+  font-size: 13px;
+}
+.timeline {
+  padding: 8px 24px 24px;
+}
+.timeline li {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 25px;
+  padding: 22px 0 22px 18px;
+  border-left: 2px solid #365453;
+  border-bottom: 1px solid #26333d;
+  font-size: 13px;
+}
+.timeline li.truth-stage {
+  border-left-color: #b18b53;
+  background: #211e1744;
+}
+.timeline-time {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+}
+.timeline-time small {
+  display: block;
+  margin-top: 7px;
+  color: #b39664;
+  font-size: 9px;
+}
+@media (max-width: 1180px) {
+  .explorer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .timeline li {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .network-canvas {
+    height: 360px;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

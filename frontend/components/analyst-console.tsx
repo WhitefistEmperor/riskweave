@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { RingExplorer } from '@/components/ring-explorer';
 import { Line, LineChart, ReferenceLine, YAxis } from 'recharts';
 import { ChartContainer } from '@/components/ui/chart';
 import {
@@ -75,6 +76,10 @@ export function AnalystConsole() {
   const [data, setData] = useState<ConsoleData | null>(null);
   const [error, setError] = useState('');
   const [screen, setScreen] = useState<Screen>('overview');
+  const [explorerPrefix, setExplorerPrefix] = useState<number | undefined>();
+  const [explorerCandidate, setExplorerCandidate] = useState<
+    string | undefined
+  >();
   const [cursor, setCursor] = useState(0);
   const [running, setRunning] = useState(false);
   const [speed, setSpeed] = useState('1');
@@ -137,7 +142,11 @@ export function AnalystConsole() {
               <SidebarMenuItem key={id}>
                 <SidebarMenuButton
                   isActive={screen === id}
-                  onClick={() => setScreen(id)}
+                  onClick={() => {
+                    setExplorerPrefix(undefined);
+                    setExplorerCandidate(undefined);
+                    setScreen(id);
+                  }}
                   className="nav-item"
                 >
                   <Icon />
@@ -211,6 +220,13 @@ export function AnalystConsole() {
                 </div>
               )}
             </>
+          ) : screen === 'explorer' ? (
+            <RingExplorer
+              key={`${explorerPrefix ?? 'full'}-${explorerCandidate ?? 'default'}`}
+              eventCount={explorerPrefix}
+              initialCandidate={explorerCandidate}
+              onBack={() => setScreen('overview')}
+            />
           ) : screen !== 'overview' ? (
             <Empty>
               <EmptyHeader>
@@ -389,13 +405,25 @@ export function AnalystConsole() {
                     </div>
                     <ChartContainer
                       className="risk-chart"
-                      config={{ risk_score: { label: 'Risk score', color: '#55d6cc' } }}
+                      config={{
+                        risk_score: { label: 'Risk score', color: '#55d6cc' },
+                      }}
                       aria-label="Observed event risk scores with detection threshold"
                     >
                       <LineChart data={plotted}>
                         <YAxis domain={[0, 1]} hide />
-                        <ReferenceLine y={data.simulation.threshold} stroke="#bb8e45" strokeDasharray="5 5" />
-                        <Line dataKey="risk_score" stroke="var(--color-risk_score)" strokeWidth={2} dot={false} isAnimationActive={false} />
+                        <ReferenceLine
+                          y={data.simulation.threshold}
+                          stroke="#bb8e45"
+                          strokeDasharray="5 5"
+                        />
+                        <Line
+                          dataKey="risk_score"
+                          stroke="var(--color-risk_score)"
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
                       </LineChart>
                     </ChartContainer>
                     <div className="chart-caption">
@@ -503,6 +531,8 @@ export function AnalystConsole() {
                           className="w-full"
                           onClick={() => {
                             setRunning(false);
+                            setExplorerPrefix(current?.observed_event_count);
+                            setExplorerCandidate(live.candidate_id);
                             setScreen('explorer');
                           }}
                         >

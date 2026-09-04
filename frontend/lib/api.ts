@@ -73,6 +73,51 @@ export type ConsoleData = {
   simulation: Simulation;
   candidates: Candidate[];
 };
+
+export type GraphNode = {
+  id: string;
+  type: string;
+  shared_infrastructure: boolean;
+};
+export type GraphData = {
+  nodes: GraphNode[];
+  edges: {
+    source: string;
+    target: string;
+    relationship: string;
+    event_count: number;
+    suspicious: boolean;
+  }[];
+};
+export type TimelineEvent = {
+  timestamp: string;
+  kind: string;
+  title: string;
+  detail: string;
+  risk_score: number | null;
+  event_id: string | null;
+  ground_truth_only: boolean;
+};
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+export type RingSnapshot = {
+  scope: string;
+  observed_event_count: number;
+  as_of: string;
+  candidates: Candidate[];
+  selected: {
+    candidate: Candidate;
+    members: { entity_id: string; entity_type: string; created_at: string }[];
+    graph: GraphData;
+    timeline: { events: TimelineEvent[] };
+    evidence: Record<string, JsonValue>;
+  } | null;
+};
 export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`/api${path}`);
   if (!response.ok)

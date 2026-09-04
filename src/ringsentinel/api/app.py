@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any, Protocol
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from ringsentinel.api.runtime import get_demo_runtime
@@ -23,6 +23,7 @@ class RuntimeProvider(Protocol):
     def candidate_evidence(self, candidate_id: str) -> dict[str, Any]: ...
     def simulation(self) -> dict[str, Any]: ...
     def hard_negatives(self) -> list[dict[str, Any]]: ...
+    def snapshot(self, event_count: int | None, candidate_id: str | None) -> dict[str, Any]: ...
 
 
 def create_app(
@@ -94,6 +95,20 @@ def create_app(
     @application.get("/api/hard-negatives")
     def hard_negatives() -> list[dict[str, Any]]:
         return runtime_factory().hard_negatives()
+
+    @application.get("/api/snapshot")
+    def snapshot(
+        event_count: int | None = Query(default=None, ge=1),
+        candidate_id: str | None = None,
+    ) -> dict[str, Any]:
+        try:
+            return runtime_factory().snapshot(event_count, candidate_id)
+        except (KeyError, StopIteration) as error:
+            raise HTTPException(
+                status_code=404, detail="Candidate unavailable in this snapshot"
+            ) from error
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
 
     return application
 

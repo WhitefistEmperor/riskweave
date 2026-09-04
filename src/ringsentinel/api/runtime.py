@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from dataclasses import replace
 from datetime import datetime, timedelta
 from functools import cached_property, lru_cache
 from pathlib import Path
@@ -194,6 +195,8 @@ class DemoRuntime:
     def candidate(self, candidate_id: str) -> dict[str, Any]:
         payload = self.evidence.get_candidate_ring(candidate_id)
         ring = self._ring_for_candidate(candidate_id)
+        appeared_at = self._first_connected_precursor(candidate_id)
+        payload["first_connected_precursor_timestamp"] = appeared_at.isoformat()
         payload["ground_truth_overlay"] = (
             {
                 "demo_only": True,
@@ -201,16 +204,65 @@ class DemoRuntime:
                 "archetype": ring.archetype.value,
                 "attack_start_time": ring.attack_start_time.isoformat(),
                 "detection_delay_hours": (
-                    (
-                        datetime.fromisoformat(payload["first_suspicious_timestamp"])
-                        - ring.attack_start_time
-                    ).total_seconds()
-                    / 3600
+                    (appeared_at - ring.attack_start_time).total_seconds() / 3600
                 ),
             }
             if ring
             else None
         )
+        return payload
+
+    def _first_connected_precursor(self, candidate_id: str) -> datetime:
+        """Earliest qualifying component in this candidate's observed event lineage."""
+        candidate = next(item for item in self.candidates if item.candidate_id == candidate_id)
+        event_ids = set(candidate.related_event_ids)
+        ordered = sorted(
+            (event for event in self.bundle.events if event.event_id in event_ids),
+            key=lambda event: (event.timestamp, event.event_id),
+        )
+        for index, event in enumerate(ordered, start=1):
+            prefix = self.bundle.model_copy(update={"events": tuple(ordered[:index])})
+            if generate_ring_candidates(prefix, self.scores, threshold=self.model_and_threshold[1]):
+                return event.timestamp
+        raise ValueError("candidate has no qualifying precursor")
+
+    def snapshot_view(self, event_count: int | None = None) -> DemoRuntime:
+        """Read-only prefix view sharing the frozen trained model, never future events."""
+        if event_count is None:
+            return self
+        ordered = sorted(self.bundle.events, key=lambda event: (event.timestamp, event.event_id))
+        if not 1 <= event_count <= len(ordered):
+            raise ValueError("event_count outside ecosystem bounds")
+        prefix = tuple(ordered[:event_count])
+        view = DemoRuntime(
+            seeds=self.seeds, transactions=self.transactions, result_path=self.result_path
+        )
+        view.__dict__["test_dataset"] = replace(
+            self.test_dataset, bundle=self.bundle.model_copy(update={"events": prefix})
+        )
+        view.__dict__["model_and_threshold"] = self.model_and_threshold
+        view.__dict__["scores"] = {event.event_id: self.scores[event.event_id] for event in prefix}
+        return view
+
+    def snapshot(self, event_count: int | None, candidate_id: str | None) -> dict[str, Any]:
+        view = self.snapshot_view(event_count)
+        candidates = view.list_candidates()
+        selected = candidate_id or (candidates[0]["candidate_id"] if candidates else None)
+        payload: dict[str, Any] = {
+            "scope": "observed_prefix" if event_count is not None else "completed_ecosystem",
+            "observed_event_count": len(view.bundle.events),
+            "as_of": max(event.timestamp for event in view.bundle.events).isoformat(),
+            "candidates": candidates,
+            "selected": None,
+        }
+        if selected:
+            payload["selected"] = {
+                "candidate": view.candidate(selected),
+                "members": view.evidence.get_ring_members(selected),
+                "graph": view.candidate_graph(selected),
+                "timeline": view.candidate_timeline(selected),
+                "evidence": view.candidate_evidence(selected),
+            }
         return payload
 
     def candidate_evidence(self, candidate_id: str) -> dict[str, Any]:
@@ -286,7 +338,6 @@ class DemoRuntime:
         )
 
     def candidate_timeline(self, candidate_id: str) -> dict[str, Any]:
-        candidate = next(item for item in self.candidates if item.candidate_id == candidate_id)
         ring = self._ring_for_candidate(candidate_id)
         timeline = self.evidence.get_transaction_timeline(candidate_id)
         events: list[dict[str, Any]] = [
@@ -313,14 +364,16 @@ class DemoRuntime:
                     "ground_truth_only": True,
                 }
                 for stage in ring.attack_progression
+                if stage.starts_at <= max(event.timestamp for event in self.bundle.events)
             )
         events.append(
             {
-                "timestamp": candidate.first_suspicious_timestamp.isoformat(),
+                "timestamp": self._first_connected_precursor(candidate_id).isoformat(),
                 "kind": "candidate_created",
-                "title": "Candidate threshold crossed",
-                "detail": f"Risk score {candidate.risk_score:.3f}",
-                "risk_score": candidate.risk_score,
+                "title": "First connected candidate precursor",
+                "detail": "At least two linked above-threshold events from two customers. "
+                "Membership may grow or merge later; this is not the final ring's creation time.",
+                "risk_score": None,
                 "event_id": None,
                 "ground_truth_only": False,
             }
