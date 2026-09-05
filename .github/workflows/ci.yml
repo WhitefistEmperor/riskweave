@@ -65,7 +65,8 @@ jobs:
       - name: Start real backend and production frontend
         shell: bash
         run: |
-          uv run --no-sync uvicorn ringsentinel.api.app:app --host 127.0.0.1 --port 8000 --workers 1 --no-access-log > work/backend.log 2>&1 &
+          # A long-running uv wrapper holds the cache lock during setup-uv cleanup.
+          .venv/bin/uvicorn ringsentinel.api.app:app --host 127.0.0.1 --port 8000 --workers 1 --no-access-log > work/backend.log 2>&1 &
           (cd frontend && npm start) > work/frontend.log 2>&1 &
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:8000/api/v1/ready && curl --fail --silent http://127.0.0.1:5173/ > /dev/null; then
