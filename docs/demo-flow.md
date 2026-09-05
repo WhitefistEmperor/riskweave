@@ -2,7 +2,7 @@
 
 This is the original Phase 4 **synthetic replay** walkthrough, retained for the separate
 `/demo` route. The primary product now opens persisted investigations. For the submission
-recording, use the current [2–4 minute demo script](../DEMO_SCRIPT.md) and
+recording, use the current [2–4 minute demo script](demo-script.md) and
 [local setup](quick-start.md). Replay timing claims below describe one example, not the
 retrospective uploaded-dataset workflow or average detection latency.
 

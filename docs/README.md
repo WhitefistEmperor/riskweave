@@ -8,7 +8,7 @@ The internal `ringsentinel` package, commands, environment variables, and API pa
 
 - [Local setup and troubleshooting](quick-start.md)
 - [Submission screenshots](assets/screenshots/README.md)
-- [Three-minute demo script](../DEMO_SCRIPT.md)
+- [Three-minute demo script](demo-script.md)
 - [Submission verification](submission-validation.md)
 - [GitHub description, topics, and remaining manual steps](submission-metadata.md)
 

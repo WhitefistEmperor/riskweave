@@ -25,7 +25,7 @@ Named team members and roles have not been supplied. Add only owner-confirmed de
 
 ## Before submitting
 
-- Record the [demo script](../DEMO_SCRIPT.md), then replace the README's video placeholder
+- Record the [demo script](demo-script.md), then replace the README's video placeholder
   with the real recording link. Do not use a fake or inaccessible hosted-demo URL.
 - Confirm the final branch/commit is present in the chosen GitHub repository; this pass
   creates a local checkpoint, not a remote publication.

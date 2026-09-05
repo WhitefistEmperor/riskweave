@@ -152,4 +152,4 @@ separately configured identity gateway and [unverified infrastructure gates](pha
 - **Investigator has no LLM:** expected by default. Computed, cited statements work without a key.
 - **Replay cold start:** the separate `/demo` route may need 20–40 seconds to reproduce its fold.
 
-See [the demo script](../DEMO_SCRIPT.md) for the concise reviewer walkthrough.
+See [the demo script](demo-script.md) for the concise reviewer walkthrough.

@@ -2,13 +2,13 @@
 
 ## Before recording
 
-- Follow [local setup](docs/quick-start.md). Use a clean local presentation workspace and the
+- Follow [local setup](quick-start.md). Use a clean local presentation workspace and the
   seed-105, 1,000-payment sample. No real customer data or paid provider is needed.
 - Rehearse the real upload and analysis once; keep a completed investigation available if
   the recording cannot accommodate cold-start time. Never present prerecorded completion as live.
 - Capture only the application, with no terminals, address bar, local file chooser, or secrets.
   Pause while selecting the sample file if the chooser would reveal personal paths.
-- Use the current [screenshots](docs/assets/screenshots/README.md) as framing references.
+- Use the current [screenshots](assets/screenshots/README.md) as framing references.
 - Leave the default **Deterministic evidence fallback · no LLM** label visible. Do not claim
   that a paid LLM was called. Do not switch to replay during the main walkthrough.
 

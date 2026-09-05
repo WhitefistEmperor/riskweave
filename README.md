@@ -15,7 +15,7 @@ configuration names, API paths, and historical benchmark artifacts are unchanged
 ![Ring Explorer showing observed customer and infrastructure relationships](docs/assets/screenshots/ring-explorer.png)
 
 [Quick start](#quick-start) · [Screenshots](docs/assets/screenshots/README.md) ·
-[Validation](#measured-validation) · [Demo script](DEMO_SCRIPT.md)
+[Validation](#measured-validation) · [Demo script](docs/demo-script.md)
 
 ## What it does
 
@@ -188,7 +188,7 @@ tests/            Python unit and integration tests
 scripts/          Validated upload sample and local API smoke test
 results/phase3/   Frozen measured benchmark JSON and report
 docs/             Setup, architecture, methodology, security history, screenshots
-DEMO_SCRIPT.md    2–4 minute recording plan
+docs/demo-script.md  2–4 minute recording plan
 ```
 
 Start with [local setup](docs/quick-start.md), [screenshot gallery](docs/assets/screenshots/README.md),
@@ -197,7 +197,7 @@ or the [documentation index](docs/README.md). Historical reports and Phase 2 art
 ## Demo video and project metadata
 
 **Demo video: not recorded yet.** Replace this sentence with the final recording link before
-submission. The [demo script](DEMO_SCRIPT.md) is ready; no hosted demo is claimed.
+submission. The [demo script](docs/demo-script.md) is ready; no hosted demo is claimed.
 
 Suggested GitHub description and topics are in [submission metadata](docs/submission-metadata.md).
 Licensed under the existing [MIT License](LICENSE), credited to RingSentinel contributors.
