@@ -13,9 +13,8 @@ Suggested topics (select those useful to the submission):
 
 Title: **RiskWeave**. The internal package name remains `ringsentinel`; package metadata
 and commands are intentionally unchanged. Historical reports retain the former RingSentinel brand.
-No Git remote is configured in the inspected checkout, so no repository URL, live CI badge,
-GitHub settings change, or push is claimed. Apply the description/topics in GitHub after
-the owner selects the submission repository.
+Public repository: [WhitefistEmperor/riskweave](https://github.com/WhitefistEmperor/riskweave).
+Demo video: [RiskWeave on YouTube](https://youtu.be/CaeExe9ePls).
 
 ## License and team
 
@@ -25,10 +24,9 @@ Named team members and roles have not been supplied. Add only owner-confirmed de
 
 ## Before submitting
 
-- Record the [demo script](demo-script.md), then replace the README's video placeholder
-  with the real recording link. Do not use a fake or inaccessible hosted-demo URL.
-- Confirm the final branch/commit is present in the chosen GitHub repository; this pass
-  creates a local checkpoint, not a remote publication.
+- The [demo video](https://youtu.be/CaeExe9ePls) is published and linked from the README;
+  retain the [recording script](demo-script.md) as the source walkthrough.
+- Confirm the final submission commit remains present on the public repository's `main` branch.
 - Keep synthetic-training, uncalibrated-score, exposure, and infrastructure limitations visible.
 - Use only the [curated gallery](assets/screenshots/README.md), not ignored browser-test captures.
 - Do not upload `.env`, databases, generated datasets/results, secrets, or local build output.

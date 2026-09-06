@@ -15,7 +15,7 @@ configuration names, API paths, and historical benchmark artifacts are unchanged
 ![Ring Explorer showing observed customer and infrastructure relationships](docs/assets/screenshots/ring-explorer.png)
 
 [Quick start](#quick-start) · [Screenshots](docs/assets/screenshots/README.md) ·
-[Validation](#measured-validation) · [Demo script](docs/demo-script.md)
+[Validation](#measured-validation) · [Watch demo](https://youtu.be/CaeExe9ePls)
 
 ## What it does
 
@@ -196,8 +196,11 @@ or the [documentation index](docs/README.md). Historical reports and Phase 2 art
 
 ## Demo video and project metadata
 
-**Demo video: not recorded yet.** Replace this sentence with the final recording link before
-submission. The [demo script](docs/demo-script.md) is ready; no hosted demo is claimed.
+[![Watch the RiskWeave demo](https://img.youtube.com/vi/CaeExe9ePls/hqdefault.jpg)](https://youtu.be/CaeExe9ePls)
+
+**[Watch the RiskWeave demo on YouTube](https://youtu.be/CaeExe9ePls).** The
+[recording script](docs/demo-script.md) is also available for reference. No hosted application
+deployment is claimed.
 
 Suggested GitHub description and topics are in [submission metadata](docs/submission-metadata.md).
 Licensed under the existing [MIT License](LICENSE), credited to RingSentinel contributors.

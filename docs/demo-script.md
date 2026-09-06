@@ -72,5 +72,6 @@ Return to the saved investigation.
 “RiskWeave brings detection, relationship evidence, timelines, and grounded explanation
 into one reviewable workflow. The next step is real-data validation—not automatic blocking.”
 
-End on the product. Add the final recording URL to the README's **Demo video** section.
-No recording or hosted-demo link exists yet.
+End on the product.
+
+Published recording: [RiskWeave demo](https://youtu.be/CaeExe9ePls).
