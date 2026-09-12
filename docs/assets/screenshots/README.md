@@ -1,10 +1,8 @@
 # RiskWeave screenshots
 
-Refreshed on 2026-09-04 after the public RiskWeave rename, at 1440 × 1050.
-Only display branding changed; the Phase 5C application behavior and saved analysis are unchanged.
+Refreshed on 2026-09-12 after the RiskWeave light-theme update, at 1440 × 1050.
+Only presentation styling changed; the application behavior and saved analysis are unchanged.
 These are real local browser captures—not mockups, altered evidence, or fixture responses.
-The Sites skill guided preservation of the existing interface and local visual review;
-no site was registered or deployed.
 
 ## Provenance
 
