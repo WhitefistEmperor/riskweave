@@ -460,7 +460,7 @@ export function AnalystConsole() {
                     <ChartContainer
                       className="risk-chart"
                       config={{
-                        risk_score: { label: 'Risk score', color: '#55d6cc' },
+                        risk_score: { label: 'Risk score', color: '#0f766e' },
                       }}
                       aria-label="Observed event risk scores with detection threshold"
                     >
@@ -468,7 +468,7 @@ export function AnalystConsole() {
                         <YAxis domain={[0, 1]} hide />
                         <ReferenceLine
                           y={data.simulation.threshold}
-                          stroke="#bb8e45"
+                          stroke="#9a5b0a"
                           strokeDasharray="5 5"
                         />
                         <Line
