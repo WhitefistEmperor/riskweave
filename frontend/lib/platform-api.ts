@@ -95,6 +95,7 @@ export type AnalysisResult = {
   event_count: number;
   entity_count: number;
   model_scope: string;
+  currency?: string | null;
   rings: {
     candidate: PersistedCandidate;
     queries: EvidenceQueries;

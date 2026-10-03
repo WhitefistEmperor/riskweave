@@ -20,8 +20,7 @@ def parse_input(content: bytes) -> DatasetBundle | PaymentDataset:
         if not bundle.events:
             raise ValueError("Empty payment dataset")
         validate_payment_records(bundle.entities, bundle.events)
-        if len({event.currency for event in bundle.events}) != 1:
-            raise ValueError("Analyze currencies separately; no implicit currency conversion")
+        single_currency(bundle)
         return bundle
     from ringsentinel.data.validation import validate_dataset
 
@@ -29,4 +28,12 @@ def parse_input(content: bytes) -> DatasetBundle | PaymentDataset:
     validate_dataset(bundle)
     if not bundle.events:
         raise ValueError("Empty dataset")
+    single_currency(bundle)
     return bundle
+
+
+def single_currency(bundle: DatasetBundle | PaymentDataset) -> str:
+    currencies = {event.currency for event in bundle.events}
+    if len(currencies) != 1:
+        raise ValueError("Analyze currencies separately; no implicit currency conversion")
+    return next(iter(currencies))

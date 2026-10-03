@@ -10,6 +10,10 @@
   scikit-learn-version checks. Artifact inference replaces per-run synthetic retraining
   when configured. Container builds now generate their artifact once.
 - Artifact SHA-256 in run provenance and explicit propagation to the worker.
+- Currency provenance in new results; correct currency precision across findings,
+  timelines, evidence and source panels; exact minor units in investigator facts.
+  Legacy results with missing currency retain unknown units. Non-INR model scores
+  explicitly remain unvalidated. Synthetic uploads cannot bypass currency isolation.
 - Run-scoped analyst dispositions, required notes, audit history, safe submission retry
   and revision conflicts. Migration 0002 preserves existing cases; backups retain reviews.
 - Browser OIDC authorization code with PKCE, sign-in callback and sign-out, using
@@ -37,6 +41,18 @@ termination race was fixed and the worker-lock cleanup regression passed.
 The previous increment's Linux CI passed backend, frontend and both container builds
 with a real PostgreSQL-backed analysis (run 37106573152). Current remote validation
 is tracked on pull request 1; local checks alone do not establish production readiness.
+
+The analyst-review increment's remote Linux CI also passed all three jobs (run
+37108521431), including migration 0002 and a real PostgreSQL-backed review save,
+retry and reload with one audit event and unchanged inference-result checksum.
+
+The currency increment passed 114 Python tests and 36 production-browser tests.
+Real HTTP tests completed observed JPY analysis, correct currency provenance and
+investigator facts, followed by reopen and ownership checks. Browser fixtures verified
+USD, JPY, KWD and legacy unknown units throughout findings, evidence and timeline.
+The undefined-minor-unit fallback also passed a focused test after the full suite.
+Ruff, TypeScript, frontend lint and production build passed. The existing model
+artifact digest and historical benchmark were not changed.
 
 ## Deployment state
 

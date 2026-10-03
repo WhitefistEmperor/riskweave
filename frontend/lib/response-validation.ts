@@ -169,6 +169,9 @@ export const validResult = (v: unknown) =>
   num(v.event_count) &&
   num(v.entity_count) &&
   str(v.model_scope) &&
+  (v.currency === undefined ||
+    v.currency === null ||
+    (typeof v.currency === 'string' && /^[A-Z]{3}$/.test(v.currency))) &&
   Array.isArray(v.rings) &&
   v.rings.every(
     (r) =>

@@ -16,6 +16,23 @@ All event references must resolve to correctly typed entities. Payment transacti
 IDs and event IDs must be unique. Refunds must follow their original payment,
 match its customer, merchant, card and currency, and cumulatively stay within its
 amount. Analyze each currency in a separate dataset; no FX conversion is implied.
+This restriction also applies to synthetic uploads. New result artifacts record the
+single event currency. Findings, timeline, nested evidence and investigator sources
+use that currency; the browser uses its supported ISO currency precision through
+`Intl.NumberFormat`. Fractional units are retained. Unrecognized currencies and old
+result artifacts without currency metadata show original minor units, without an
+invented scale or default INR label. Investigator statements always preserve minor
+units exactly. Existing result files and checksums are not rewritten.
+Codes with no ISO minor unit (such as gold/XAU) also retain original units. The
+exclusion list follows SIX's current List One, published 2026-09-17; changes to
+currency standards require release review.
+
+References: [ECMA-402 currency digits](https://tc39.es/ecma402/#sec-currencydigits),
+[SIX ISO 4217 maintenance data](https://www.six-group.com/en/products-services/financial-information/market-reference-data/data-standards.html).
+
+The model's amount features were trained on synthetic INR records. Another currency
+can be ingested for evidence analysis, but its score distribution is explicitly
+unvalidated. Displaying a currency correctly is not FX normalization or model validation.
 
 This contract has no labels, fraud rings, generator seed or synthetic manifest.
 Unknown outcomes are not converted into benign labels. Uploaded outcomes never

@@ -134,12 +134,38 @@ export async function loadConsoleData(): Promise<ConsoleData> {
   ]);
   return { overview, benchmark, simulation, candidates };
 }
-export const money = (minor: number) =>
-  new Intl.NumberFormat('en-IN', {
+const currencies = new Set(Intl.supportedValuesOf('currency'));
+// SIX ISO 4217 List One, published 2026-09-17: these codes have no minor unit.
+const unscaledCurrencies = new Set([
+  'XAG',
+  'XAU',
+  'XBA',
+  'XBB',
+  'XBC',
+  'XBD',
+  'XDR',
+  'XPD',
+  'XPT',
+  'XSU',
+  'XTS',
+  'XUA',
+  'XXX',
+]);
+export const money = (minor: number, currency: string | null = 'INR') => {
+  if (
+    !currency ||
+    !currencies.has(currency) ||
+    unscaledCurrencies.has(currency)
+  )
+    return `${minor.toLocaleString('en-GB')} ${currency ?? 'unknown-currency'} minor units`;
+  const format = new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-GB', {
     style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(minor / 100);
+    currency,
+    currencyDisplay: 'code',
+  });
+  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
+  return format.format(minor / 10 ** digits);
+};
 export const clock = (value: string) =>
   new Date(value).toLocaleTimeString('en-GB', {
     timeZone: 'UTC',

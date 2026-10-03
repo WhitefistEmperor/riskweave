@@ -222,6 +222,7 @@ class ResultsResponse(Contract):
     event_count: int
     entity_count: int
     model_scope: str
+    currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")] | None = None
     rings: list[PersistedRing]
 
 

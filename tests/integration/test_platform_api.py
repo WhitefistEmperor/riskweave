@@ -296,6 +296,8 @@ def test_production_fails_closed_and_cors_is_restricted(settings):
 def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_bytes, unlabeled):
     if unlabeled:
         original = json.loads(dataset_bytes)
+        for event in original["events"]:
+            event["currency"] = "JPY"
         dataset_bytes = json.dumps(
             {
                 "schema_version": "payments-v1",
@@ -328,6 +330,9 @@ def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_by
         assert run["started_at"].endswith("Z") and run["completed_at"].endswith("Z")
         result = client.get(f"/api/v1/runs/{run_id}/results")
         assert result.status_code == 200, result.text
+        assert result.json()["currency"] == ("JPY" if unlabeled else "INR")
+        if unlabeled:
+            assert "non-INR" in result.json()["model_scope"]
         rings = client.get(f"/api/v1/runs/{run_id}/rings").json()
         assert rings, "The generated known scenario sample should yield measured candidates"
         candidate_id = rings[0]["candidate_id"]
@@ -340,6 +345,17 @@ def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_by
         assert answer.status_code == 200, answer.text
         assert answer.json()["statements"]
         assert answer.json()["provider"] == "deterministic_evidence_fallback"
+        exposure_answer = client.post(
+            f"{prefix}/investigate", json={"question": "How much exposure?"}
+        )
+        assert exposure_answer.status_code == 200
+        amount_facts = [
+            fact["text"]
+            for fact in exposure_answer.json()["statements"]
+            if fact["query"] in {"calculate_exposure", "get_refund_patterns"}
+        ]
+        assert len(amount_facts) == 2
+        assert all(f"{'JPY' if unlabeled else 'INR'} minor units" in fact for fact in amount_facts)
         assert_error(client.get(f"/api/v1/runs/{run_id}/rings/missing"), "NOT_FOUND", 404)
         original_result = result.json()
     settings.jobs_enabled = False

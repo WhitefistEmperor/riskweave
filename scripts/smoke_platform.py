@@ -82,6 +82,7 @@ def main():
         assert "running" in states, states
         result = get(f"/runs/{run_id}/results")
         assert result["event_count"] == len(bundle.events)
+        assert result["currency"] == "INR"
         rings = get(f"/runs/{run_id}/rings")
         assert rings, "Fixture yielded no candidates; report the measured result"
         candidate_id = rings[0]["candidate_id"]

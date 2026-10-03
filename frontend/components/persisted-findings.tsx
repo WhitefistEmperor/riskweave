@@ -46,6 +46,7 @@ export function PersistedFindings({
   result: AnalysisResult;
   runId: string;
 }) {
+  const currency = result.currency ?? null;
   const ranked = useMemo(
     () =>
       [...result.rings].sort(
@@ -234,7 +235,7 @@ export function PersistedFindings({
                           .join(' · ') || 'No shared resources reported'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {money(candidate.estimated_exposure_minor)}
+                        {money(candidate.estimated_exposure_minor, currency)}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -302,7 +303,10 @@ export function PersistedFindings({
                 <div className="exposure-caption">
                   <span>Estimated exposure</span>
                   <strong>
-                    {money(selected.candidate.estimated_exposure_minor)}
+                    {money(
+                      selected.candidate.estimated_exposure_minor,
+                      currency,
+                    )}
                   </strong>
                   <small>Candidate-associated value · not confirmed loss</small>
                 </div>
@@ -353,7 +357,10 @@ export function PersistedFindings({
                   )}
                 </TabsContent>
                 <TabsContent value="timeline" key={`timeline-${ringId}`}>
-                  <EvidenceTimeline queries={selected.queries} />
+                  <EvidenceTimeline
+                    queries={selected.queries}
+                    currency={currency}
+                  />
                 </TabsContent>
                 <TabsContent value="evidence" key={`evidence-${ringId}`}>
                   <div className="grouped-evidence">
@@ -380,6 +387,7 @@ export function PersistedFindings({
                               <AccordionContent>
                                 <EvidenceValue
                                   value={queryValue(selected.queries, key)}
+                                  currency={currency}
                                 />
                               </AccordionContent>
                             </AccordionItem>
@@ -394,6 +402,7 @@ export function PersistedFindings({
                     key={`${runId}-${ringId}`}
                     runId={runId}
                     candidateId={ringId}
+                    currency={currency}
                   />
                 </TabsContent>
               </Tabs>
@@ -407,6 +416,12 @@ export function PersistedFindings({
         </>
       )}
       <p className="model-scope">
+        Amount currency:{' '}
+        {currency ?? 'unknown; amounts are shown in minor units'}. No currency
+        conversion is applied.{' '}
+        {currency &&
+          currency !== 'INR' &&
+          'The model was trained on synthetic INR amounts; scoring for this currency has not been validated. '}
         {result.model_scope}. Evidence is limited to this run; no ground-truth
         labels are used to explain a finding.
       </p>

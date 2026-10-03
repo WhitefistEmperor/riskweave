@@ -14,22 +14,32 @@ import { type JsonValue, money, shortId } from '@/lib/api';
 export const humanize = (key: string) => key.replaceAll('_', ' ');
 const fullValue = (value: JsonValue) =>
   typeof value === 'string' ? value : JSON.stringify(value);
-function scalar(value: JsonValue, key = ''): string {
+function scalar(
+  value: JsonValue,
+  key = '',
+  currency: string | null = 'INR',
+): string {
   if (value === null) return 'Not available';
   if (typeof value === 'number')
     return key.endsWith('_minor')
-      ? money(value)
+      ? money(value, currency)
       : Number.isInteger(value)
         ? value.toLocaleString()
         : value.toFixed(3);
   if (Array.isArray(value))
-    return value.map((item) => scalar(item, key)).join(', ');
+    return value.map((item) => scalar(item, key, currency)).join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
   if (key.endsWith('_id') || key.endsWith('_ids'))
     return shortId(String(value));
   return String(value);
 }
-export function EvidenceValue({ value }: { value: JsonValue }) {
+export function EvidenceValue({
+  value,
+  currency = 'INR',
+}: {
+  value: JsonValue;
+  currency?: string | null;
+}) {
   const [page, setPage] = useState(0);
   if (Array.isArray(value)) {
     if (!value.length)
@@ -52,7 +62,12 @@ export function EvidenceValue({ value }: { value: JsonValue }) {
               <TableRow>
                 {keys.map((key) => (
                   <TableHead key={key}>
-                    {humanize(key.replace('_minor', ' (INR)'))}
+                    {humanize(
+                      key.replace(
+                        '_minor',
+                        ` (${currency ?? 'minor units; currency unknown'})`,
+                      ),
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -64,7 +79,9 @@ export function EvidenceValue({ value }: { value: JsonValue }) {
                     <TableCell key={key} title={JSON.stringify(record[key])}>
                       {key.endsWith('_id') || key.endsWith('_ids') ? (
                         <details className="evidence-id">
-                          <summary>{scalar(record[key], key)}</summary>
+                          <summary>
+                            {scalar(record[key], key, currency)}
+                          </summary>
                           <span>
                             {Array.isArray(record[key])
                               ? record[key].map(fullValue).join(', ')
@@ -72,7 +89,7 @@ export function EvidenceValue({ value }: { value: JsonValue }) {
                           </span>
                         </details>
                       ) : (
-                        scalar(record[key], key)
+                        scalar(record[key], key, currency)
                       )}
                     </TableCell>
                   ))}
@@ -107,26 +124,33 @@ export function EvidenceValue({ value }: { value: JsonValue }) {
         </div>
       );
     }
-    return <p className="break-words">{scalar(value)}</p>;
+    return <p className="break-words">{scalar(value, '', currency)}</p>;
   }
   if (value !== null && typeof value === 'object')
     return (
       <div className="evidence-object">
         {Object.entries(value).map(([key, item]) => (
           <div key={key}>
-            <h4>{humanize(key.replace('_minor', ' (INR)'))}</h4>
+            <h4>
+              {humanize(
+                key.replace(
+                  '_minor',
+                  ` (${currency ?? 'minor units; currency unknown'})`,
+                ),
+              )}
+            </h4>
             {typeof item === 'object' && item !== null ? (
-              <EvidenceValue value={item} />
+              <EvidenceValue value={item} currency={currency} />
             ) : (
               <p title={String(item)}>
                 {key.endsWith('_id')
                   ? String(item ?? 'Not available')
-                  : scalar(item, key)}
+                  : scalar(item, key, currency)}
               </p>
             )}
           </div>
         ))}
       </div>
     );
-  return <p>{scalar(value)}</p>;
+  return <p>{scalar(value, '', currency)}</p>;
 }
