@@ -59,7 +59,7 @@ test('a lost review response retries the same submission and renders the note as
     '<script>throw new Error("must remain text")</script> Review the evidence.';
   await page.getByLabel('Review note', { exact: true }).fill(note);
   await page.getByRole('button', { name: 'Save review', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Backend unavailable');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('Backend unavailable');
   expect(keys).toHaveLength(1);
   await expect(page.getByLabel('Review note', { exact: true })).toHaveValue(
     note,
@@ -118,7 +118,7 @@ test('conflicts preserve the draft and require a reload before resubmission', as
     .getByLabel('Review note', { exact: true })
     .fill('My unsaved reasoning.');
   await page.getByRole('button', { name: 'Save review', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'changed since you opened',
   );
   await expect(
@@ -158,7 +158,7 @@ test('a review response for another candidate cannot expose history or permit sa
     }),
   );
   await page.goto(workspaceUrl);
-  await expect(page.getByRole('alert')).toContainText('unreadable response');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('unreadable response');
   await expect(page.getByText('Wrong candidate confidential note')).toHaveCount(
     0,
   );

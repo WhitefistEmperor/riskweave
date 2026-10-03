@@ -55,6 +55,8 @@ if (production) {
 }
 
 const nextConfig: NextConfig = {
+  output: process.env.RINGSENTINEL_STANDALONE === 'true' ? 'standalone' : undefined,
+  poweredByHeader: false,
   async headers() {
     return [
       {

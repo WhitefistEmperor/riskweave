@@ -71,7 +71,7 @@ computed graph/event information. The **investigator** explains that evidence us
 server-rendered statements—not free-form model-written findings.
 
 **Stack:** Python, FastAPI, Pydantic, scikit-learn, NetworkX, SQLAlchemy/Alembic;
-React/TypeScript, Vinext, Tailwind/shadcn, Cytoscape; pytest, Playwright, Ruff, Oxlint.
+React/TypeScript, Next.js, Tailwind/shadcn, Cytoscape; pytest, Playwright, Ruff, Oxlint.
 Local startup uses SQLite and filesystem storage. PostgreSQL support exists, but live
 PostgreSQL/container verification remains outstanding. See [architecture](docs/architecture.md).
 
@@ -183,7 +183,8 @@ to keep your presentation worklist uncluttered. See [setup details](docs/quick-s
   visibly deterministic; optional paid-provider integration has not been live-verified.
 - This is a single-host/local-storage foundation, not production approval. JWT verification
   is implemented, but real identity-gateway/TLS integration and live infrastructure checks
-  remain unverified. Vinext is beta. See [Phase 5C verification and gates](docs/phase5c-final.md).
+  remain unverified. See [Vercel deployment](docs/vercel-deployment.md) and
+  [Phase 5C verification and gates](docs/phase5c-final.md).
 
 ## Repository guide
 
