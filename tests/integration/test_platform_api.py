@@ -292,7 +292,17 @@ def test_production_fails_closed_and_cors_is_restricted(settings):
         assert "Access-Control-Allow-Origin" not in denied.headers
 
 
-def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_bytes):
+@pytest.mark.parametrize("unlabeled", [False, True])
+def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_bytes, unlabeled):
+    if unlabeled:
+        original = json.loads(dataset_bytes)
+        dataset_bytes = json.dumps(
+            {
+                "schema_version": "payments-v1",
+                "entities": original["entities"],
+                "events": original["events"],
+            }
+        ).encode()
     settings.jobs_enabled = True
     application = create_app(settings=settings)
     with TestClient(application) as client:

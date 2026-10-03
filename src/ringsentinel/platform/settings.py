@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     development_user_id: str = Field(default="local-analyst", pattern=r"^[a-zA-Z0-9_-]{1,80}$")
     demo_enabled: bool = True
     jobs_enabled: bool = True
+    model_artifact_path: Path | None = None
+    model_artifact_sha256: str = Field(default="", pattern=r"^([a-f0-9]{64})?$")
     upload_limit_bytes: int = Field(default=25_000_000, ge=1024, le=100_000_000)
     analysis_timeout_seconds: int = Field(default=300, ge=1, le=3600)
     max_investigations_per_owner: int = Field(default=1000, ge=1, le=10000)
@@ -52,6 +54,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def deployment_boundary(self) -> "Settings":
+        if bool(self.model_artifact_path) != bool(self.model_artifact_sha256):
+            raise ValueError("Model artifact path and pinned SHA-256 must be configured together")
         if any(not host or any(c in host for c in "/*:@ ") for host in self.trusted_hosts):
             raise ValueError("Trusted hosts must be explicit hostnames without ports")
         if self.auth_mode == "jwt":

@@ -21,6 +21,7 @@ dependencies = [
   "pydantic>=2.8,<3",
   "scikit-learn>=1.5,<2",
   "uvicorn>=0.35,<1",
+  "joblib>=1.5,<2",
 ]
 
 [project.optional-dependencies]

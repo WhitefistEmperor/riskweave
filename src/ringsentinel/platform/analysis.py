@@ -7,6 +7,8 @@ from ringsentinel.data.schema import DatasetBundle
 from ringsentinel.detection.candidates import generate_ring_candidates
 from ringsentinel.features.extractor import extract_event_features
 from ringsentinel.investigation.evidence import RingEvidenceService
+from ringsentinel.models.artifact import load_artifact
+from ringsentinel.platform.settings import Settings
 
 EVIDENCE_QUERIES = (
     "get_candidate_ring",
@@ -37,8 +39,13 @@ class Phase3AnalysisEngine:
     """
 
     def analyze(self, bundle: DatasetBundle) -> dict:
-        runtime = DemoRuntime()
-        model, threshold = runtime.model_and_threshold
+        settings = Settings()
+        if settings.model_artifact_path:
+            model, threshold = load_artifact(
+                settings.model_artifact_path, settings.model_artifact_sha256
+            )
+        else:
+            model, threshold = DemoRuntime().model_and_threshold
         features = extract_event_features(bundle)
         scores = dict(
             zip(features.event_ids, map(float, model.predict_proba(features)), strict=True)

@@ -143,7 +143,7 @@ export function InvestigationList() {
           <FolderSearch size={32} />
           <h2>No investigations yet</h2>
           <p>
-            Start with a name above. Upload a DatasetBundle JSON file,
+            Start with a name above. Upload a payment dataset JSON file,
             <br className="hidden md:block" /> run analysis, then review
             candidate rings and their evidence.
           </p>

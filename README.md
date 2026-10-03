@@ -9,6 +9,10 @@ rings, and makes the relationships, timeline, and financial exposure reviewable.
 **Evidence, not verdicts.** This is a working local analyst product with a synthetic-trained
 detector—not a real-payment-validated fraud service. No GNN or paid API key is required.
 
+Product completion work now adds unlabeled `payments-v1` ingestion, a build-owned
+model artifact and configurable OIDC browser sign-in. See [current progress and
+deployment gates](docs/production-progress.md) and [payment input](docs/payment-ingestion.md).
+
 Previously branded RingSentinel. The internal `ringsentinel` package, CLI commands,
 configuration names, API paths, and historical benchmark artifacts are unchanged.
 
@@ -107,8 +111,9 @@ choose another output filename. First analysis may take tens of seconds on a lap
 No `.env` or API key is needed. Defaults use local development identity, SQLite at
 `work/ringsentinel.db`, and objects at `work/storage`. Keep both servers on loopback.
 `.env.example` documents settings but is **not automatically loaded**; pre-existing shell
-overrides still apply. Ingestion accepts a complete **DatasetBundle JSON**, not arbitrary CSV
-or a single exported table. See [data contract](docs/data-model.md).
+overrides still apply. Ingestion accepts **payments-v1 JSON** for unlabeled observed
+payments or a synthetic **DatasetBundle JSON**. Arbitrary CSV is not supported.
+See [payment input](docs/payment-ingestion.md) and [synthetic data contract](docs/data-model.md).
 
 For build/preview commands, browser dependencies, and troubleshooting, see
 [local setup](docs/quick-start.md). Do not expose development identity to a network.

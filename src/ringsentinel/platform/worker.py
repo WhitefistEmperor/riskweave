@@ -5,7 +5,7 @@ import os
 import sys
 from threading import Timer
 
-from ringsentinel.data.schema import DatasetBundle
+from ringsentinel.data.ingestion import parse_input
 from ringsentinel.platform.analysis import Phase3AnalysisEngine
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.locking import FileLock
@@ -36,7 +36,7 @@ def main():
             content = storage.read(artifact.storage_key)
             if hashlib.sha256(content).hexdigest() != artifact.checksum:
                 raise ValueError("Input checksum mismatch")
-        result = Phase3AnalysisEngine().analyze(DatasetBundle.model_validate_json(content))
+        result = Phase3AnalysisEngine().analyze(parse_input(content))
         service.finish(run_id, result)
     finally:
         watchdog.cancel()

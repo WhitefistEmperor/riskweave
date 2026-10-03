@@ -1064,6 +1064,7 @@ source = { editable = "." }
 dependencies = [
     { name = "alembic" },
     { name = "fastapi" },
+    { name = "joblib" },
     { name = "networkx" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -1089,6 +1090,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.16,<2" },
     { name = "fastapi", specifier = ">=0.116,<1" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
+    { name = "joblib", specifier = ">=1.5,<2" },
     { name = "networkx", specifier = ">=3.3,<4" },
     { name = "numpy", specifier = ">=2.0,<3" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },

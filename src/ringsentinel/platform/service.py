@@ -12,8 +12,7 @@ from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 
 from ringsentinel import __version__
-from ringsentinel.data.schema import DatasetBundle
-from ringsentinel.data.validation import validate_dataset
+from ringsentinel.data.ingestion import PaymentDataset, parse_input
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.errors import ERRORS, ProductError
 from ringsentinel.platform.models import AnalysisRun, Artifact, Investigation, Status, User, utcnow
@@ -109,8 +108,7 @@ class InvestigationService:
         if content_type.split(";")[0] != "application/json":
             raise ProductError("INVALID_DATASET")
         try:
-            bundle = DatasetBundle.model_validate_json(content)
-            validate_dataset(bundle)
+            bundle = parse_input(content)
             if not bundle.events:
                 raise ValueError("Empty dataset")
         except (ValueError, KeyError, TypeError, IndexError):
@@ -155,7 +153,15 @@ class InvestigationService:
                 session.execute(
                     update(Investigation)
                     .where(Investigation.id == item.id)
-                    .values(status=Status.CREATED, source_metadata={"format": "DatasetBundle"})
+                    .values(
+                        status=Status.CREATED,
+                        source_metadata={
+                            "format": "payments-v1"
+                            if isinstance(bundle, PaymentDataset)
+                            else "DatasetBundle",
+                            "labels_available": not isinstance(bundle, PaymentDataset),
+                        },
+                    )
                 )
             return artifact
         except Exception:
@@ -219,6 +225,8 @@ class InvestigationService:
                         "build_commit": self.settings.build_commit,
                         "configuration_schema": "1",
                         "result_schema": "1",
+                        "model_artifact_sha256": self.settings.model_artifact_sha256
+                        or "runtime-trained",
                     },
                     configuration_snapshot={
                         "training_seeds": [102, 103, 104],

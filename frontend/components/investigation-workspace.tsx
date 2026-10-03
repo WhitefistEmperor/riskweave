@@ -159,8 +159,8 @@ export function InvestigationDetail({
                     Input dataset
                   </h2>
                   <p className="muted text-sm">
-                    DatasetBundle JSON only. Arbitrary CSV or payment exports
-                    are not supported.
+                    Upload payments-v1 JSON for unlabeled payments, or a
+                    synthetic DatasetBundle. Analyze one currency per upload.
                   </p>
                 </div>
               </div>

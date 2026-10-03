@@ -17,6 +17,9 @@ The internal `ringsentinel` package, commands, environment variables, and API pa
 
 - [Architecture overview](architecture.md) and [persisted production foundation](PRODUCTION_ARCHITECTURE.md)
 - [Data model and DatasetBundle](data-model.md)
+- [Unlabeled payment ingestion](payment-ingestion.md)
+- [Current product completion work and deployment gates](production-progress.md)
+- [Model build artifacts](model-artifact.md) and [browser sign-in configuration](browser-authentication.md)
 - [Evidence UI semantics](evidence-ui.md) and [investigator design](investigator-design.md)
 - [Benchmark methodology](benchmark-methodology.md) and [measured Phase 3 results](../results/phase3/phase3_summary.md)
 - [Offline backup/restore](backup-restore.md)

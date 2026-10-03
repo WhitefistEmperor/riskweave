@@ -1,4 +1,5 @@
 /** Single transport boundary for both the unchanged demo and persisted API. */
+import { accessToken, authenticationEnabled } from '@/lib/auth';
 const baseUrl = (
   process.env.NEXT_PUBLIC_RINGSENTINEL_API_BASE_URL ?? ''
 ).replace(/\/$/, '');
@@ -23,6 +24,19 @@ export async function apiRequest<T>(
   const requestId = crypto.randomUUID();
   const headers = new Headers(init.headers);
   headers.set('X-Request-ID', requestId);
+  if (authenticationEnabled) {
+    const token = await accessToken();
+    if (!token) {
+      if (typeof window !== 'undefined') window.location.replace('/sign-in');
+      throw new ApiError(
+        'Sign in to continue.',
+        401,
+        'UNAUTHORIZED',
+        requestId,
+      );
+    }
+    headers.set('Authorization', `Bearer ${token}`);
+  }
   let response: Response;
   try {
     response = await fetch(`${baseUrl}/api${path}`, {
@@ -42,6 +56,12 @@ export async function apiRequest<T>(
   }
   const returnedId = response.headers.get('X-Request-ID') ?? requestId;
   if (!response.ok) {
+    if (
+      response.status === 401 &&
+      authenticationEnabled &&
+      typeof window !== 'undefined'
+    )
+      window.location.replace('/sign-in');
     const body: unknown = await response.json().catch(() => null);
     const detail =
       body &&

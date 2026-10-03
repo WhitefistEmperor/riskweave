@@ -82,6 +82,14 @@ class LocalJobExecutor:
         environment["RINGSENTINEL_STORAGE_ROOT"] = str(settings.storage_root.resolve())
         environment["RINGSENTINEL_ENVIRONMENT"] = "test"
         environment["RINGSENTINEL_AUTH_MODE"] = "disabled"
+        if settings.model_artifact_path:
+            environment["RINGSENTINEL_MODEL_ARTIFACT_PATH"] = str(
+                settings.model_artifact_path.resolve()
+            )
+            environment["RINGSENTINEL_MODEL_ARTIFACT_SHA256"] = settings.model_artifact_sha256
+        else:
+            environment.pop("RINGSENTINEL_MODEL_ARTIFACT_PATH", None)
+            environment.pop("RINGSENTINEL_MODEL_ARTIFACT_SHA256", None)
         environment["RINGSENTINEL_STORAGE_LIMIT_BYTES"] = str(settings.storage_limit_bytes)
         environment["RINGSENTINEL_RESULT_LIMIT_BYTES"] = str(settings.result_limit_bytes)
         environment["RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS"] = str(
