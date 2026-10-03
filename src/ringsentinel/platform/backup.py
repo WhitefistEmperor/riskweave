@@ -19,7 +19,13 @@ from sqlalchemy import inspect, select
 
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.locking import ExecutorLease, FileLock
-from ringsentinel.platform.models import AnalysisRun, Artifact, Investigation, Status
+from ringsentinel.platform.models import (
+    AnalysisRun,
+    Artifact,
+    Investigation,
+    Status,
+    StorageDeletion,
+)
 from ringsentinel.platform.settings import Settings
 from ringsentinel.platform.storage import LocalStorageBackend
 
@@ -112,6 +118,10 @@ def create_snapshot(settings: Settings, destination: Path, *, writers_stopped: b
                 )
                 if active or uploading:
                     raise ValueError("Recover interrupted writes before backup")
+                if session.scalar(select(StorageDeletion.key).limit(1)):
+                    raise ValueError(
+                        "Complete pending storage deletion before creating a new backup"
+                    )
             verify_references(database, LocalStorageBackend(root))
             destination.mkdir(parents=True, exist_ok=False)
             (destination / "objects").mkdir()
@@ -217,6 +227,8 @@ def restore_snapshot(settings: Settings, source: Path, *, writers_stopped: bool 
 
 
 def retention_report(settings: Settings):
+    from ringsentinel.platform.deletion import retention_conditions
+
     database = Database(settings.database_url.get_secret_value())
     cutoff = datetime.now(UTC) - timedelta(days=settings.retention_days)
     try:
@@ -224,10 +236,7 @@ def retention_report(settings: Settings):
             ids = list(
                 session.scalars(
                     select(Investigation.id).where(
-                        Investigation.updated_at < cutoff,
-                        Investigation.status.not_in(
-                            [Status.RUNNING, Status.QUEUED, Status.UPLOADING]
-                        ),
+                        *retention_conditions(cutoff),
                     )
                 )
             )
@@ -240,16 +249,71 @@ def retention_report(settings: Settings):
         database.engine.dispose()
 
 
+def apply_retention(settings: Settings, *, confirmed: bool = False, limit: int = 100):
+    """Explicit operator action; never called by API or automatically by the scheduler."""
+    from ringsentinel.platform.deletion import DeletionService, retention_conditions
+    from ringsentinel.platform.errors import ProductError
+    from ringsentinel.platform.service import InvestigationService, Principal
+
+    if not confirmed:
+        raise ValueError("Explicit confirmation of the configured retention policy is required")
+    if not 1 <= limit <= 1000:
+        raise ValueError("Retention batch must contain between 1 and 1000 cases")
+    database = Database(settings.database_url.get_secret_value())
+    cutoff = datetime.now(UTC) - timedelta(days=settings.retention_days)
+    service = InvestigationService(
+        database, LocalStorageBackend(settings.storage_root, settings.storage_limit_bytes), settings
+    )
+    deleted, skipped = 0, 0
+    try:
+        with database.session() as session:
+            cases = list(
+                session.scalars(
+                    select(Investigation)
+                    .where(*retention_conditions(cutoff))
+                    .order_by(Investigation.updated_at, Investigation.id)
+                    .limit(limit)
+                )
+            )
+        for case in cases:
+            try:
+                DeletionService(service).remove(
+                    Principal(case.owner_id), case.id, case.name, older_than=cutoff
+                )
+                deleted += 1
+            except ProductError as failure:
+                if failure.code not in {"NOT_FOUND", "CONFLICT"}:
+                    raise
+                skipped += 1
+        cleanup = DeletionService(service).cleanup()
+        return {
+            "deleted": deleted,
+            "skipped_changed": skipped,
+            "pending_storage_objects": cleanup["pending"],
+            "policy_days": settings.retention_days,
+        }
+    finally:
+        database.engine.dispose()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["backup", "restore", "retention-report"])
+    parser.add_argument(
+        "action", choices=["backup", "restore", "retention-report", "retention-delete"]
+    )
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--writers-stopped", action="store_true")
+    parser.add_argument("--confirm-delete-expired", action="store_true")
+    parser.add_argument("--limit", type=int, default=100)
     args = parser.parse_args()
     try:
         settings = Settings()
         if args.action == "retention-report":
             result = retention_report(settings)
+        elif args.action == "retention-delete":
+            result = apply_retention(
+                settings, confirmed=args.confirm_delete_expired, limit=args.limit
+            )
         else:
             if not args.directory:
                 parser.error("--directory is required")

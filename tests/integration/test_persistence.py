@@ -19,6 +19,7 @@ def test_migration_persistence_and_foreign_keys(tmp_path):
         "analysis_runs",
         "candidate_reviews",
         "review_audit",
+        "storage_deletions",
     }
     with first.session.begin() as session:
         session.add(User(id="alice"))

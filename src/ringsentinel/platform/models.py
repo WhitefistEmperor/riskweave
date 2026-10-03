@@ -145,3 +145,14 @@ class ReviewAudit(Base):
     note: Mapped[str] = mapped_column(String(2000))
     idempotency_key: Mapped[str] = mapped_column(String(80))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class StorageDeletion(Base):
+    """Durable cleanup work containing only opaque object keys, never case content."""
+
+    __tablename__ = "storage_deletions"
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    attempts: Mapped[int] = mapped_column(default=0)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error_code: Mapped[str | None] = mapped_column(String(40))

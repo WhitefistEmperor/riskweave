@@ -29,6 +29,8 @@ def make_engine(url: str):
 
 
 class Database:
+    revision = "0003"
+
     def __init__(self, url: str):
         self.engine = make_engine(url)
         self.session = sessionmaker(self.engine, expire_on_commit=False)

@@ -14,6 +14,8 @@ from ringsentinel.api.contracts import (
     EvidenceResponse,
     HealthResponse,
     InvestigationCreate,
+    InvestigationDeleteRequest,
+    InvestigationDeleteResponse,
     InvestigationResponse,
     InvestigatorRequest,
     InvestigatorResponse,
@@ -27,8 +29,14 @@ from ringsentinel.api.contracts import (
 )
 from ringsentinel.api.security import current_principal
 from ringsentinel.investigation.investigator import InvestigatorService
+from ringsentinel.platform.deletion import DeletionService
 from ringsentinel.platform.errors import ProductError
-from ringsentinel.platform.models import CandidateReview, Investigation, ReviewAudit
+from ringsentinel.platform.models import (
+    CandidateReview,
+    Investigation,
+    ReviewAudit,
+    StorageDeletion,
+)
 from ringsentinel.platform.reviews import ReviewService
 from ringsentinel.platform.service import InvestigationService, Principal
 
@@ -53,11 +61,15 @@ def dependencies_ready(service: InvestigationService) -> bool:
     try:
         with service.database.session() as session:
             # Check the migration and actual domain table, not just socket connectivity.
-            if session.scalar(text("SELECT version_num FROM alembic_version")) != "0002":
+            if (
+                session.scalar(text("SELECT version_num FROM alembic_version"))
+                != service.database.revision
+            ):
                 return False
             session.execute(select(Investigation.id).limit(1))
             session.execute(select(CandidateReview.candidate_id).limit(1))
             session.execute(select(ReviewAudit.id).limit(1))
+            session.execute(select(StorageDeletion.key).limit(1))
         return service.storage.ready()
     except Exception:
         return False
@@ -100,6 +112,18 @@ def create_investigation(body: InvestigationCreate, principal: CurrentPrincipal,
 @router.get("/investigations/{investigation_id}", response_model=InvestigationResponse)
 def investigation(investigation_id: str, principal: CurrentPrincipal, service: Service):
     return service.get(principal, investigation_id)
+
+
+@router.delete("/investigations/{investigation_id}", response_model=InvestigationDeleteResponse)
+def delete_investigation(
+    investigation_id: str,
+    body: InvestigationDeleteRequest,
+    principal: CurrentPrincipal,
+    service: Service,
+):
+    return DeletionService(service).remove(
+        principal, investigation_id, body.confirm_name, body.expected_updated_at
+    )
 
 
 @router.get("/investigations/{investigation_id}/artifacts", response_model=list[ArtifactResponse])

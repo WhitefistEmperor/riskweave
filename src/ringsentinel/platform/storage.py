@@ -72,7 +72,9 @@ class LocalStorageBackend:
         return self._path(key).is_file()
 
     def delete(self, key: str) -> None:
-        self._path(key).unlink(missing_ok=True)
+        # Serialize removal with byte-budget admission and offline snapshot copying.
+        with FileLock(self.root / ".write.lock"):
+            self._path(key).unlink(missing_ok=True)
 
     def reference(self, key: str) -> str:
         self._path(key)

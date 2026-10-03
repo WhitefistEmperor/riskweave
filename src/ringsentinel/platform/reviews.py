@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import (
+    AnalysisRun,
     CandidateReview,
     ReviewAudit,
     ReviewDisposition,
@@ -58,6 +59,10 @@ class ReviewService:
         self._candidate(principal, run_id, candidate_id)
         # This lock also serializes the initial insert across processes/databases.
         with self.investigations._write() as session:
+            run = session.get(AnalysisRun, run_id)
+            if run is None:
+                raise ProductError("NOT_FOUND")
+            investigation = self.investigations._owned(session, principal, run.investigation_id)
             existing = session.scalar(
                 select(ReviewAudit).where(
                     ReviewAudit.run_id == run_id,
@@ -91,6 +96,7 @@ class ReviewService:
             review.disposition = disposition
             review.version = version + 1
             review.updated_at = utcnow()
+            investigation.updated_at = review.updated_at
             session.flush()  # Insert the composite parent before the audit foreign key.
             session.add(
                 ReviewAudit(

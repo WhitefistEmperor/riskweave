@@ -10,6 +10,7 @@ import {
   StatusBadge,
 } from '@/components/workspace-states';
 import { PersistedFindings } from '@/components/persisted-findings';
+import { DeleteInvestigation } from '@/components/delete-investigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ export function InvestigationDetail({
     activeRun,
   } = state;
   const [file, setFile] = useState<File | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const artifact = artifacts.find((item) => item.id === artifactId);
   return (
     <ProductShell>
@@ -174,7 +176,7 @@ export function InvestigationDetail({
                     onChange={(event) =>
                       setFile(event.target.files?.[0] ?? null)
                     }
-                    disabled={!!busy || activeRun}
+                    disabled={!!busy || activeRun || deleting}
                   />
                   <p className="muted text-xs">
                     Validated and checksummed by the API. Identical uploads
@@ -183,7 +185,7 @@ export function InvestigationDetail({
                   <Button
                     variant="outline"
                     onClick={() => file && void state.upload(file)}
-                    disabled={!file || !!busy || activeRun}
+                    disabled={!file || !!busy || activeRun || deleting}
                   >
                     <Upload size={15} />
                     {busy === 'upload'
@@ -202,7 +204,7 @@ export function InvestigationDetail({
                         onValueChange={(value) =>
                           state.setArtifactId(String(value ?? ''))
                         }
-                        disabled={!!busy || activeRun}
+                        disabled={!!busy || activeRun || deleting}
                       >
                         <SelectTrigger
                           id="artifact-select"
@@ -225,7 +227,9 @@ export function InvestigationDetail({
                       </p>
                       <Button
                         onClick={() => void state.start()}
-                        disabled={!artifactId || !!busy || activeRun}
+                        disabled={
+                          !artifactId || !!busy || activeRun || deleting
+                        }
                       >
                         {busy === 'start'
                           ? 'Queuing analysis…'
@@ -251,6 +255,12 @@ export function InvestigationDetail({
               </div>
             </Card>
           </details>
+          <DeleteInvestigation
+            key={record.id}
+            record={record}
+            disabled={!!busy || activeRun}
+            onBusy={setDeleting}
+          />
         </>
       )}
     </ProductShell>

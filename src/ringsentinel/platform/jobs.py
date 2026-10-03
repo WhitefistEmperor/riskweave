@@ -59,6 +59,9 @@ class LocalJobExecutor:
             self.owns_lease = False
 
     def _loop(self):
+        from ringsentinel.platform.deletion import DeletionService
+
+        next_cleanup = 0.0
         while not self.stopping.wait(0.25):
             try:
                 self.lease.check()
@@ -67,6 +70,12 @@ class LocalJobExecutor:
                 self.stopping.set()
                 return
             try:
+                if time.monotonic() >= next_cleanup:
+                    next_cleanup = time.monotonic() + 60
+                    try:
+                        DeletionService(self.service).cleanup()
+                    except Exception:
+                        logger.error(json.dumps({"event": "storage_cleanup_unavailable"}))
                 run_id = self.service.claim()
                 if run_id:
                     self.execute(run_id)

@@ -16,6 +16,9 @@
   explicitly remain unvalidated. Synthetic uploads cannot bypass currency isolation.
 - Run-scoped analyst dispositions, required notes, audit history, safe submission retry
   and revision conflicts. Migration 0002 preserves existing cases; backups retain reviews.
+- Owner-scoped whole-case deletion with exact-name/version confirmation, active-job guards,
+  atomic metadata erasure and durable file cleanup. Migration 0003 preserves existing cases.
+  Explicit bounded retention application excludes active work and open analyst reviews.
 - Browser OIDC authorization code with PKCE, sign-in callback and sign-out, using
   `oidc-client-ts`. Tokens live in tab-scoped session storage, never local storage.
   Expired or missing tokens return the browser to sign-in; the API still authorizes
@@ -54,6 +57,15 @@ The undefined-minor-unit fallback also passed a focused test after the full suit
 Ruff, TypeScript, frontend lint and production build passed. The existing model
 artifact digest and historical benchmark were not changed.
 
+The data-lifecycle increment passed the full 126-test Python suite and all 41
+production-browser tests. A final cleanup-fairness regression was added afterward;
+all 16 focused deletion and backup checks passed, bringing the backend suite to
+127 cases. Ruff, TypeScript, frontend lint and production build passed. The real
+API smoke completed analysis, review and case deletion, then confirmed that the
+case, run and review endpoints returned 404. Migration 0003 and the same deletion
+smoke will run against PostgreSQL in container CI. The workflow deletes only its
+own newly created smoke case. No deployed/user case was erased by these checks.
+
 ## Deployment state
 
 A private Railway project named RiskWeave was created in the connected personal
@@ -70,7 +82,8 @@ joblib is executable serialization and must never accept user-uploaded model fil
 2. Deploy PostgreSQL and durable artifact storage, run explicit migrations, verify
    private API routing and TLS, and exercise restart, interrupted-job recovery and restore.
 3. Establish external uptime/error/queue monitoring, alerts, scheduled encrypted backups,
-   retention/deletion operations and a tested rollback procedure.
+   organization-specific retention/hold policy, cross-snapshot erasure reconciliation
+   and a tested rollback procedure. Case deletion and manual retention commands are implemented.
 4. Add ingestion mapping for real source exports; practical dataset and workload limits;
    benchmark deployment capacity. Add worklist review summaries and filtering as usage grows.
 5. Evaluate on permissioned real payment data with temporal holdouts, calibration,

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowRight, FolderSearch, Plus } from 'lucide-react';
 import { ProductShell } from '@/components/product-shell';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export function InvestigationList() {
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [page, setPage] = useState(0);
+  const removed = useSearchParams()?.get('removed');
   const inFlight = useRef(false);
   const visible = records?.slice(page * 10, page * 10 + 10);
   useEffect(() => {
@@ -87,6 +89,13 @@ export function InvestigationList() {
   }
   return (
     <ProductShell>
+      {(removed === 'complete' || removed === 'pending') && (
+        <output className="block panel p-4 mb-4">
+          {removed === 'complete'
+            ? 'Investigation deleted from the workspace and its stored files removed.'
+            : 'Investigation removed from the workspace. Some stored files are awaiting cleanup.'}
+        </output>
+      )}
       <div className="workspace-heading">
         <div>
           <span className="product-kicker">INVESTIGATION WORKLIST</span>

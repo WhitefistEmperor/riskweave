@@ -111,7 +111,7 @@ jobs:
           curl --fail http://127.0.0.1:8000/api/v1/ready
           curl --fail http://127.0.0.1:5173/ > /dev/null
       - name: Run a real persisted investigation through the container API
-        run: uv run --locked --extra dev python scripts/smoke_platform.py --base-url http://127.0.0.1:8000
+        run: uv run --locked --extra dev python scripts/smoke_platform.py --base-url http://127.0.0.1:8000 --delete-created
       - name: Preserve stack logs on failure
         if: failure()
         run: docker compose logs --no-color

@@ -32,9 +32,11 @@ does not consume this quota.
 
 History records the analyst's authenticated opaque ID, previous and new status,
 revision, note and UTC timestamp. The application exposes no editing or deletion
-endpoint for audit entries. This is an append-only application history, not a
+endpoint for individual audit entries. [Whole-case deletion](data-lifecycle.md)
+removes the entire investigation, including its review history. This is an append-only
+application history during the case's lifetime, not a
 cryptographically tamper-proof ledger: database administrators still control the
-underlying data. Retention/deletion policy remains deployment work. Avoid unnecessary
+underlying data. Organization-specific retention policy remains deployment work. Avoid unnecessary
 personal information in notes.
 
 ## Existing databases
@@ -44,6 +46,7 @@ unchanged. Stop the application, run `uv run --locked ringsentinel-migrate`, and
 restart. Readiness rejects the old revision or missing review tables. The migration
 preserves existing investigations and run artifacts. Normal offline database backups
 include review and audit rows; restore tests verify history and ownership survive.
+Current deployments also apply migration 0003 for durable deletion cleanup.
 
 ## Browser recovery
 

@@ -23,6 +23,9 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
         importlib.import_module(
             "ringsentinel.platform.migrations.versions.0002_candidate_review"
         ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0003_storage_deletion"
+        ).upgrade()
     sql = output.getvalue()
     assert "CREATE TABLE analysis_runs" in sql
     assert "TIMESTAMP WITH TIME ZONE" in sql
@@ -30,6 +33,7 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
     assert "FOREIGN KEY(owner_id) REFERENCES users" in sql
     assert "CREATE TABLE candidate_reviews" in sql
     assert "CREATE TABLE review_audit" in sql
+    assert "CREATE TABLE storage_deletions" in sql
     assert "FOREIGN KEY(run_id, candidate_id)" in sql
     statements = []
     engine = create_mock_engine(

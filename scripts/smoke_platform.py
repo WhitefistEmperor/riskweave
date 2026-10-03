@@ -15,6 +15,11 @@ def main():
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--reopen-run", help="Verify a completed run after restarting the backend")
     parser.add_argument("--owner", default="phase5a-smoke")
+    parser.add_argument(
+        "--delete-created",
+        action="store_true",
+        help="Delete only the investigation created by this smoke run",
+    )
     args = parser.parse_args()
     # Explicitly scoped to local tests; never upload generated data to an arbitrary host.
     url = httpx.URL(args.base_url)
@@ -125,6 +130,23 @@ def main():
         )
         assert malformed.status_code == 422
         assert malformed.json()["error"]["code"] == "INVALID_DATASET"
+        deletion = None
+        if args.delete_created:
+            current = get(f"/investigations/{inv_id}")
+            deleted = client.request(
+                "DELETE",
+                f"/api/v1/investigations/{inv_id}",
+                json={
+                    "confirm_name": current["name"],
+                    "expected_updated_at": current["updated_at"],
+                },
+            )
+            assert deleted.status_code == 200, deleted.text
+            deletion = deleted.json()["storage_cleanup"]
+            assert deletion == "complete", deleted.text
+            assert client.get(f"/api/v1/runs/{run_id}").status_code == 404
+            assert client.get(review_path).status_code == 404
+            assert client.get(f"/api/v1/investigations/{inv_id}").status_code == 404
         print(
             json.dumps(
                 {
@@ -139,6 +161,7 @@ def main():
                     "provider": answer.json()["provider"],
                     "review_version": review["version"],
                     "review_history_events": len(review["history"]),
+                    "created_case_deletion": deletion,
                     "result_checksum": run["result_checksum"],
                     "other_owner_http": denied.status_code,
                     "malformed_http": malformed.status_code,

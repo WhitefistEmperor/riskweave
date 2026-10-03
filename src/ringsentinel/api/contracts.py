@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 from ringsentinel.platform.models import ReviewDisposition, Status
 
@@ -224,6 +224,17 @@ class ResultsResponse(Contract):
     model_scope: str
     currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")] | None = None
     rings: list[PersistedRing]
+
+
+class InvestigationDeleteRequest(Contract):
+    confirm_name: Annotated[str, Field(min_length=1, max_length=120)]
+    expected_updated_at: AwareDatetime
+
+
+class InvestigationDeleteResponse(Contract):
+    investigation_id: str
+    status: Literal["deleted"]
+    storage_cleanup: Literal["complete", "pending"]
 
 
 class InvestigatorRequest(Contract):

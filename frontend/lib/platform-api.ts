@@ -9,6 +9,7 @@ import {
   validRun,
   validResult,
   validReview,
+  object,
 } from '@/lib/response-validation';
 
 export type RunStatus =
@@ -108,6 +109,20 @@ const json = (body: unknown) => ({
   body: JSON.stringify(body),
 });
 export const platformApi = {
+  remove: (investigationId: string, confirmName: string, updatedAt: string) =>
+    apiRequest<{
+      investigation_id: string;
+      status: 'deleted';
+      storage_cleanup: 'complete' | 'pending';
+    }>(
+      `/v1/investigations/${id(investigationId)}`,
+      { ...json({ confirm_name: confirmName, expected_updated_at: updatedAt }), method: 'DELETE' },
+      (value) =>
+        object(value) &&
+        value.investigation_id === investigationId &&
+        value.status === 'deleted' &&
+        ['complete', 'pending'].includes(String(value.storage_cleanup)),
+    ),
   review: (runId: string, candidateId: string, signal?: AbortSignal) =>
     apiRequest<CandidateReview>(
       `/v1/runs/${id(runId)}/rings/${id(candidateId)}/review`,
