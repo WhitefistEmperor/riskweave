@@ -100,23 +100,32 @@ export const workspaceUrl = `/investigations/${investigationId}?run=${runId}`;
 export async function installWorkspace(page: Page, currentRun = run) {
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
-    const data = path.endsWith('/session')
+    const data = path.endsWith('/review')
       ? {
-          user_id: 'local-analyst',
-          authentication_mode: 'development',
-          production_authentication: false,
+          run_id: runId,
+          candidate_id: path.split('/').at(-2),
+          disposition: 'unreviewed',
+          version: 0,
+          updated_at: null,
+          history: [],
         }
-      : path.endsWith('/artifacts')
-        ? [artifact]
-        : path.endsWith('/results')
-          ? result
-          : path.endsWith(`/runs/${runId}`)
-            ? currentRun
-            : path.endsWith('/runs')
-              ? [currentRun]
-              : path.endsWith('/investigations')
-                ? [record]
-                : record;
+      : path.endsWith('/session')
+        ? {
+            user_id: 'local-analyst',
+            authentication_mode: 'development',
+            production_authentication: false,
+          }
+        : path.endsWith('/artifacts')
+          ? [artifact]
+          : path.endsWith('/results')
+            ? result
+            : path.endsWith(`/runs/${runId}`)
+              ? currentRun
+              : path.endsWith('/runs')
+                ? [currentRun]
+                : path.endsWith('/investigations')
+                  ? [record]
+                  : record;
     return route.fulfill({ json: data });
   });
 }

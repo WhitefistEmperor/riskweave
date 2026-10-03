@@ -10,6 +10,8 @@
   scikit-learn-version checks. Artifact inference replaces per-run synthetic retraining
   when configured. Container builds now generate their artifact once.
 - Artifact SHA-256 in run provenance and explicit propagation to the worker.
+- Run-scoped analyst dispositions, required notes, audit history, safe submission retry
+  and revision conflicts. Migration 0002 preserves existing cases; backups retain reviews.
 - Browser OIDC authorization code with PKCE, sign-in callback and sign-out, using
   `oidc-client-ts`. Tokens live in tab-scoped session storage, never local storage.
   Expired or missing tokens return the browser to sign-in; the API still authorizes
@@ -24,6 +26,17 @@ persisted evidence successfully (2 tests). Frontend typecheck, lint and producti
 build passed. Final full Python regression passed 104 tests; the production-browser
 suite passed 27 tests. OIDC configuration security checks were added afterward and
 run separately. Live-provider and image/runtime validation remain outstanding.
+
+The analyst-review increment passed 109 Python tests and all 31 production-browser
+tests, including a real upload, analysis, review save and revisit. TypeScript, Ruff,
+frontend lint and production build passed. The local API smoke verified idempotent
+review writes, ownership isolation and unchanged result checksums. Its container-CI
+counterpart also exercises review persistence against PostgreSQL. A Windows process
+termination race was fixed and the worker-lock cleanup regression passed.
+
+The previous increment's Linux CI passed backend, frontend and both container builds
+with a real PostgreSQL-backed analysis (run 37106573152). Current remote validation
+is tracked on pull request 1; local checks alone do not establish production readiness.
 
 ## Deployment state
 
@@ -42,8 +55,8 @@ joblib is executable serialization and must never accept user-uploaded model fil
    private API routing and TLS, and exercise restart, interrupted-job recovery and restore.
 3. Establish external uptime/error/queue monitoring, alerts, scheduled encrypted backups,
    retention/deletion operations and a tested rollback procedure.
-4. Add analyst dispositions, case notes and audit history; ingestion mapping for real
-   source exports; practical dataset and workload limits; benchmark deployment capacity.
+4. Add ingestion mapping for real source exports; practical dataset and workload limits;
+   benchmark deployment capacity. Add worklist review summaries and filtering as usage grows.
 5. Evaluate on permissioned real payment data with temporal holdouts, calibration,
    distribution-shift checks, subgroup/error analysis and documented operating thresholds.
    Synthetic results cannot substitute for this validation.

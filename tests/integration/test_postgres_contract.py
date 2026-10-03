@@ -20,11 +20,17 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
     revision = importlib.import_module("ringsentinel.platform.migrations.versions.0001_foundation")
     with Operations.context(context):
         revision.upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0002_candidate_review"
+        ).upgrade()
     sql = output.getvalue()
     assert "CREATE TABLE analysis_runs" in sql
     assert "TIMESTAMP WITH TIME ZONE" in sql
     assert "UNIQUE (active_slot)" in sql
     assert "FOREIGN KEY(owner_id) REFERENCES users" in sql
+    assert "CREATE TABLE candidate_reviews" in sql
+    assert "CREATE TABLE review_audit" in sql
+    assert "FOREIGN KEY(run_id, candidate_id)" in sql
     statements = []
     engine = create_mock_engine(
         "postgresql+psycopg://",

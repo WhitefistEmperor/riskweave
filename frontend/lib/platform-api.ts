@@ -8,6 +8,7 @@ import {
   validArtifact,
   validRun,
   validResult,
+  validReview,
 } from '@/lib/response-validation';
 
 export type RunStatus =
@@ -17,6 +18,32 @@ export type RunStatus =
   | 'running'
   | 'completed'
   | 'failed';
+export type ReviewDisposition =
+  | 'unreviewed'
+  | 'investigating'
+  | 'escalated'
+  | 'dismissed';
+export type CandidateReview = {
+  run_id: string;
+  candidate_id: string;
+  disposition: ReviewDisposition;
+  version: number;
+  updated_at: string | null;
+  history: Array<{
+    id: string;
+    actor_id: string;
+    previous_disposition: ReviewDisposition;
+    disposition: ReviewDisposition;
+    version: number;
+    note: string;
+    created_at: string;
+  }>;
+};
+export type ReviewUpdate = {
+  disposition: ReviewDisposition;
+  note: string;
+  expected_version: number;
+};
 export type Session = {
   user_id: string;
   authentication_mode: 'development' | 'jwt';
@@ -80,6 +107,32 @@ const json = (body: unknown) => ({
   body: JSON.stringify(body),
 });
 export const platformApi = {
+  review: (runId: string, candidateId: string, signal?: AbortSignal) =>
+    apiRequest<CandidateReview>(
+      `/v1/runs/${id(runId)}/rings/${id(candidateId)}/review`,
+      { signal },
+      (v) =>
+        validReview(v) &&
+        (v as CandidateReview).run_id === runId &&
+        (v as CandidateReview).candidate_id === candidateId,
+    ),
+  saveReview: (
+    runId: string,
+    candidateId: string,
+    body: ReviewUpdate,
+    key: string,
+  ) =>
+    apiRequest<CandidateReview>(
+      `/v1/runs/${id(runId)}/rings/${id(candidateId)}/review`,
+      {
+        ...json(body),
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+      },
+      (v) =>
+        validReview(v) &&
+        (v as CandidateReview).run_id === runId &&
+        (v as CandidateReview).candidate_id === candidateId,
+    ),
   session: () => apiRequest<Session>('/v1/session', {}, validSession),
   investigations: (signal?: AbortSignal) =>
     apiRequest<InvestigationRecord[]>(

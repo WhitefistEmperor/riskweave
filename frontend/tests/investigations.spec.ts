@@ -20,18 +20,18 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   );
   await page.goto('/investigations');
   await expect(page).toHaveTitle('RiskWeave | Network Risk Operations');
-  await expect(page.getByRole('link', { name: 'RiskWeave ANALYST WORKSPACE' })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'RiskWeave ANALYST WORKSPACE' }),
+  ).toBeVisible();
   const name = `Browser verification ${Date.now()}`;
   await page.getByLabel('Investigation name').fill(name);
   await page.getByRole('button', { name: 'Create investigation' }).click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
-  await page
-    .getByLabel('Dataset file')
-    .setInputFiles({
-      name: 'malformed.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from('{not valid JSON'),
-    });
+  await page.getByLabel('Dataset file').setInputFiles({
+    name: 'malformed.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{not valid JSON'),
+  });
   await page
     .getByRole('button', { name: 'Upload dataset', exact: true })
     .click();
@@ -74,14 +74,14 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   await page.getByText('Run provenance and integrity', { exact: true }).click();
   await expect(page.getByText(/Result SHA256:/)).toBeVisible();
   await page.getByRole('combobox', { name: 'Entity', exact: true }).click();
-  await page.getByRole('option').first().click();
+  await page.getByRole('listbox').getByRole('option').first().click();
   await expect(page.getByText(/explicit relationships shown/)).toBeVisible();
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
   await page.getByRole('button', { name: 'Fit graph', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Relationship', exact: true })
     .click();
-  await page.getByRole('option').first().click();
+  await page.getByRole('listbox').getByRole('option').first().click();
   await page
     .getByRole('button', { name: 'Open source evidence', exact: true })
     .click();
@@ -126,6 +126,16 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
     path: '../outputs/phase5b-investigator.png',
     fullPage: true,
   });
+  await page
+    .getByLabel('Review status', { exact: true })
+    .selectOption('investigating');
+  const reviewNote =
+    'Inspect shared infrastructure; no automatic blocking decision.';
+  await page.getByLabel('Review note', { exact: true }).fill(reviewNote);
+  await page.getByRole('button', { name: 'Save review', exact: true }).click();
+  await expect(
+    page.getByText('Review saved to the audit history.'),
+  ).toBeVisible();
   const savedUrl = page.url();
   expect(savedUrl).toContain('?run=');
   await page.reload();
@@ -135,6 +145,11 @@ test('real upload, asynchronous analysis, evidence, and revisit', async ({
   await expect(
     page.getByRole('heading', { name: 'Persisted findings' }),
   ).toBeVisible();
+  await expect(page.getByText('Saved status:', { exact: false })).toContainText(
+    'Investigating',
+  );
+  await page.getByText('Review history (1)', { exact: true }).click();
+  await expect(page.getByText(reviewNote, { exact: true })).toBeVisible();
   await page
     .getByRole('navigation', { name: 'Breadcrumb' })
     .getByRole('link', { name: 'Investigations', exact: true })

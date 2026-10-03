@@ -29,6 +29,8 @@ configuration names, API paths, and historical benchmark artifacts are unchanged
   and revisit saved findings with input/result checksums and run history.
 - **Inspect evidence:** explore explicit network links, shared resources, merchant
   relationships, event timelines, and candidate-associated exposure.
+- **Record analyst decisions:** save run-scoped dispositions and notes with audit
+  history, revision conflicts and safe submission retry. See [analyst review](docs/analyst-review.md).
 - **Ask grounded questions:** the investigator cites computed facts. An optional LLM can
   select/order those facts; it cannot invent evidence or change detection decisions.
 - **Compare simpler approaches:** a separate demo/replay workspace includes measured

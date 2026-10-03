@@ -21,6 +21,7 @@ The internal `ringsentinel` package, commands, environment variables, and API pa
 - [Current product completion work and deployment gates](production-progress.md)
 - [Model build artifacts](model-artifact.md) and [browser sign-in configuration](browser-authentication.md)
 - [Evidence UI semantics](evidence-ui.md) and [investigator design](investigator-design.md)
+- [Analyst reviews, notes and decision history](analyst-review.md)
 - [Benchmark methodology](benchmark-methodology.md) and [measured Phase 3 results](../results/phase3/phase3_summary.md)
 - [Offline backup/restore](backup-restore.md)
 

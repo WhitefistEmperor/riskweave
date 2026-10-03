@@ -19,6 +19,8 @@ from ringsentinel.api.contracts import (
     InvestigatorResponse,
     ReadinessResponse,
     ResultsResponse,
+    ReviewRequest,
+    ReviewResponse,
     RunCreate,
     RunResponse,
     SessionResponse,
@@ -26,7 +28,8 @@ from ringsentinel.api.contracts import (
 from ringsentinel.api.security import current_principal
 from ringsentinel.investigation.investigator import InvestigatorService
 from ringsentinel.platform.errors import ProductError
-from ringsentinel.platform.models import Investigation
+from ringsentinel.platform.models import CandidateReview, Investigation, ReviewAudit
+from ringsentinel.platform.reviews import ReviewService
 from ringsentinel.platform.service import InvestigationService, Principal
 
 router = APIRouter(
@@ -50,9 +53,11 @@ def dependencies_ready(service: InvestigationService) -> bool:
     try:
         with service.database.session() as session:
             # Check the migration and actual domain table, not just socket connectivity.
-            if session.scalar(text("SELECT version_num FROM alembic_version")) != "0001":
+            if session.scalar(text("SELECT version_num FROM alembic_version")) != "0002":
                 return False
             session.execute(select(Investigation.id).limit(1))
+            session.execute(select(CandidateReview.candidate_id).limit(1))
+            session.execute(select(ReviewAudit.id).limit(1))
         return service.storage.ready()
     except Exception:
         return False
@@ -193,6 +198,31 @@ def candidate(run_id: str, candidate_id: str, principal: CurrentPrincipal, servi
 @router.get("/runs/{run_id}/rings/{candidate_id}/evidence", response_model=EvidenceResponse)
 def evidence(run_id: str, candidate_id: str, principal: CurrentPrincipal, service: Service):
     return ring_for(service.result(principal, run_id), candidate_id)["queries"]
+
+
+@router.get("/runs/{run_id}/rings/{candidate_id}/review", response_model=ReviewResponse)
+def review(run_id: str, candidate_id: str, principal: CurrentPrincipal, service: Service):
+    return ReviewService(service).get(principal, run_id, candidate_id)
+
+
+@router.post("/runs/{run_id}/rings/{candidate_id}/review", response_model=ReviewResponse)
+def save_review(
+    run_id: str,
+    candidate_id: str,
+    body: ReviewRequest,
+    principal: CurrentPrincipal,
+    service: Service,
+    idempotency_key: Annotated[str, Header(min_length=1, max_length=80, pattern=r"^[\w-]+$")],
+):
+    return ReviewService(service).save(
+        principal,
+        run_id,
+        candidate_id,
+        body.disposition,
+        body.note,
+        body.expected_version,
+        idempotency_key,
+    )
 
 
 @router.post("/runs/{run_id}/rings/{candidate_id}/investigate", response_model=InvestigatorResponse)

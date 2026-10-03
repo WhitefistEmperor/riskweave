@@ -93,6 +93,28 @@ def main():
         )
         assert answer.status_code == 200, answer.text
         assert answer.json()["statements"]
+        review_path = f"/api/v1/runs/{run_id}/rings/{candidate_id}/review"
+        assert get(f"/runs/{run_id}/rings/{candidate_id}/review")["version"] == 0
+        review_body = {
+            "disposition": "investigating",
+            "note": "Synthetic deployment smoke: evidence requires analyst assessment.",
+            "expected_version": 0,
+        }
+        review_headers = {"Idempotency-Key": uuid4().hex}
+        for _ in range(2):
+            saved = client.post(review_path, json=review_body, headers=review_headers)
+            assert saved.status_code == 200, saved.text
+            assert saved.json()["version"] == 1
+            assert len(saved.json()["history"]) == 1
+        review = get(f"/runs/{run_id}/rings/{candidate_id}/review")
+        assert review["disposition"] == "investigating"
+        assert review["history"][0]["note"] == review_body["note"]
+        assert get(f"/runs/{run_id}")["result_checksum"] == run["result_checksum"]
+        assert get(f"/runs/{run_id}/results") == result
+        review_denied = client.get(
+            review_path, headers={"X-Development-User": f"other-{args.owner}"}
+        )
+        assert review_denied.status_code == 404
         denied = client.get(
             f"/api/v1/runs/{run_id}/results", headers={"X-Development-User": f"other-{args.owner}"}
         )
@@ -114,6 +136,8 @@ def main():
                     "entities": result["entity_count"],
                     "candidate_rings": len(rings),
                     "provider": answer.json()["provider"],
+                    "review_version": review["version"],
+                    "review_history_events": len(review["history"]),
                     "result_checksum": run["result_checksum"],
                     "other_owner_http": denied.status_code,
                     "malformed_http": malformed.status_code,

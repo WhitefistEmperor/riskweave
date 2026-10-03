@@ -27,6 +27,7 @@ import {
 import { Investigator } from '@/components/investigator';
 import { EvidenceValue } from '@/components/evidence-value';
 import { EvidenceTimeline } from '@/components/evidence-timeline';
+import { CandidateReviewPanel } from '@/components/candidate-review';
 import { LoadingState } from '@/components/workspace-states';
 import {
   evidenceGroups,
@@ -396,6 +397,11 @@ export function PersistedFindings({
                   />
                 </TabsContent>
               </Tabs>
+              <CandidateReviewPanel
+                key={`review-${runId}-${ringId}`}
+                runId={runId}
+                candidateId={ringId}
+              />
             </section>
           )}
         </>

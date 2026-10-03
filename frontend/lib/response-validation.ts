@@ -14,7 +14,8 @@ export const list = (validate: (v: unknown) => boolean) => (v: unknown) =>
 export const validSession = (v: unknown) =>
   object(v) &&
   str(v.user_id) &&
-  ((v.authentication_mode === 'development' && v.production_authentication === false) ||
+  ((v.authentication_mode === 'development' &&
+    v.production_authentication === false) ||
     (v.authentication_mode === 'jwt' && v.production_authentication === true));
 export const validInvestigation = (v: unknown) =>
   object(v) &&
@@ -177,4 +178,30 @@ export const validResult = (v: unknown) =>
       str(r.candidate.first_suspicious_timestamp) &&
       strings(r.candidate.suspicious_relationships) &&
       validQueries(r.queries),
+  );
+
+const reviewDisposition = (value: unknown) =>
+  ['unreviewed', 'investigating', 'escalated', 'dismissed'].includes(
+    String(value),
+  );
+export const validReview = (v: unknown) =>
+  object(v) &&
+  str(v.run_id) &&
+  str(v.candidate_id) &&
+  reviewDisposition(v.disposition) &&
+  Number.isSafeInteger(v.version) &&
+  Number(v.version) >= 0 &&
+  nullable(v.updated_at, str) &&
+  Array.isArray(v.history) &&
+  v.history.every(
+    (event) =>
+      object(event) &&
+      str(event.id) &&
+      str(event.actor_id) &&
+      reviewDisposition(event.previous_disposition) &&
+      reviewDisposition(event.disposition) &&
+      Number.isSafeInteger(event.version) &&
+      Number(event.version) > 0 &&
+      str(event.note) &&
+      str(event.created_at),
   );

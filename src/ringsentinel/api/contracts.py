@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
-from ringsentinel.platform.models import Status
+from ringsentinel.platform.models import ReviewDisposition, Status
 
 
 class Contract(BaseModel):
@@ -234,6 +234,48 @@ class InvestigatorRequest(Contract):
         if not value.strip():
             raise ValueError("Supply a question")
         return value
+
+
+class ReviewRequest(Contract):
+    disposition: ReviewDisposition
+    note: Annotated[str, Field(min_length=1, max_length=2000)]
+    expected_version: Annotated[int, Field(ge=0, strict=True)]
+
+    @field_validator("note")
+    @classmethod
+    def meaningful_note(cls, value: str) -> str:
+        if not value.strip() or any(ord(char) < 32 and char not in "\n\t\r" for char in value):
+            raise ValueError("Supply a review note without control characters")
+        return value.strip()
+
+
+class ReviewAuditResponse(Contract):
+    id: str
+    actor_id: str
+    previous_disposition: ReviewDisposition
+    disposition: ReviewDisposition
+    version: int
+    note: str
+    created_at: datetime
+
+    @field_validator("created_at", mode="after")
+    @classmethod
+    def utc_timestamp(cls, value: datetime) -> datetime:
+        return Record.utc_timestamps(value)
+
+
+class ReviewResponse(Contract):
+    run_id: str
+    candidate_id: str
+    disposition: ReviewDisposition
+    version: int
+    updated_at: datetime | None
+    history: list[ReviewAuditResponse]
+
+    @field_validator("updated_at", mode="after")
+    @classmethod
+    def utc_timestamp(cls, value: datetime | None) -> datetime | None:
+        return Record.utc_timestamps(value) if value else None
 
 
 class Fact(Contract):

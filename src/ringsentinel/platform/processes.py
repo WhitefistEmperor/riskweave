@@ -9,24 +9,35 @@ def terminate_child(process: subprocess.Popen):
     if process.poll() is not None:
         return
     if os.name == "nt":
+        from ringsentinel.platform.windows_processes import WindowsProcessTree
+
         # Windows venv python.exe may be a launcher with another Python process beneath it.
         # Killing just the launcher does not stop analysis or release the child's OS lock.
-        subprocess.run(
-            [
-                os.path.join(
-                    os.environ.get("SYSTEMROOT", r"C:\Windows"), "System32", "taskkill.exe"
-                ),
-                "/PID",
-                str(process.pid),
-                "/T",
-                "/F",
-            ],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=5,
-            check=False,
-        )
+        tree = WindowsProcessTree(process.pid)
+        try:
+            subprocess.run(
+                [
+                    os.path.join(
+                        os.environ.get("SYSTEMROOT", r"C:\Windows"), "System32", "taskkill.exe"
+                    ),
+                    "/PID",
+                    str(process.pid),
+                    "/T",
+                    "/F",
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+                check=False,
+            )
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=5)
+            tree.wait()  # taskkill and launcher exit do not prove descendant termination.
+        finally:
+            tree.close()
+        return
     elif os.getpgid(process.pid) == process.pid:
         # Only kill a group whose leader is our own newly launched child, never our API group.
         os.killpg(process.pid, signal.SIGKILL)
