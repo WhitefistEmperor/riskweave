@@ -14,6 +14,7 @@ ERRORS = {
     "ANALYSIS_FAILED": (500, "Analysis could not be completed."),
     "ANALYSIS_TIMEOUT": (504, "Analysis exceeded its execution time limit."),
     "WORKER_INTERRUPTED": (503, "Analysis was interrupted. Start a new run to retry."),
+    "QUEUE_EXPIRED": (409, "Queued analysis expired before execution. Start a new run to retry."),
     "PROVIDER_UNAVAILABLE": (503, "The optional explanation provider is unavailable."),
     "NOT_READY": (503, "Required application dependencies are not ready."),
     "INTERNAL_ERROR": (500, "The request could not be completed."),

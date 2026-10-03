@@ -20,11 +20,11 @@ from ringsentinel.api.platform_api import router as platform_router
 from ringsentinel.api.runtime import get_demo_runtime
 from ringsentinel.investigation.investigator import InvestigatorService
 from ringsentinel.platform.database import Database
+from ringsentinel.platform.database_storage import storage_for
 from ringsentinel.platform.errors import ProductError
-from ringsentinel.platform.jobs import LocalJobExecutor
+from ringsentinel.platform.jobs import LocalJobExecutor, RequestJobExecutor
 from ringsentinel.platform.service import InvestigationService
 from ringsentinel.platform.settings import Settings
-from ringsentinel.platform.storage import LocalStorageBackend
 
 
 class RuntimeProvider(Protocol):
@@ -56,10 +56,10 @@ def create_app(
 ) -> FastAPI:
     settings = settings or Settings()
     database = Database(settings.database_url.get_secret_value())
-    platform = InvestigationService(
-        database, LocalStorageBackend(settings.storage_root, settings.storage_limit_bytes), settings
+    platform = InvestigationService(database, storage_for(database, settings), settings)
+    executor = (RequestJobExecutor if settings.execution_mode == "request" else LocalJobExecutor)(
+        platform
     )
-    executor = LocalJobExecutor(platform)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
@@ -73,7 +73,8 @@ def create_app(
                     "authentication": settings.auth_mode,
                     "database": database.engine.dialect.name,
                     "jobs_enabled": settings.jobs_enabled,
-                    "worker_topology": "single-host-single-worker",
+                    "worker_topology": settings.execution_mode,
+                    "storage_backend": settings.storage_backend,
                     "llm_provider": settings.llm_provider,
                     "upload_limit_bytes": settings.upload_limit_bytes,
                     "storage_limit_bytes": settings.storage_limit_bytes,
@@ -83,7 +84,11 @@ def create_app(
             )
         )
         # Migrations are an explicit operator step; startup never creates/changes schema.
-        if settings.jobs_enabled and dependencies_ready(platform):
+        if (
+            settings.execution_mode == "local"
+            and settings.jobs_enabled
+            and dependencies_ready(platform)
+        ):
             executor.start()
         try:
             yield

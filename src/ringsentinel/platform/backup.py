@@ -18,6 +18,7 @@ from pathlib import Path
 from sqlalchemy import inspect, select
 
 from ringsentinel.platform.database import Database
+from ringsentinel.platform.database_storage import storage_for
 from ringsentinel.platform.locking import ExecutorLease, FileLock
 from ringsentinel.platform.models import (
     AnalysisRun,
@@ -27,7 +28,7 @@ from ringsentinel.platform.models import (
     StorageDeletion,
 )
 from ringsentinel.platform.settings import Settings
-from ringsentinel.platform.storage import LocalStorageBackend
+from ringsentinel.platform.storage import StorageBackend
 
 
 def digest(path: Path) -> str:
@@ -81,18 +82,22 @@ def pg_command(database: Database, action: str, path: Path):
         ) from None
 
 
-def verify_references(database: Database, storage: LocalStorageBackend):
+def verify_references(database: Database, storage: StorageBackend):
     with database.session() as session:
         for obj in session.scalars(select(Artifact)):
-            path = storage._path(obj.storage_key)
-            if path.stat().st_size != obj.size_bytes or digest(path) != obj.checksum:
+            content = storage.read(obj.storage_key)
+            if (
+                len(content) != obj.size_bytes
+                or hashlib.sha256(content).hexdigest() != obj.checksum
+            ):
                 raise ValueError("Artifact integrity check failed")
         for run in session.scalars(
             select(AnalysisRun).where(AnalysisRun.status == Status.COMPLETED)
         ):
             if (
                 not run.result_reference
-                or digest(storage._path(run.result_reference)) != run.result_checksum
+                or hashlib.sha256(storage.read(run.result_reference)).hexdigest()
+                != run.result_checksum
             ):
                 raise ValueError("Result integrity check failed")
 
@@ -108,7 +113,7 @@ def create_snapshot(settings: Settings, destination: Path, *, writers_stopped: b
     lease = ExecutorLease(database, root)
     try:
         lease.acquire()
-        with FileLock(root / ".analysis.lock"), FileLock(root / ".write.lock"):
+        with FileLock(root / ".analysis.lock"), FileLock(root / ".write.lock"), database.write():
             with database.session() as session:
                 active = session.scalar(
                     select(AnalysisRun.id).where(AnalysisRun.status == Status.RUNNING)
@@ -122,7 +127,7 @@ def create_snapshot(settings: Settings, destination: Path, *, writers_stopped: b
                     raise ValueError(
                         "Complete pending storage deletion before creating a new backup"
                     )
-            verify_references(database, LocalStorageBackend(root))
+            verify_references(database, storage_for(database, settings))
             destination.mkdir(parents=True, exist_ok=False)
             (destination / "objects").mkdir()
             dialect = database.engine.dialect.name
@@ -137,7 +142,7 @@ def create_snapshot(settings: Settings, destination: Path, *, writers_stopped: b
             else:
                 pg_command(database, "backup", destination / db_file)
             paths = [destination / db_file]
-            for path in sorted(root.glob("*.json")):
+            for path in sorted(root.glob("*.json")) if settings.storage_backend == "local" else []:
                 if not re.fullmatch(r"[a-f0-9]{32}\.json", path.name) or path.is_symlink():
                     raise ValueError("Unexpected object in storage")
                 target = destination / "objects" / path.name
@@ -146,6 +151,7 @@ def create_snapshot(settings: Settings, destination: Path, *, writers_stopped: b
             manifest = {
                 "schema": 1,
                 "database": dialect,
+                "storage_backend": settings.storage_backend,
                 "created_at": datetime.now(UTC).isoformat(),
                 "files": {
                     p.relative_to(destination).as_posix(): {
@@ -191,6 +197,8 @@ def restore_snapshot(settings: Settings, source: Path, *, writers_stopped: bool 
     if not writers_stopped:
         raise ValueError("Stop all writers and acknowledge offline operation")
     manifest = validate_snapshot(source)
+    if manifest.get("storage_backend", "local") != settings.storage_backend:
+        raise ValueError("Snapshot storage backend does not match target")
     root = settings.storage_root.resolve()
     if root.exists():
         raise ValueError("Restore requires a new storage directory")
@@ -220,7 +228,7 @@ def restore_snapshot(settings: Settings, source: Path, *, writers_stopped: bool 
                 shutil.copyfileobj(stream, target)
         else:
             pg_command(database, "restore", source / "database.dump")
-        verify_references(database, LocalStorageBackend(root))
+        verify_references(database, storage_for(database, settings))
         return {"status": "restored", "files": len(manifest["files"])}
     finally:
         database.engine.dispose()
@@ -261,9 +269,7 @@ def apply_retention(settings: Settings, *, confirmed: bool = False, limit: int =
         raise ValueError("Retention batch must contain between 1 and 1000 cases")
     database = Database(settings.database_url.get_secret_value())
     cutoff = datetime.now(UTC) - timedelta(days=settings.retention_days)
-    service = InvestigationService(
-        database, LocalStorageBackend(settings.storage_root, settings.storage_limit_bytes), settings
-    )
+    service = InvestigationService(database, storage_for(database, settings), settings)
     deleted, skipped = 0, 0
     try:
         with database.session() as session:

@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "production"] = "development"
     database_url: SecretStr = SecretStr("sqlite:///./work/ringsentinel.db")
     storage_root: Path = Path("work/storage")
+    storage_backend: Literal["local", "database"] = "local"
+    execution_mode: Literal["local", "request"] = "local"
     frontend_origins: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173"]
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8000, ge=1, le=65535)
@@ -55,6 +57,23 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def deployment_boundary(self) -> "Settings":
+        if self.execution_mode == "request":
+            if self.storage_backend != "database" or self.analysis_timeout_seconds > 240:
+                raise ValueError(
+                    "Request execution requires durable database storage and a timeout <=240s"
+                )
+            if self.environment == "production" and (
+                not self.database_url.get_secret_value().startswith("postgresql")
+                or not self.model_artifact_path
+                or not self.model_artifact_sha256
+                or self.auth_mode != "jwt"
+                or not self.jobs_enabled
+                or "storage_limit_bytes" not in self.model_fields_set
+            ):
+                raise ValueError(
+                    "Production request execution requires PostgreSQL, JWT, a pinned model, "
+                    "enabled jobs and explicit storage budget"
+                )
         if bool(self.model_artifact_path) != bool(self.model_artifact_sha256):
             raise ValueError("Model artifact path and pinned SHA-256 must be configured together")
         if any(not host or any(c in host for c in "/*:@ ") for host in self.trusted_hosts):

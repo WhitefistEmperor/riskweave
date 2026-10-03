@@ -23,6 +23,13 @@
   `oidc-client-ts`. Tokens live in tab-scoped session storage, never local storage.
   Expired or missing tokens return the browser to sign-in; the API still authorizes
   every protected operation. No refresh-token scope is requested.
+- Native Next.js 16.3.8 builds for Vercel and a non-root standalone container.
+- Optional database objects with atomic byte admission, artifact/result persistence
+  and case erasure; offline verified import preserves old keys and source files.
+- Optional request execution with owner-scoped dispatch of an existing run, a
+  global single-analysis capacity slot, deadlines, late-result fencing and scoped
+  recovery. Migration 0004 preserves populated review history and foreign keys.
+  See [configuration and remaining serverless gates](request-execution.md).
 
 ## Verified so far
 
@@ -68,9 +75,16 @@ own newly created smoke case. No deployed/user case was erased by these checks.
 
 ## Deployment state
 
-A private Railway project named RiskWeave was created in the connected personal
-workspace. No application service or database has been deployed. Repository attachment
-requires the user's confirmation under the Railway deployment tool's instructions.
+Vercel Hobby is selected following the user's free-hosting instruction. Railway
+provided a time/credit-limited trial; both initial private deployments were stopped
+and verified offline, and the API repository source was disconnected. The empty
+database volume and service definitions remain, and retained storage can consume
+trial allowance. No application cases were written there.
+
+No Vercel project/deployment has completed. The connector cannot access the Hobby
+workspace; repository import in the signed-in browser requires GitHub connection.
+The user has been asked to complete that connection after the browser rejected
+its popup's invalid URL. No paid resource or plan upgrade has been selected.
 The browser identity flow is implemented but an actual provider has not been provisioned
 or live-tested. Model artifact loading is only safe for trusted build artifacts;
 joblib is executable serialization and must never accept user-uploaded model files.
@@ -90,5 +104,7 @@ joblib is executable serialization and must never accept user-uploaded model fil
    distribution-shift checks, subgroup/error analysis and documented operating thresholds.
    Synthetic results cannot substitute for this validation.
 
-The current executor remains single-host and single-worker. Production scalability,
-real-data model performance and completed public deployment are not claimed.
+The default executor remains single-host and single-worker. Request execution
+has distributed database claims but still needs durable background dispatch and
+chunk transport, plus hosted runtime/bundle/capacity validation. Production
+scalability, real-data model performance and completed public deployment are not claimed.

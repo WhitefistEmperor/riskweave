@@ -89,6 +89,8 @@ class LocalJobExecutor:
         environment = dict(os.environ)
         environment["RINGSENTINEL_DATABASE_URL"] = settings.database_url.get_secret_value()
         environment["RINGSENTINEL_STORAGE_ROOT"] = str(settings.storage_root.resolve())
+        environment["RINGSENTINEL_STORAGE_BACKEND"] = settings.storage_backend
+        environment["RINGSENTINEL_EXECUTION_MODE"] = settings.execution_mode
         environment["RINGSENTINEL_ENVIRONMENT"] = "test"
         environment["RINGSENTINEL_AUTH_MODE"] = "disabled"
         if settings.model_artifact_path:
@@ -160,3 +162,30 @@ class LocalJobExecutor:
                 }
             )
         )
+
+
+class RequestJobExecutor(LocalJobExecutor):
+    """A caller executes one persisted claim; no scheduler survives the response."""
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def execute_owned(self, principal, run_id: str):
+        from ringsentinel.platform.models import Status
+
+        if not self.service.settings.jobs_enabled:
+            from ringsentinel.platform.errors import ProductError
+
+            raise ProductError("NOT_READY")
+        self.service.run(principal, run_id)  # Authorize before recovery/claim/execution.
+        self.service.expire_deadlines()
+        claimed = self.service.claim(run_id, principal)
+        if claimed:
+            self.execute(claimed)
+        run = self.service.run(principal, run_id)
+        if run.status not in {Status.QUEUED, Status.RUNNING, Status.COMPLETED, Status.FAILED}:
+            raise RuntimeError("Invalid execution state")
+        return run

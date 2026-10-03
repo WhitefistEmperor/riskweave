@@ -7,6 +7,13 @@ belongs in Git or a command argument. This tool does not implement encryption, P
 
 ## Consistency and backup
 
+For database object storage, case bytes are inside the database backup. Manifests
+record `storage_backend`; restore requires the same backend (older manifests mean
+local storage). The snapshot mutation lock also blocks request-mode claims/writes.
+All replicas must still be stopped. Recover expired request-mode runs through
+authorized status reads rather than starting a local scheduler on that database.
+See [request execution and import](request-execution.md).
+
 1. Block new traffic at the gateway. Stop **all** API replicas, including jobs-disabled writers.
    Graceful shutdown terminates analysis; queued runs remain queued. Inspect safe shutdown logs.
    If recovering an ungraceful stop, start exactly one backend to mark interrupted runs failed,

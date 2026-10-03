@@ -204,7 +204,13 @@ export const platformApi = {
       validRun,
     ),
   run: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisRun>(`/v1/runs/${id(value)}`, { signal }, validRun),
+    apiRequest<AnalysisRun>(`/v1/runs/${id(value)}`, { signal }, (v) => validRun(v) && (v as AnalysisRun).id === value),
+  execute: (value: string, investigationId: string, signal?: AbortSignal) =>
+    apiRequest<AnalysisRun>(
+      `/v1/runs/${id(value)}/execute`,
+      { method: 'POST', signal },
+      (v) => validRun(v) && (v as AnalysisRun).id === value && (v as AnalysisRun).investigation_id === investigationId,
+    ),
   results: (value: string, signal?: AbortSignal) =>
     apiRequest<AnalysisResult>(
       `/v1/runs/${id(value)}/results`,
@@ -213,16 +219,21 @@ export const platformApi = {
     ),
 };
 
-/** Poll persisted state only. Never retry a POST or start a second analysis implicitly. */
+/** Dispatch an existing request-mode claim; never enqueue a second analysis implicitly. */
 export async function pollRun(
   value: string,
   onUpdate: (run: AnalysisRun) => void,
   signal: AbortSignal,
 ) {
   while (!signal.aborted) {
-    const run = await platformApi.run(value, signal);
+    let run = await platformApi.run(value, signal);
     if (signal.aborted) return;
     onUpdate(run);
+    if (run.status === 'queued' && run.configuration_snapshot.execution_mode === 'request') {
+      run = await platformApi.execute(value, run.investigation_id, signal);
+      if (signal.aborted) return;
+      onUpdate(run);
+    }
     if (run.status === 'completed' || run.status === 'failed') return run;
     await new Promise<void>((resolve) => {
       const done = () => {

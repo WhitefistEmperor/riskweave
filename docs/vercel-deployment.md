@@ -38,21 +38,25 @@ before deploying the analyst workflow.
 
 ## API release gates
 
-The current Python API is **not ready for Vercel Functions**. Its queue uses a
-long-lived scheduler and subprocesses, and its default object storage is a local
-filesystem. Deploying this entry point unchanged would lose queued work and
-case files between function invocations. Disabling the scheduler would leave
-analysis requests queued indefinitely.
+The default Python API entry point is **not ready for Vercel Functions**. Its
+default queue uses a long-lived scheduler and filesystem objects. Optional
+[database storage and request execution](request-execution.md) now provide atomic
+durable bytes, distributed single-run claims, deadlines and late-worker fencing.
+They preserve case data across instances without a lifespan scheduler. This is
+a tested foundation; transport, background dispatch and hosted dependencies still
+need completion before release.
 
 A complete Vercel deployment still needs:
 
-1. Durable PostgreSQL with explicit migrations through revision `0003`.
-2. Private object storage with authenticated reads, opaque keys, bounded byte
-   admission, checksum verification, and retryable deletion. Local `/tmp` is
-   suitable only for disposable analysis scratch files.
-3. A request-scoped or durable job execution design with distributed claims,
-   deadlines, retry/recovery and deletion guards. No daemon started from an ASGI
-   lifespan should be treated as a durable worker.
+1. A provisioned private PostgreSQL database with explicit migrations through
+   revision `0004`, TLS, a verified free allowance and an explicit storage budget.
+2. Enable database object storage and verify authenticated reads, checksum checks,
+   atomic byte admission/deletion and backup/restore against that deployed database.
+   Local `/tmp` is suitable only for disposable analysis scratch files.
+3. Complete durable background dispatch around the persisted request-mode claims,
+   with retry scheduling and hosted interruption/recovery checks. Browser polling
+   currently dispatches existing queued runs; closing it before dispatch does not
+   guarantee background completion. No ASGI lifespan daemon is a durable worker.
 4. Bounded uploads and responses suitable for Vercel's 4.5 MB function limit.
    The current 25 MB upload limit and large evidence payloads need adaptation.
    Splitting transport must retain ownership, validation and checksum checks.
@@ -84,5 +88,4 @@ operating thresholds are separate release gates.
 
 References: [Hobby limits](https://vercel.com/docs/plans/hobby),
 [Function limits](https://vercel.com/docs/functions/limitations),
-[Private Blob storage](https://vercel.com/docs/vercel-blob/private-storage),
 [Next.js standalone output](https://nextjs.org/docs/app/api-reference/config/next-config-js/output).

@@ -215,6 +215,33 @@ test('polling connection loss is recoverable without re-enqueuing a run', async 
   expect(posts).toBe(0);
 });
 
+test('request execution retries capacity on the saved run without enqueuing a duplicate', async ({ page }) => {
+  const queued = { ...run, status: 'queued' as const, configuration_snapshot: { execution_mode: 'request' } };
+  await installWorkspace(page, queued);
+  const posts: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST') posts.push(new URL(request.url()).pathname);
+  });
+  await page.route(`**/api/v1/runs/${runId}/execute`, (route) =>
+    route.fulfill({ json: posts.length === 1 ? queued : run }),
+  );
+  await page.goto(workspaceUrl);
+  await expect(page.getByRole('heading', { name: 'Persisted findings' })).toBeVisible();
+  expect(posts).toEqual([`/api/v1/runs/${runId}/execute`, `/api/v1/runs/${runId}/execute`]);
+  await page.waitForTimeout(2200);
+  expect(posts).toHaveLength(2);
+});
+
+test('an execution reply for another investigation fails closed', async ({ page }) => {
+  await installWorkspace(page, { ...run, status: 'queued', configuration_snapshot: { execution_mode: 'request' } });
+  await page.route(`**/api/v1/runs/${runId}/execute`, (route) =>
+    route.fulfill({ json: { ...run, investigation_id: '00000000-0000-4000-8000-000000000099' } }),
+  );
+  await page.goto(workspaceUrl);
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('unreadable response');
+  await expect(page.getByRole('heading', { name: 'Persisted findings' })).toHaveCount(0);
+});
+
 test('investigator malformed/provider-unavailable replies stay grounded and citations open their source', async ({
   page,
 }) => {

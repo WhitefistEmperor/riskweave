@@ -6,11 +6,13 @@ from uuid import uuid4
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
     ForeignKeyConstraint,
+    LargeBinary,
     String,
     UniqueConstraint,
 )
@@ -98,6 +100,8 @@ class AnalysisRun(Identity, Base):
     configuration_snapshot: Mapped[dict] = mapped_column(JSON)
     result_reference: Mapped[str | None] = mapped_column(String(100))
     result_checksum: Mapped[str | None] = mapped_column(String(64))
+    execution_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    executor_slot: Mapped[str | None] = mapped_column(String(80), unique=True)
 
 
 class ReviewDisposition(StrEnum):
@@ -156,3 +160,15 @@ class StorageDeletion(Base):
     attempts: Mapped[int] = mapped_column(default=0)
     last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error_code: Mapped[str | None] = mapped_column(String(40))
+
+
+class StoredBlob(Base):
+    """Private durable bytes; no HTTP route accepts or exposes these keys."""
+
+    __tablename__ = "stored_objects"
+    __table_args__ = (CheckConstraint("size_bytes >= 0", name="stored_object_size"),)
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    checksum: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

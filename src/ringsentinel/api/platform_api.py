@@ -1,4 +1,4 @@
-"""Versioned investigation APIs. No detector work occurs in request handlers."""
+"""Versioned investigation APIs and owner-scoped execution dispatch."""
 
 from typing import Annotated
 
@@ -84,7 +84,7 @@ def health():
 def readiness(request: Request, service: Service):
     if not dependencies_ready(service):
         raise ProductError("NOT_READY")
-    if service.settings.jobs_enabled:
+    if service.settings.jobs_enabled and service.settings.execution_mode == "local":
         thread = request.app.state.executor.thread
         if thread is None or not thread.is_alive():
             raise ProductError("NOT_READY")
@@ -195,6 +195,14 @@ def start_run(
 @router.get("/runs/{run_id}", response_model=RunResponse)
 def run(run_id: str, principal: CurrentPrincipal, service: Service):
     return service.run(principal, run_id)
+
+
+@router.post("/runs/{run_id}/execute", response_model=RunResponse)
+def execute_run(run_id: str, request: Request, principal: CurrentPrincipal, service: Service):
+    service.run(principal, run_id)
+    if service.settings.execution_mode != "request":
+        raise ProductError("CONFLICT")
+    return request.app.state.executor.execute_owned(principal, run_id)
 
 
 @router.get("/runs/{run_id}/results", response_model=ResultsResponse)

@@ -57,6 +57,9 @@ if (production) {
 const nextConfig: NextConfig = {
   output: process.env.RINGSENTINEL_STANDALONE === 'true' ? 'standalone' : undefined,
   poweredByHeader: false,
+  // Request-mode analysis has a 240s watchdog and time to persist its outcome.
+  // This bounds the self-hosted proxy; hosted platform limits still apply.
+  experimental: { proxyTimeout: 280_000 },
   async headers() {
     return [
       {

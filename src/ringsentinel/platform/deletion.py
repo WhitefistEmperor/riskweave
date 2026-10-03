@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from sqlalchemy import delete, func, select
 
 from ringsentinel.platform.database import Database
+from ringsentinel.platform.database_storage import DatabaseStorageBackend, storage_for
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import (
     AnalysisRun,
@@ -22,7 +23,6 @@ from ringsentinel.platform.models import (
 )
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
-from ringsentinel.platform.storage import LocalStorageBackend
 
 logger = logging.getLogger("ringsentinel.cleanup")
 ACTIVE = (Status.QUEUED, Status.RUNNING, Status.UPLOADING)
@@ -118,7 +118,9 @@ class DeletionService:
             ):
                 raise ProductError("INTERNAL_ERROR")
             for key in keys:
-                if session.get(StorageDeletion, key) is None:
+                if isinstance(self.service.storage, DatabaseStorageBackend):
+                    self.service.storage.delete_in(session, key)
+                elif session.get(StorageDeletion, key) is None:
                     session.add(StorageDeletion(key=key))
             run_ids = select(AnalysisRun.id).where(AnalysisRun.investigation_id == item.id)
             session.execute(delete(ReviewAudit).where(ReviewAudit.run_id.in_(run_ids)))
@@ -173,7 +175,10 @@ class DeletionService:
                     logger.error(json.dumps({"event": "storage_cleanup_reference_conflict"}))
                     continue
                 try:
-                    self.service.storage.delete(task.key)
+                    if isinstance(self.service.storage, DatabaseStorageBackend):
+                        self.service.storage.delete_in(session, task.key)
+                    else:
+                        self.service.storage.delete(task.key)
                 except (OSError, RuntimeError, ValueError, ProductError) as failure:
                     task.last_error_code = (
                         "UNSAFE_LOCATION"
@@ -202,7 +207,7 @@ def main():
         database = Database(settings.database_url.get_secret_value())
         service = InvestigationService(
             database,
-            LocalStorageBackend(settings.storage_root, settings.storage_limit_bytes),
+            storage_for(database, settings),
             settings,
         )
         result = DeletionService(service).cleanup(limit=args.limit)

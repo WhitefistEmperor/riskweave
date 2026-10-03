@@ -29,6 +29,12 @@ does not recreate anything. The browser validates response scope before navigati
 
 ## File cleanup and failure recovery
 
+With `RINGSENTINEL_STORAGE_BACKEND=database`, private object bytes commit their
+deletion in the same transaction as case metadata and review history. No file
+cleanup task is required for new database objects. Old imported filesystem copies,
+exports and snapshots need their own authorized erasure policy. The retryable
+file-cleanup behavior below applies to the default local-storage backend.
+
 Database erasure and a `storage_deletions` entry for every referenced object commit
 in one transaction. File removal starts only after that commit. A transaction failure
 leaves metadata and files intact. Storage failure leaves cleanup work in the database;

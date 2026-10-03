@@ -1,0 +1,8 @@
+# CI/local verification of Vercel's durable, request-scoped execution topology.
+# This overrides the local-only compose stack; it never configures a public API.
+services:
+  backend:
+    environment:
+      RINGSENTINEL_STORAGE_BACKEND: database
+      RINGSENTINEL_EXECUTION_MODE: request
+      RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS: "240"

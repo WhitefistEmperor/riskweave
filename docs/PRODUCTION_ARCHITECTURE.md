@@ -5,7 +5,10 @@ executor-ownership and backup sections; see [current hardening](phase5c-hardenin
 [backup/restore](backup-restore.md), [dependency audit](dependency-audit.md) and
 [container verification status](phase5c-container-verification.md). The original domain schema,
 detector/evidence semantics and investigation endpoint shapes remain; the session auth-mode union
-and safe 429 quota category are explicit additions. No deployment has occurred.
+and safe 429 quota category are explicit additions. See [production progress](production-progress.md)
+for the current deployment state and [request execution](request-execution.md) for optional durable
+database objects, atomic erasure, distributed claims and migration 0004. The local scheduler and
+filesystem limitations below describe the default mode. No completed public release is claimed.
 
 Phase 5B note: backend architecture and contracts below remain unchanged. The minimal frontend has
 been replaced by the investigation-first analyst UI described in [phase5b-frontend.md](phase5b-frontend.md).

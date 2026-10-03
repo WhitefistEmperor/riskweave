@@ -4,16 +4,17 @@ from __future__ import annotations
 
 import hashlib
 import json
-from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import UTC, timedelta
 from pathlib import PurePosixPath
 
-from sqlalchemy import func, select, text, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from ringsentinel import __version__
 from ringsentinel.data.ingestion import PaymentDataset, parse_input
 from ringsentinel.platform.database import Database
+from ringsentinel.platform.database_storage import DatabaseStorageBackend
 from ringsentinel.platform.errors import ERRORS, ProductError
 from ringsentinel.platform.models import AnalysisRun, Artifact, Investigation, Status, User, utcnow
 from ringsentinel.platform.settings import Settings
@@ -29,14 +30,18 @@ class InvestigationService:
     def __init__(self, database: Database, storage: StorageBackend, settings: Settings):
         self.database, self.storage, self.settings = database, storage, settings
 
-    @contextmanager
     def _write(self):
-        with self.database.session.begin() as session:
-            if self.database.engine.dialect.name == "sqlite":
-                session.connection().exec_driver_sql("BEGIN IMMEDIATE")
-            else:
-                session.execute(text("SELECT pg_advisory_xact_lock(593002)"))
-            yield session
+        return self.database.write()
+
+    def _save(self, session, content: bytes):
+        if isinstance(self.storage, DatabaseStorageBackend):
+            return self.storage.save_in(session, content)
+        return self.storage.save(content)
+
+    def _discard_uncommitted(self, saved):
+        # Database bytes have already rolled back with their metadata.
+        if saved and not isinstance(self.storage, DatabaseStorageBackend):
+            self.storage.delete(saved.key)
 
     @staticmethod
     def _quota(session, model, limit, *conditions):
@@ -70,6 +75,8 @@ class InvestigationService:
         return item
 
     def list(self, principal: Principal) -> list[Investigation]:
+        if self.settings.execution_mode == "request":
+            self.expire_deadlines(principal=principal)
         with self.database.session() as session:
             return list(
                 session.scalars(
@@ -81,7 +88,12 @@ class InvestigationService:
 
     def get(self, principal: Principal, investigation_id: str) -> Investigation:
         with self.database.session() as session:
-            return self._owned(session, principal, investigation_id)
+            item = self._owned(session, principal, investigation_id)
+        if self.settings.execution_mode == "request":
+            self.expire_deadlines(principal=principal, investigation_id=investigation_id)
+            with self.database.session() as session:
+                return self._owned(session, principal, investigation_id)
+        return item
 
     def artifacts(self, principal: Principal, investigation_id: str) -> list[Artifact]:
         with self.database.session() as session:
@@ -138,7 +150,7 @@ class InvestigationService:
                     self.settings.max_artifacts_per_investigation,
                     Artifact.investigation_id == item.id,
                 )
-                saved = self.storage.save(content)
+                saved = self._save(session, content)
                 safe_name = PurePosixPath(name.replace("\\", "/")).name
                 safe_name = "".join(c for c in safe_name if c.isprintable())[:200] or "dataset.json"
                 artifact = Artifact(
@@ -165,8 +177,7 @@ class InvestigationService:
                 )
             return artifact
         except Exception:
-            if saved:
-                self.storage.delete(saved.key)
+            self._discard_uncommitted(saved)
             raise
 
     def _lock_idle(self, session, investigation_id: str, target: Status):
@@ -187,6 +198,8 @@ class InvestigationService:
         try:
             with self._write() as session:
                 self._owned(session, principal, investigation_id)
+                if self.settings.execution_mode == "request":
+                    self._expire_in(session, principal=principal, investigation_id=investigation_id)
                 existing = session.scalar(
                     select(AnalysisRun).where(
                         AnalysisRun.investigation_id == investigation_id,
@@ -235,7 +248,11 @@ class InvestigationService:
                         "transactions_per_seed": 5000,
                         "input_checksum": artifact.checksum,
                         "timeout_seconds": self.settings.analysis_timeout_seconds,
+                        "execution_mode": self.settings.execution_mode,
                     },
+                    execution_deadline=utcnow() + timedelta(hours=24)
+                    if self.settings.execution_mode == "request"
+                    else None,
                 )
                 session.add(run)
             return run
@@ -243,6 +260,7 @@ class InvestigationService:
             raise ProductError("CONFLICT") from None
 
     def runs(self, principal: Principal, investigation_id: str) -> list[AnalysisRun]:
+        self.get(principal, investigation_id)
         with self.database.session() as session:
             self._owned(session, principal, investigation_id)
             return list(
@@ -262,7 +280,14 @@ class InvestigationService:
             )
             if run is None:
                 raise ProductError("NOT_FOUND")
-            return run
+        if self.settings.execution_mode == "request":
+            self.expire_deadlines(run_id=run_id)
+            with self.database.session() as session:
+                run = session.get(AnalysisRun, run_id)
+                if run is None:
+                    raise ProductError("NOT_FOUND")
+                return run
+        return run
 
     def result(self, principal: Principal, run_id: str) -> dict:
         run = self.run(principal, run_id)
@@ -273,20 +298,36 @@ class InvestigationService:
             raise ProductError("INTERNAL_ERROR")
         return json.loads(content)
 
-    def claim(self) -> str | None:
-        with self.database.session.begin() as session:
-            run = session.scalar(
-                select(AnalysisRun)
-                .where(AnalysisRun.status == Status.QUEUED)
-                .order_by(AnalysisRun.created_at, AnalysisRun.id)
-                .limit(1)
-            )
+    def claim(self, run_id: str | None = None, principal: Principal | None = None) -> str | None:
+        with self._write() as session:
+            query = select(AnalysisRun).where(AnalysisRun.status == Status.QUEUED)
+            if run_id is not None:
+                if principal is None:
+                    raise ValueError("Targeted claims require an owner")
+                query = query.join(Investigation).where(
+                    AnalysisRun.id == run_id, Investigation.owner_id == principal.user_id
+                )
+            if self.settings.execution_mode == "request" and session.scalar(
+                select(AnalysisRun.id).where(AnalysisRun.status == Status.RUNNING).limit(1)
+            ):
+                return None
+            run = session.scalar(query.order_by(AnalysisRun.created_at, AnalysisRun.id).limit(1))
             if run is None:
                 return None
+            now = utcnow()
+            values = {"status": Status.RUNNING, "started_at": now}
+            if self.settings.execution_mode == "request":
+                # The child watchdog ends at timeout+5; allow persistence/parent cleanup
+                # before another invocation can release its capacity slot.
+                values.update(
+                    execution_deadline=now
+                    + timedelta(seconds=self.settings.analysis_timeout_seconds + 20),
+                    executor_slot="request-analysis",
+                )
             result = session.execute(
                 update(AnalysisRun)
                 .where(AnalysisRun.id == run.id, AnalysisRun.status == Status.QUEUED)
-                .values(status=Status.RUNNING, started_at=utcnow())
+                .values(**values)
             )
             if result.rowcount != 1:
                 return None
@@ -300,21 +341,27 @@ class InvestigationService:
     def finish(self, run_id: str, result: dict | None = None, error_code: str | None = None):
         saved = None
         try:
+            content = None
             if result is not None:
                 content = json.dumps(
                     result, sort_keys=True, allow_nan=False, separators=(",", ":")
                 ).encode()
                 if len(content) > self.settings.result_limit_bytes:
                     raise ProductError("QUOTA_EXCEEDED")
-                saved = self.storage.save(content)
-            with self.database.session.begin() as session:
+            with self._write() as session:
                 run = session.get(AnalysisRun, run_id)
                 if run is None or run.status != Status.RUNNING:
                     raise ProductError("CONFLICT")
+                deadline = run.execution_deadline
+                if deadline and deadline.replace(tzinfo=UTC) <= utcnow():
+                    error_code = "ANALYSIS_TIMEOUT"
+                if content is not None and not error_code:
+                    saved = self._save(session, content)
                 status = Status.FAILED if error_code else Status.COMPLETED
                 if not error_code and saved is None:
                     raise ValueError("Successful runs require a result")
                 run.status, run.active_slot, run.completed_at = status, None, utcnow()
+                run.execution_deadline, run.executor_slot = None, None
                 run.error_code = error_code
                 run.error_message_safe = ERRORS[error_code][1] if error_code else None
                 run.result_reference = saved.key if saved else None
@@ -325,9 +372,60 @@ class InvestigationService:
                     .values(status=status)
                 )
         except Exception:
-            if saved:
-                self.storage.delete(saved.key)
+            self._discard_uncommitted(saved)
             raise
+
+    def expire_deadlines(
+        self,
+        *,
+        run_id: str | None = None,
+        principal: Principal | None = None,
+        investigation_id: str | None = None,
+        limit: int = 100,
+    ) -> int:
+        """Fence expired work without failing healthy invocations in another instance."""
+        if not 1 <= limit <= 1000:
+            raise ValueError("Invalid recovery batch")
+        with self._write() as session:
+            return self._expire_in(
+                session,
+                run_id=run_id,
+                principal=principal,
+                investigation_id=investigation_id,
+                limit=limit,
+            )
+
+    def _expire_in(
+        self, session, *, run_id=None, principal=None, investigation_id=None, limit=100
+    ) -> int:
+        query = select(AnalysisRun).where(
+            AnalysisRun.status.in_([Status.QUEUED, Status.RUNNING]),
+            AnalysisRun.execution_deadline <= utcnow(),
+        )
+        if run_id is not None:
+            query = query.where(AnalysisRun.id == run_id)
+        if investigation_id is not None:
+            query = query.where(AnalysisRun.investigation_id == investigation_id)
+        if principal is not None:
+            query = query.join(Investigation).where(Investigation.owner_id == principal.user_id)
+        expired = list(
+            session.scalars(
+                query.order_by(AnalysisRun.execution_deadline, AnalysisRun.id).limit(limit)
+            )
+        )
+        for run in expired:
+            run.error_code = (
+                "WORKER_INTERRUPTED" if run.status == Status.RUNNING else "QUEUE_EXPIRED"
+            )
+            run.error_message_safe = ERRORS[run.error_code][1]
+            run.status, run.active_slot, run.executor_slot = Status.FAILED, None, None
+            run.completed_at, run.execution_deadline = utcnow(), None
+            session.execute(
+                update(Investigation)
+                .where(Investigation.id == run.investigation_id)
+                .values(status=Status.FAILED, updated_at=utcnow())
+            )
+        return len(expired)
 
     def recover_interrupted(self):
         # SINGLE scheduler only. Queued work survives; crashed running work is not auto-retried.

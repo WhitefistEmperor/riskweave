@@ -16,6 +16,11 @@ def main():
     parser.add_argument("--reopen-run", help="Verify a completed run after restarting the backend")
     parser.add_argument("--owner", default="phase5a-smoke")
     parser.add_argument(
+        "--request-execution",
+        action="store_true",
+        help="Dispatch the persisted run through its owner-scoped request endpoint",
+    )
+    parser.add_argument(
         "--delete-created",
         action="store_true",
         help="Delete only the investigation created by this smoke run",
@@ -26,7 +31,9 @@ def main():
     if url.host not in {"localhost", "127.0.0.1", "::1"}:
         parser.error("Smoke tests require a loopback backend URL")
     with httpx.Client(
-        base_url=args.base_url, timeout=30, headers={"X-Development-User": args.owner}
+        base_url=args.base_url,
+        timeout=280 if args.request_execution else 30,
+        headers={"X-Development-User": args.owner},
     ) as client:
 
         def get(path):
@@ -78,13 +85,20 @@ def main():
         deadline = time.monotonic() + 360
         while time.monotonic() < deadline:
             run = get(f"/runs/{run_id}")
+            if args.request_execution and run["status"] == "queued":
+                executed = client.post(f"/api/v1/runs/{run_id}/execute")
+                assert executed.status_code == 200, executed.text
+                run = executed.json()
             if run["status"] != states[-1]:
                 states.append(run["status"])
             if run["status"] in {"completed", "failed"}:
                 break
             time.sleep(0.1)
         assert run["status"] == "completed", run
-        assert "running" in states, states
+        if args.request_execution:
+            assert run["started_at"] and run["completed_at"]
+        else:
+            assert "running" in states, states
         result = get(f"/runs/{run_id}/results")
         assert result["event_count"] == len(bundle.events)
         assert result["currency"] == "INR"
