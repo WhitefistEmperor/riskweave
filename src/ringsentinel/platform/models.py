@@ -172,3 +172,31 @@ class StoredBlob(Base):
     size_bytes: Mapped[int] = mapped_column(BigInteger)
     checksum: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class UploadSession(Identity, Base):
+    """Owner-scoped, resumable input admission; source chunks are never public."""
+
+    __tablename__ = "upload_sessions"
+    __table_args__ = (UniqueConstraint("investigation_id", "idempotency_key"),)
+    investigation_id: Mapped[str] = mapped_column(ForeignKey("investigations.id"), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(200))
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    checksum: Mapped[str] = mapped_column(String(64))
+    chunk_count: Mapped[int]
+    status: Mapped[str] = mapped_column(String(16))
+    active_slot: Mapped[str | None] = mapped_column(String(80), unique=True)
+    previous_status: Mapped[Status] = status_column()
+    artifact_id: Mapped[str | None] = mapped_column(ForeignKey("artifacts.id"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class UploadPart(Base):
+    __tablename__ = "upload_parts"
+    __table_args__ = (CheckConstraint("size_bytes > 0", name="upload_part_size"),)
+    upload_id: Mapped[str] = mapped_column(ForeignKey("upload_sessions.id"), primary_key=True)
+    part_index: Mapped[int] = mapped_column(primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    checksum: Mapped[str] = mapped_column(String(64))

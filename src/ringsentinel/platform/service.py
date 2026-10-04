@@ -77,6 +77,10 @@ class InvestigationService:
     def list(self, principal: Principal) -> list[Investigation]:
         if self.settings.execution_mode == "request":
             self.expire_deadlines(principal=principal)
+            from ringsentinel.platform.upload_transport import UploadTransport
+
+            if isinstance(self.storage, DatabaseStorageBackend):
+                UploadTransport(self).expire(principal=principal)
         with self.database.session() as session:
             return list(
                 session.scalars(
@@ -91,6 +95,10 @@ class InvestigationService:
             item = self._owned(session, principal, investigation_id)
         if self.settings.execution_mode == "request":
             self.expire_deadlines(principal=principal, investigation_id=investigation_id)
+            from ringsentinel.platform.upload_transport import UploadTransport
+
+            if isinstance(self.storage, DatabaseStorageBackend):
+                UploadTransport(self).expire(principal=principal, investigation_id=investigation_id)
             with self.database.session() as session:
                 return self._owned(session, principal, investigation_id)
         return item
@@ -129,56 +137,83 @@ class InvestigationService:
         saved = None
         try:
             with self._write() as session:
-                item = self._owned(session, principal, investigation_id)
-                previous_status = item.status
-                self._lock_idle(session, item.id, Status.UPLOADING)
-                existing = session.scalar(
-                    select(Artifact).where(
-                        Artifact.investigation_id == item.id, Artifact.checksum == checksum
-                    )
-                )
-                if existing:
-                    session.execute(
-                        update(Investigation)
-                        .where(Investigation.id == item.id)
-                        .values(status=previous_status)
-                    )
-                    return existing
-                self._quota(
-                    session,
-                    Artifact,
-                    self.settings.max_artifacts_per_investigation,
-                    Artifact.investigation_id == item.id,
-                )
-                saved = self._save(session, content)
-                safe_name = PurePosixPath(name.replace("\\", "/")).name
-                safe_name = "".join(c for c in safe_name if c.isprintable())[:200] or "dataset.json"
-                artifact = Artifact(
-                    investigation_id=item.id,
-                    original_name=safe_name,
-                    storage_key=saved.key,
-                    checksum=saved.checksum,
-                    size_bytes=saved.size_bytes,
-                    content_type="application/json",
-                )
-                session.add(artifact)
-                session.execute(
-                    update(Investigation)
-                    .where(Investigation.id == item.id)
-                    .values(
-                        status=Status.CREATED,
-                        source_metadata={
-                            "format": "payments-v1"
-                            if isinstance(bundle, PaymentDataset)
-                            else "DatasetBundle",
-                            "labels_available": not isinstance(bundle, PaymentDataset),
-                        },
-                    )
+                artifact, saved = self.attach_validated_in(
+                    session, principal, investigation_id, content, name, bundle, checksum
                 )
             return artifact
         except Exception:
             self._discard_uncommitted(saved)
             raise
+
+    def attach_validated_in(
+        self,
+        session,
+        principal: Principal,
+        investigation_id: str,
+        content: bytes,
+        name: str,
+        bundle,
+        checksum: str,
+        *,
+        reserved_upload=None,
+    ):
+        """Commit validated bytes and metadata in the caller's write transaction."""
+        item = self._owned(session, principal, investigation_id)
+        if reserved_upload is None:
+            previous_status = item.status
+            self._lock_idle(session, item.id, Status.UPLOADING)
+        else:
+            if item.status != Status.UPLOADING or reserved_upload.active_slot != item.id:
+                raise ProductError("CONFLICT")
+            previous_status = reserved_upload.previous_status
+        existing = session.scalar(
+            select(Artifact).where(
+                Artifact.investigation_id == item.id, Artifact.checksum == checksum
+            )
+        )
+        if existing:
+            session.execute(
+                update(Investigation)
+                .where(Investigation.id == item.id)
+                .values(status=previous_status)
+            )
+            return existing, None
+        self._quota(
+            session,
+            Artifact,
+            self.settings.max_artifacts_per_investigation,
+            Artifact.investigation_id == item.id,
+        )
+        saved = self._save(session, content)
+        try:
+            safe_name = PurePosixPath(name.replace("\\", "/")).name
+            safe_name = "".join(c for c in safe_name if c.isprintable())[:200] or "dataset.json"
+            artifact = Artifact(
+                investigation_id=item.id,
+                original_name=safe_name,
+                storage_key=saved.key,
+                checksum=saved.checksum,
+                size_bytes=saved.size_bytes,
+                content_type="application/json",
+            )
+            session.add(artifact)
+            session.execute(
+                update(Investigation)
+                .where(Investigation.id == item.id)
+                .values(
+                    status=Status.CREATED,
+                    source_metadata={
+                        "format": "payments-v1"
+                        if isinstance(bundle, PaymentDataset)
+                        else "DatasetBundle",
+                        "labels_available": not isinstance(bundle, PaymentDataset),
+                    },
+                )
+            )
+        except Exception:
+            self._discard_uncommitted(saved)
+            raise
+        return artifact, saved
 
     def _lock_idle(self, session, investigation_id: str, target: Status):
         changed = session.execute(
@@ -290,13 +325,17 @@ class InvestigationService:
         return run
 
     def result(self, principal: Principal, run_id: str) -> dict:
+        return json.loads(self.result_content(principal, run_id))
+
+    def result_content(self, principal: Principal, run_id: str) -> bytes:
+        """Authorize and verify immutable bytes before any result transport."""
         run = self.run(principal, run_id)
         if run.status != Status.COMPLETED or not run.result_reference:
             raise ProductError("CONFLICT")
         content = self.storage.read(run.result_reference)
         if hashlib.sha256(content).hexdigest() != run.result_checksum:
             raise ProductError("INTERNAL_ERROR")
-        return json.loads(content)
+        return content
 
     def claim(self, run_id: str | None = None, principal: Principal | None = None) -> str | None:
         with self._write() as session:

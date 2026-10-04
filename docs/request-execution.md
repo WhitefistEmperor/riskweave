@@ -54,8 +54,10 @@ alone does not promise completion after every browser or network interruption.
 
 Next.js's self-hosted rewrite timeout is bounded at 280 seconds, above the worker
 deadline. Vercel's own routing/duration limits require separate hosted verification.
-The existing 25 MB upload and 100 MB result budgets are preserved; authenticated
-chunk transport is still needed for Vercel's 4.5 MB request/response ceiling.
+The existing 25 MB upload and 100 MB result budgets are preserved. Authenticated
+[fragment transport](bounded-transport.md) supports large uploads and request-mode
+result delivery below Vercel's 4.5 MB request/response ceiling. Other large evidence
+and investigator replies, hosted routing and transport capacity still need verification.
 Model bundle size, memory and worst-case latency must also be measured there.
 
 ## Existing filesystem cases
@@ -98,4 +100,4 @@ uv run --locked --extra dev python scripts/smoke_platform.py --request-execution
 
 This uses isolated development identity. It verifies persisted inference, review,
 repeat reads and deletion; it is not a substitute for hosted JWT/HTTPS, provider
-quotas, transport, background delivery or real-payment model evaluation.
+quotas, hosted transport capacity, background delivery or real-payment model evaluation.

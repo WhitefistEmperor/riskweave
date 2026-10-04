@@ -78,8 +78,54 @@ class ArtifactResponse(Record):
     checksum: str
 
 
+class UploadBegin(Contract):
+    name: Annotated[str, Field(min_length=1, max_length=200)]
+    size_bytes: Annotated[int, Field(ge=1, le=100_000_000, strict=True)]
+    checksum: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+
+
+class UploadProgress(Contract):
+    id: str
+    investigation_id: str
+    name: str
+    status: Literal["pending", "completed"]
+    size_bytes: int
+    checksum: str
+    chunk_bytes: Literal[2_000_000]
+    chunk_count: int
+    received: list[int]
+    artifact_id: str | None
+
+
+class UploadCancelResponse(Contract):
+    id: str
+    status: Literal["aborted", "expired"]
+
+
 class RunCreate(Contract):
     artifact_id: Annotated[str, Field(pattern=r"^[a-f0-9-]{36}$")]
+
+
+class ResultManifestResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    investigation_id: str
+    encoding: Literal["base64"]
+    content_type: Literal["application/json"]
+    size_bytes: Annotated[int, Field(ge=1, le=500_000_000)]
+    sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    chunk_bytes: Literal[2_000_000]
+    chunk_count: Annotated[int, Field(ge=1, le=250)]
+
+
+class ResultChunkResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    index: Annotated[int, Field(ge=0, le=249)]
+    size_bytes: Annotated[int, Field(ge=1, le=2_000_000)]
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    data: Annotated[str, Field(max_length=2_666_668)]
 
 
 class RunResponse(Record):

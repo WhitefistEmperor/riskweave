@@ -21,6 +21,8 @@ def test_migration_persistence_and_foreign_keys(tmp_path):
         "review_audit",
         "storage_deletions",
         "stored_objects",
+        "upload_sessions",
+        "upload_parts",
     }
     with first.session.begin() as session:
         session.add(User(id="alice"))

@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     max_investigations_per_owner: int = Field(default=1000, ge=1, le=10000)
     max_investigations_total: int = Field(default=10000, ge=1, le=100000)
     max_artifacts_per_investigation: int = Field(default=20, ge=1, le=1000)
+    max_upload_sessions_per_investigation: int = Field(default=100, ge=1, le=1000)
+    max_upload_sessions_total: int = Field(default=10000, ge=1, le=100000)
     max_runs_per_investigation: int = Field(default=50, ge=1, le=1000)
     max_pending_runs: int = Field(default=100, ge=1, le=10000)
     max_review_events_per_candidate: int = Field(default=200, ge=1, le=10000)

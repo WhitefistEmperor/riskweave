@@ -43,6 +43,7 @@ export function InvestigationDetail({
     error,
     busy,
     activeRun,
+    uploadStage,
   } = state;
   const [file, setFile] = useState<File | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -100,9 +101,11 @@ export function InvestigationDetail({
                   </output>
                   <p className="muted">
                     {run.status === 'queued'
-                      ? 'Waiting for the local analysis worker. You can leave this page and return later.'
+                      ? run.configuration_snapshot.execution_mode === 'request'
+                        ? 'Waiting to start analysis. Keep this page open until processing begins. If you leave now, reopen this investigation to resume.'
+                        : 'Waiting for the analysis worker. You can leave this page and return later.'
                       : run.status === 'running'
-                        ? 'Computing network relationships and evidence. You can return later; no percentage estimate is available.'
+                        ? 'Computing network relationships and evidence. Reopen this investigation to check the saved outcome; no percentage estimate is available.'
                         : run.status === 'completed'
                           ? 'Review the candidate rings below. Findings require analyst assessment.'
                           : 'The run did not produce usable results. Review the error before starting a new run.'}
@@ -182,6 +185,34 @@ export function InvestigationDetail({
                     Validated and checksummed by the API. Identical uploads
                     reuse the artifact.
                   </p>
+                  {uploadStage && (
+                    <div className="run-state">
+                      <output className="block">
+                        <strong>
+                          {busy === 'upload'
+                            ? 'Upload progress'
+                            : 'Upload incomplete'}
+                        </strong>
+                        <span className="block">
+                          {uploadStage.name} · {uploadStage.received.length} of{' '}
+                          {uploadStage.chunk_count} parts saved
+                        </span>
+                      </output>
+                      <p className="muted text-sm">
+                        Select the same file and upload again to resume.
+                        Incomplete uploads expire after 24 hours.
+                      </p>
+                      <Button
+                        variant="outline"
+                        disabled={!!busy || deleting}
+                        onClick={() => void state.discardUpload()}
+                      >
+                        {busy === 'discard'
+                          ? 'Discarding…'
+                          : 'Discard incomplete upload'}
+                      </Button>
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => file && void state.upload(file)}
@@ -228,7 +259,12 @@ export function InvestigationDetail({
                       <Button
                         onClick={() => void state.start()}
                         disabled={
-                          !artifactId || !!busy || activeRun || deleting
+                          !artifactId ||
+                          !!busy ||
+                          activeRun ||
+                          deleting ||
+                          !!uploadStage ||
+                          record.status === 'uploading'
                         }
                       >
                         {busy === 'start'

@@ -1,4 +1,4 @@
-# Product completion work — 3 October 2026
+# Product completion work — 4 October 2026
 
 ## Implemented
 
@@ -32,6 +32,23 @@
   See [configuration and remaining serverless gates](request-execution.md).
 
 ## Verified so far
+
+Authenticated fragment transport now supports staged uploads, saved-part resume,
+discard and expiry, shared byte admission, complete dataset validation and atomic
+artifact acceptance. Migration 0005 adds private upload sessions without rebuilding
+existing case/review tables. Request-mode result delivery verifies fragment and whole
+checksums before displaying findings. See [transport behavior and limits](bounded-transport.md).
+Hosted capacity and durable background dispatch remain release gates.
+
+Local transport validation passed a full 148-test backend regression, then the
+three added session-history, metadata-rollback and streamed-size regressions.
+The browser suite passed 53 cases; a synthetic fixture was updated to include
+the new pending-upload route. Four final focused checks passed against the rebuilt
+console, including that fixture, resume/discard and the new expired-key retry check.
+The current CI suites contain 151 backend and 55 browser tests. Ruff, TypeScript,
+frontend lint and the final native production build passed. PostgreSQL/container
+transport validation is tracked on the pull request; local checks alone do not
+establish a hosted Vercel release.
 
 The initial full Python regression passed 101 tests. Added artifact round-trip and
 tamper checks passed alongside ingestion checks (6 tests). Both synthetic and unlabeled
@@ -105,6 +122,6 @@ joblib is executable serialization and must never accept user-uploaded model fil
    Synthetic results cannot substitute for this validation.
 
 The default executor remains single-host and single-worker. Request execution
-has distributed database claims but still needs durable background dispatch and
-chunk transport, plus hosted runtime/bundle/capacity validation. Production
+has distributed database claims and bounded upload/result transport but still
+needs durable background dispatch and hosted runtime/bundle/capacity validation. Production
 scalability, real-data model performance and completed public deployment are not claimed.

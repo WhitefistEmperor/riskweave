@@ -19,6 +19,8 @@ from ringsentinel.platform.models import (
     ReviewAudit,
     Status,
     StorageDeletion,
+    UploadPart,
+    UploadSession,
     utcnow,
 )
 from ringsentinel.platform.service import InvestigationService, Principal
@@ -68,6 +70,12 @@ class DeletionService:
         older_than: datetime | None = None,
     ) -> dict:
         with self.service._write() as session:
+            if self.service.settings.execution_mode == "request":
+                from ringsentinel.platform.upload_transport import UploadTransport
+
+                UploadTransport(self.service)._expire_in(
+                    session, principal=principal, investigation_id=investigation_id
+                )
             item = self.service._owned(session, principal, investigation_id)
             if item.name != confirm_name or item.status in ACTIVE:
                 raise ProductError("CONFLICT")
@@ -123,6 +131,9 @@ class DeletionService:
                 elif session.get(StorageDeletion, key) is None:
                     session.add(StorageDeletion(key=key))
             run_ids = select(AnalysisRun.id).where(AnalysisRun.investigation_id == item.id)
+            upload_ids = select(UploadSession.id).where(UploadSession.investigation_id == item.id)
+            session.execute(delete(UploadPart).where(UploadPart.upload_id.in_(upload_ids)))
+            session.execute(delete(UploadSession).where(UploadSession.investigation_id == item.id))
             session.execute(delete(ReviewAudit).where(ReviewAudit.run_id.in_(run_ids)))
             session.execute(delete(CandidateReview).where(CandidateReview.run_id.in_(run_ids)))
             session.execute(delete(AnalysisRun).where(AnalysisRun.investigation_id == item.id))

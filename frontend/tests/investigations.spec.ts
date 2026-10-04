@@ -195,13 +195,17 @@ test('empty investigation list and safe unauthorized/backend-unavailable states'
   await expect(
     page.getByRole('heading', { name: 'Unauthorized', exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('main').getByRole('alert')).toContainText('ui-auth-fixture');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'ui-auth-fixture',
+  );
   await page.unroute('**/api/v1/investigations');
   await page.route('**/api/v1/investigations', (route) =>
     route.abort('failed'),
   );
   await page.reload();
-  await expect(page.getByRole('main').getByRole('alert')).toContainText('Backend unavailable');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'Backend unavailable',
+  );
 });
 
 test('failed and empty-result runs render without invented findings', async ({
@@ -237,6 +241,9 @@ test('failed and empty-result runs render without invented findings', async ({
   await page.route(`**/api/v1/investigations/${invId}/artifacts`, (route) =>
     route.fulfill({ json: [] }),
   );
+  await page.route(`**/api/v1/investigations/${invId}/uploads`, (route) =>
+    route.fulfill({ json: [] }),
+  );
   await page.route(`**/api/v1/investigations/${invId}/runs`, (route) =>
     route.fulfill({ json: [run] }),
   );
@@ -247,7 +254,9 @@ test('failed and empty-result runs render without invented findings', async ({
   await expect(page.getByRole('status')).toContainText(
     'Analysis status: failed',
   );
-  await expect(page.getByRole('main').getByRole('alert')).toContainText('ANALYSIS_TIMEOUT');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'ANALYSIS_TIMEOUT',
+  );
   await expect(
     page.getByRole('heading', { name: 'Persisted findings' }),
   ).toHaveCount(0);

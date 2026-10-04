@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select
 
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.errors import ProductError
-from ringsentinel.platform.models import AnalysisRun, Artifact, Status, StoredBlob
+from ringsentinel.platform.models import AnalysisRun, Artifact, Status, StoredBlob, UploadPart
 from ringsentinel.platform.storage import StoredObject
 
 
@@ -24,6 +24,7 @@ class DatabaseStorageBackend:
     def save_in(self, session, content: bytes) -> StoredObject:
         # Caller holds Database.write(); admission and bytes commit together.
         used = session.scalar(select(func.coalesce(func.sum(StoredBlob.size_bytes), 0)))
+        used += session.scalar(select(func.coalesce(func.sum(UploadPart.size_bytes), 0)))
         if used + len(content) > self.limit_bytes:
             raise ProductError("QUOTA_EXCEEDED")
         obj = StoredObject(f"{uuid4().hex}.json", len(content), hashlib.sha256(content).hexdigest())

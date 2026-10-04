@@ -20,12 +20,17 @@ from ringsentinel.api.contracts import (
     InvestigatorRequest,
     InvestigatorResponse,
     ReadinessResponse,
+    ResultChunkResponse,
+    ResultManifestResponse,
     ResultsResponse,
     ReviewRequest,
     ReviewResponse,
     RunCreate,
     RunResponse,
     SessionResponse,
+    UploadBegin,
+    UploadCancelResponse,
+    UploadProgress,
 )
 from ringsentinel.api.security import current_principal
 from ringsentinel.investigation.investigator import InvestigatorService
@@ -37,8 +42,10 @@ from ringsentinel.platform.models import (
     ReviewAudit,
     StorageDeletion,
 )
+from ringsentinel.platform.result_transport import ResultTransport
 from ringsentinel.platform.reviews import ReviewService
 from ringsentinel.platform.service import InvestigationService, Principal
+from ringsentinel.platform.upload_transport import CHUNK_BYTES, UploadTransport
 
 router = APIRouter(
     prefix="/api/v1",
@@ -176,6 +183,85 @@ async def upload_artifact(
     )
 
 
+@router.get("/investigations/{investigation_id}/uploads", response_model=list[UploadProgress])
+def pending_uploads(investigation_id: str, principal: CurrentPrincipal, service: Service):
+    return UploadTransport(service).pending(principal, investigation_id)
+
+
+@router.post("/investigations/{investigation_id}/uploads", response_model=UploadProgress)
+def begin_upload(
+    investigation_id: str,
+    body: UploadBegin,
+    principal: CurrentPrincipal,
+    service: Service,
+    idempotency_key: Annotated[str, Header(min_length=1, max_length=80, pattern=r"^[\w-]+$")],
+):
+    return UploadTransport(service).begin(
+        principal,
+        investigation_id,
+        name=body.name,
+        size_bytes=body.size_bytes,
+        checksum=body.checksum,
+        key=idempotency_key,
+    )
+
+
+@router.put(
+    "/investigations/{investigation_id}/uploads/{upload_id}/parts/{index}",
+    response_model=UploadProgress,
+)
+async def receive_upload_part(
+    investigation_id: str,
+    upload_id: str,
+    index: int,
+    request: Request,
+    principal: CurrentPrincipal,
+    service: Service,
+    x_chunk_sha256: Annotated[str, Header(pattern=r"^[a-f0-9]{64}$")],
+):
+    transport = UploadTransport(service)
+    transport._supported()
+    # Authorization precedes reading bytes; content length is only an early hint.
+    await run_in_threadpool(service.get, principal, investigation_id)
+    length = request.headers.get("content-length")
+    if length and (not length.isdecimal() or int(length) > CHUNK_BYTES):
+        raise ProductError("UPLOAD_TOO_LARGE")
+    payload = bytearray()
+    async for chunk in request.stream():
+        if len(payload) + len(chunk) > CHUNK_BYTES:
+            raise ProductError("UPLOAD_TOO_LARGE")
+        payload.extend(chunk)
+    return await run_in_threadpool(
+        transport.receive,
+        principal,
+        investigation_id,
+        upload_id,
+        index,
+        bytes(payload),
+        x_chunk_sha256,
+    )
+
+
+@router.post(
+    "/investigations/{investigation_id}/uploads/{upload_id}/complete",
+    response_model=ArtifactResponse,
+)
+def complete_upload(
+    investigation_id: str, upload_id: str, principal: CurrentPrincipal, service: Service
+):
+    return UploadTransport(service).complete(principal, investigation_id, upload_id)
+
+
+@router.delete(
+    "/investigations/{investigation_id}/uploads/{upload_id}",
+    response_model=UploadCancelResponse,
+)
+def cancel_upload(
+    investigation_id: str, upload_id: str, principal: CurrentPrincipal, service: Service
+):
+    return UploadTransport(service).cancel(principal, investigation_id, upload_id)
+
+
 @router.get("/investigations/{investigation_id}/runs", response_model=list[RunResponse])
 def runs(investigation_id: str, principal: CurrentPrincipal, service: Service):
     return service.runs(principal, investigation_id)
@@ -208,6 +294,16 @@ def execute_run(run_id: str, request: Request, principal: CurrentPrincipal, serv
 @router.get("/runs/{run_id}/results", response_model=ResultsResponse)
 def results(run_id: str, principal: CurrentPrincipal, service: Service):
     return service.result(principal, run_id)
+
+
+@router.get("/runs/{run_id}/results/manifest", response_model=ResultManifestResponse)
+def result_manifest(run_id: str, principal: CurrentPrincipal, service: Service):
+    return ResultTransport(service).manifest(principal, run_id)
+
+
+@router.get("/runs/{run_id}/results/chunks/{index}", response_model=ResultChunkResponse)
+def result_chunk(run_id: str, index: int, principal: CurrentPrincipal, service: Service):
+    return ResultTransport(service).chunk(principal, run_id, index)
 
 
 @router.get("/runs/{run_id}/rings", response_model=list[CandidateResponse])

@@ -10,6 +10,7 @@ ERRORS = {
     "NOT_FOUND": (404, "Resource not found."),
     "CONFLICT": (409, "The request conflicts with the current resource state."),
     "UPLOAD_TOO_LARGE": (413, "The dataset exceeds the configured upload limit."),
+    "UPLOAD_TRANSPORT_UNAVAILABLE": (409, "Chunked upload is not enabled for this workspace."),
     "INVALID_DATASET": (422, "Supply a valid payments-v1 or DatasetBundle JSON file."),
     "ANALYSIS_FAILED": (500, "Analysis could not be completed."),
     "ANALYSIS_TIMEOUT": (504, "Analysis exceeded its execution time limit."),

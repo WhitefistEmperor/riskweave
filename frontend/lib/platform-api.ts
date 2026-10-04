@@ -1,4 +1,10 @@
-import { apiRequest } from '@/lib/client';
+import { apiRequest, ApiError } from '@/lib/client';
+import { loadChunkedResult } from '@/lib/result-transport';
+import {
+  uploadInChunks,
+  validUploadProgress,
+  type UploadProgress,
+} from '@/lib/upload-transport';
 import type { JsonValue } from '@/lib/api';
 import type { EvidenceQueries } from '@/lib/evidence';
 import {
@@ -116,7 +122,10 @@ export const platformApi = {
       storage_cleanup: 'complete' | 'pending';
     }>(
       `/v1/investigations/${id(investigationId)}`,
-      { ...json({ confirm_name: confirmName, expected_updated_at: updatedAt }), method: 'DELETE' },
+      {
+        ...json({ confirm_name: confirmName, expected_updated_at: updatedAt }),
+        method: 'DELETE',
+      },
       (value) =>
         object(value) &&
         value.investigation_id === investigationId &&
@@ -174,8 +183,47 @@ export const platformApi = {
       { signal },
       list(validArtifact),
     ),
-  upload: (value: string, file: File) =>
-    apiRequest<ArtifactRecord>(
+  pendingUploads: (value: string, signal?: AbortSignal) =>
+    apiRequest<UploadProgress[]>(
+      `/v1/investigations/${id(value)}/uploads`,
+      { signal },
+      (v) =>
+        Array.isArray(v) &&
+        v.every(
+          (item) =>
+            validUploadProgress(item) &&
+            item.investigation_id === value &&
+            item.status === 'pending',
+        ) &&
+        v.length <= 1,
+    ),
+  cancelUpload: (value: string, uploadId: string) =>
+    apiRequest<{ id: string; status: 'aborted' | 'expired' }>(
+      `/v1/investigations/${id(value)}/uploads/${id(uploadId)}`,
+      { method: 'DELETE' },
+      (v) =>
+        object(v) &&
+        v.id === uploadId &&
+        ['aborted', 'expired'].includes(String(v.status)),
+    ),
+  upload: async (
+    value: string,
+    file: File,
+    key = crypto.randomUUID(),
+    onProgress?: (progress: UploadProgress) => void,
+  ) => {
+    if (file.size > 2_000_000) {
+      try {
+        return await uploadInChunks(value, file, key, onProgress);
+      } catch (error) {
+        if (
+          !(error instanceof ApiError) ||
+          error.code !== 'UPLOAD_TRANSPORT_UNAVAILABLE'
+        )
+          throw error;
+      }
+    }
+    return apiRequest<ArtifactRecord>(
       `/v1/investigations/${id(value)}/artifacts`,
       {
         method: 'POST',
@@ -187,7 +235,8 @@ export const platformApi = {
         },
       },
       validArtifact,
-    ),
+    );
+  },
   runs: (value: string, signal?: AbortSignal) =>
     apiRequest<AnalysisRun[]>(
       `/v1/investigations/${id(value)}/runs`,
@@ -204,19 +253,28 @@ export const platformApi = {
       validRun,
     ),
   run: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisRun>(`/v1/runs/${id(value)}`, { signal }, (v) => validRun(v) && (v as AnalysisRun).id === value),
+    apiRequest<AnalysisRun>(
+      `/v1/runs/${id(value)}`,
+      { signal },
+      (v) => validRun(v) && (v as AnalysisRun).id === value,
+    ),
   execute: (value: string, investigationId: string, signal?: AbortSignal) =>
     apiRequest<AnalysisRun>(
       `/v1/runs/${id(value)}/execute`,
       { method: 'POST', signal },
-      (v) => validRun(v) && (v as AnalysisRun).id === value && (v as AnalysisRun).investigation_id === investigationId,
+      (v) =>
+        validRun(v) &&
+        (v as AnalysisRun).id === value &&
+        (v as AnalysisRun).investigation_id === investigationId,
     ),
-  results: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisResult>(
-      `/v1/runs/${id(value)}/results`,
-      { signal },
-      validResult,
-    ),
+  results: (value: string, signal?: AbortSignal, savedRun?: AnalysisRun) =>
+    savedRun?.configuration_snapshot.execution_mode === 'request'
+      ? loadChunkedResult(savedRun, signal)
+      : apiRequest<AnalysisResult>(
+          `/v1/runs/${id(value)}/results`,
+          { signal },
+          validResult,
+        ),
 };
 
 /** Dispatch an existing request-mode claim; never enqueue a second analysis implicitly. */
@@ -229,7 +287,10 @@ export async function pollRun(
     let run = await platformApi.run(value, signal);
     if (signal.aborted) return;
     onUpdate(run);
-    if (run.status === 'queued' && run.configuration_snapshot.execution_mode === 'request') {
+    if (
+      run.status === 'queued' &&
+      run.configuration_snapshot.execution_mode === 'request'
+    ) {
       run = await platformApi.execute(value, run.investigation_id, signal);
       if (signal.aborted) return;
       onUpdate(run);

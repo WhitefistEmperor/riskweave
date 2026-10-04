@@ -43,13 +43,13 @@ default queue uses a long-lived scheduler and filesystem objects. Optional
 [database storage and request execution](request-execution.md) now provide atomic
 durable bytes, distributed single-run claims, deadlines and late-worker fencing.
 They preserve case data across instances without a lifespan scheduler. This is
-a tested foundation; transport, background dispatch and hosted dependencies still
+a tested foundation; transport capacity, background dispatch and hosted dependencies still
 need completion before release.
 
 A complete Vercel deployment still needs:
 
 1. A provisioned private PostgreSQL database with explicit migrations through
-   revision `0004`, TLS, a verified free allowance and an explicit storage budget.
+   revision `0005`, TLS, a verified free allowance and an explicit storage budget.
 2. Enable database object storage and verify authenticated reads, checksum checks,
    atomic byte admission/deletion and backup/restore against that deployed database.
    Local `/tmp` is suitable only for disposable analysis scratch files.
@@ -57,9 +57,10 @@ A complete Vercel deployment still needs:
    with retry scheduling and hosted interruption/recovery checks. Browser polling
    currently dispatches existing queued runs; closing it before dispatch does not
    guarantee background completion. No ASGI lifespan daemon is a durable worker.
-4. Bounded uploads and responses suitable for Vercel's 4.5 MB function limit.
-   The current 25 MB upload limit and large evidence payloads need adaptation.
-   Splitting transport must retain ownership, validation and checksum checks.
+4. Verify [bounded uploads and result fragments](bounded-transport.md) on the hosted
+   gateway against Vercel's 4.5 MB function limit. These retain ownership, validation,
+   retries and whole-object checksums; large legacy evidence and investigator replies
+   still need capacity review. No large workload is released from local tests alone.
 5. Analysis bounded below the Hobby function duration of 300 seconds, allowing
    time to persist results and report failures. Resource/capacity tests must
    also verify the 2 GB memory ceiling and bundle allowance.

@@ -1,6 +1,8 @@
 """Real local API smoke; creates isolated synthetic records, never deletes user work."""
 
 import argparse
+import base64
+import hashlib
 import json
 import time
 from uuid import uuid4
@@ -42,13 +44,34 @@ def main():
             assert response.headers["X-Request-ID"]
             return response.json()
 
+        def results(run):
+            if not args.request_execution:
+                return get(f"/runs/{run['id']}/results")
+            root = f"/runs/{run['id']}/results"
+            manifest = get(f"{root}/manifest")
+            assert manifest["investigation_id"] == run["investigation_id"]
+            assert manifest["sha256"] == run["result_checksum"]
+            chunks = []
+            for index in range(manifest["chunk_count"]):
+                fragment = get(f"{root}/chunks/{index}")
+                assert fragment["index"] == index
+                assert fragment["result_sha256"] == manifest["sha256"]
+                part = base64.b64decode(fragment["data"], validate=True)
+                assert len(part) == fragment["size_bytes"]
+                assert hashlib.sha256(part).hexdigest() == fragment["sha256"]
+                chunks.append(part)
+            content = b"".join(chunks)
+            assert len(content) == manifest["size_bytes"]
+            assert hashlib.sha256(content).hexdigest() == run["result_checksum"]
+            return json.loads(content)
+
         assert get("/health")["status"] == "ok"
         assert get("/ready")["status"] == "ready"
         assert get("/session")["user_id"] == args.owner
         if args.reopen_run:
             run = get(f"/runs/{args.reopen_run}")
             assert run["status"] == "completed"
-            result = get(f"/runs/{run['id']}/results")
+            result = results(run)
             print(
                 json.dumps(
                     {
@@ -65,12 +88,40 @@ def main():
         inv_id = investigation["id"]
         bundle = SyntheticPaymentGenerator(GenerationConfig(seed=105, transactions=1000)).generate()
         path = f"/api/v1/investigations/{inv_id}/artifacts"
-        response = client.post(
-            path,
-            content=bundle.model_dump_json(),
-            headers={"Content-Type": "application/json", "X-Filename": "sample.json"},
-        )
-        assert response.status_code == 201, response.text
+        if args.request_execution:
+            content = bundle.model_dump_json().encode()
+            # Whitespace raises only the transport size, preserving inference input.
+            content += b" " * max(0, 4_700_000 - len(content))
+            upload_path = f"/api/v1/investigations/{inv_id}/uploads"
+            started_upload = client.post(
+                upload_path,
+                json={
+                    "name": "sample.json",
+                    "size_bytes": len(content),
+                    "checksum": hashlib.sha256(content).hexdigest(),
+                },
+                headers={"Idempotency-Key": uuid4().hex},
+            )
+            assert started_upload.status_code == 200, started_upload.text
+            upload = started_upload.json()
+            for index in range(upload["chunk_count"]):
+                part = content[index * upload["chunk_bytes"] : (index + 1) * upload["chunk_bytes"]]
+                accepted = client.put(
+                    f"{upload_path}/{upload['id']}/parts/{index}",
+                    content=part,
+                    headers={"X-Chunk-SHA256": hashlib.sha256(part).hexdigest()},
+                )
+                assert accepted.status_code == 200, accepted.text
+            response = client.post(f"{upload_path}/{upload['id']}/complete")
+            assert response.status_code == 200, response.text
+            assert get(f"/investigations/{inv_id}/uploads") == []
+        else:
+            response = client.post(
+                path,
+                content=bundle.model_dump_json(),
+                headers={"Content-Type": "application/json", "X-Filename": "sample.json"},
+            )
+            assert response.status_code == 201, response.text
         artifact_id = response.json()["id"]
         started = time.monotonic()
         response = client.post(
@@ -99,7 +150,7 @@ def main():
             assert run["started_at"] and run["completed_at"]
         else:
             assert "running" in states, states
-        result = get(f"/runs/{run_id}/results")
+        result = results(run)
         assert result["event_count"] == len(bundle.events)
         assert result["currency"] == "INR"
         rings = get(f"/runs/{run_id}/rings")
@@ -130,7 +181,7 @@ def main():
         assert review["disposition"] == "investigating"
         assert review["history"][0]["note"] == review_body["note"]
         assert get(f"/runs/{run_id}")["result_checksum"] == run["result_checksum"]
-        assert get(f"/runs/{run_id}/results") == result
+        assert results(run) == result
         review_denied = client.get(
             review_path, headers={"X-Development-User": f"other-{args.owner}"}
         )
@@ -167,6 +218,7 @@ def main():
                     "investigation_id": inv_id,
                     "run_id": run_id,
                     "states": states,
+                    "transport": "bounded-chunks" if args.request_execution else "local-whole-json",
                     "enqueue_seconds": round(enqueue_seconds, 4),
                     "elapsed_seconds": round(time.monotonic() - started, 2),
                     "events": result["event_count"],

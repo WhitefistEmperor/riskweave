@@ -100,6 +100,7 @@ export const workspaceUrl = `/investigations/${investigationId}?run=${runId}`;
 export async function installWorkspace(page: Page, currentRun = run) {
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/uploads')) return route.fulfill({ json: [] });
     const data = path.endsWith('/review')
       ? {
           run_id: runId,
