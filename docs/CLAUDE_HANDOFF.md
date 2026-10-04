@@ -71,6 +71,10 @@ the project is already deployed or validated on real financial data.
   Erasure removes dispatch intent; stale steps cannot resurrect a case.
 - Alembic head is `0006`; upgrades preserve populated cases/reviews/foreign keys.
 - CI covers backend, native frontend and isolated PostgreSQL/container workflows.
+- Private read-only operator snapshot counts runs, overdue execution/delivery and
+  recent failures, with sanitized CLI exit codes and no case details. PostgreSQL
+  transactions are read-only. External alerts/scheduling still require deployment;
+  see `docs/operator-monitoring.md`.
 - PostgreSQL backup/restore drill now targets isolated CI databases with matching
   PostgreSQL 17 clients, generated lifecycle fixtures, local/database object modes,
   owner/checksum/migration preservation and existing-target rejection. Check the

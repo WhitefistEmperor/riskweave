@@ -12,6 +12,7 @@ from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
 from ringsentinel.platform.backup import create_snapshot, restore_snapshot
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.database_storage import storage_for
+from ringsentinel.platform.operations import report
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
 
@@ -87,6 +88,7 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(databases, ba
         assert restored.run(owner, run.id).result_checksum == checksum
         assert restored.storage.read(artifact.storage_key) == payload
         assert restored.list(Principal("different-owner")) == []
+        assert report(target_db)["status"] == "ok"
         with pytest.raises(ValueError, match="empty PostgreSQL"):
             restore_snapshot(
                 target.model_copy(update={"storage_root": tmp_path / "never-written"}),
