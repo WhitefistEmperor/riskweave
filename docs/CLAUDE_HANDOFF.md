@@ -5,13 +5,19 @@ the project is already deployed or validated on real financial data.
 
 ## Latest verified source
 
-- Application source: `2afdf686f95dd9f2c88ece725b704bba37c6a69f`, pushed
+- Application source: `eb9f856f55473ed56272dd692638dd91c72692a1`, pushed
   to `codex/production-foundation`. A subsequent documentation-only commit may
   update this handoff; verify the current Git and PR state before continuing.
-- [Linux CI 37219967669](https://github.com/WhitefistEmperor/riskweave/actions/runs/37219967669)
-  passed 192 Python tests, 65 production-browser tests, both container builds,
+- [Linux CI 37220886350](https://github.com/WhitefistEmperor/riskweave/actions/runs/37220886350)
+  passed 192 Python tests, 66 production-browser tests, both container builds,
   PostgreSQL local/request/SDK background inference and both actual PostgreSQL 17
   backup/restore storage modes. All six push/PR checks passed on this source.
+- Oversized inline result requests reject before full application reads in both
+  storage modes, after owner authorization. Browser tests verify large legacy
+  local-mode fallback, UTF-8 reconstruction, fragment/whole checksum rejection
+  and cancellation. Actual PostgreSQL restore drills verify storage-size queries
+  and the service byte guard. Fragment full-object reads and complete browser
+  allocation remain unoptimized; no hosted capacity claim is established.
 - Database-paged worklist reads, owner-scoped counts, literal wildcard escaping,
   Unicode SQLite search, status filtering and page bounds are verified. Browser
   tests cover later-page matches, malformed page metadata, cancellation/revisit
@@ -21,7 +27,7 @@ the project is already deployed or validated on real financial data.
 - Backup drills preserve generated input, result checksums, ownership and migration
   state and reject populated restore targets. The operator snapshot also ran in
   the restored PostgreSQL database using a read-only transaction.
-- Production Python dependency/model inventory measured 440,407,082 bytes against
+- Production Python dependency/model inventory measured 440,412,828 bytes against
   a conservative 450,000,000-byte CI budget. Actual hosted function size, memory,
   subprocess support, generated Workflow authentication and capacity remain unverified.
 - Local operator report returned schema `0006`, 14 completed runs and no overdue
