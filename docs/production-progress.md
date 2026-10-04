@@ -2,6 +2,10 @@
 
 ## Implemented
 
+- Fresh nonce script CSP on dynamically rendered/private console documents,
+  including missing document routes; explicit identity connection origins and
+  blocked unconfigured connections. Inline UI styles remain permitted. Verify
+  the hosted gateway and live identity workflow before release.
 - Optional fixed HTTPS public-JWKS retrieval and rotation, bounded response/cache,
   refresh throttling, atomic key replacement and fail-closed expired-cache outages.
   Static-file mode remains available. Live-provider lifecycle tests remain required.

@@ -54,6 +54,9 @@ the project is already deployed or validated on real financial data.
   throttled refresh, atomic key retirement and expired-cache outage rejection.
   Real-signature rotation tests pass; live provider rotation remains unverified.
 - Native Next.js 16.3.8 console, standalone non-root Docker build.
+- Per-request nonce script CSP, dynamic/private document rendering, explicit OIDC
+  connection origins, blocked inline handlers and unconfigured external connections.
+  Inline styles remain allowed for component positioning; verify hosted auth/CDN.
 - Optional private database object storage, atomic global byte admission,
   checksummed reads, offline verified file import and backup/restore tooling.
 - Request-mode global SQL execution claim, killable bounded subprocess,

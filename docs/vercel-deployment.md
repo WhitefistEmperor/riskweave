@@ -24,6 +24,7 @@ Set these environment variables for the intended deployment environment:
 | `RINGSENTINEL_API_PROXY_TARGET` | HTTPS origin of the deployed, authenticated API |
 | `NEXT_PUBLIC_RISKWEAVE_OIDC_AUTHORITY` | HTTPS issuer configured for the API |
 | `NEXT_PUBLIC_RISKWEAVE_OIDC_CLIENT_ID` | Public PKCE client registered at that issuer |
+| `RINGSENTINEL_OIDC_CONNECT_ORIGINS` | Optional JSON array of exact HTTPS origins when provider endpoints use another origin; set at build and runtime |
 
 Do not set `NEXT_PUBLIC_RINGSENTINEL_API_BASE_URL` or
 `RINGSENTINEL_STANDALONE` in Vercel. Public OIDC variables are build-time values;
@@ -35,6 +36,12 @@ unreleased. Never register wildcard production callbacks.
 The rewrite preserves same-origin browser requests to `/api/*`. A localhost
 proxy destination cannot serve a hosted console. Configure a real API origin
 before deploying the analyst workflow.
+
+Console documents render per request with fresh script CSP nonces and private,
+no-store caching. The policy permits the app and configured identity connection
+origins; inline styles remain allowed for component positioning. Keep the proxy's
+CSP header through the hosted gateway, verify live PKCE endpoints against the
+allowlist, and account for dynamic rendering in Hobby's request allowance.
 
 ## API release gates
 

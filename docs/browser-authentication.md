@@ -37,6 +37,20 @@ tampered callback/state, scope denial and two-user ownership isolation. The exis
 offline signed-token API tests are evidence of verification and authorization only.
 This frontend change does not provision an identity provider by itself.
 
-Browser scripting remains a trust boundary: deploy an appropriate script CSP and
-keep third-party scripts out of the analyst workspace. Current CSP restricts framing,
-objects and base URI; a full script CSP remains outstanding.
+Browser documents now receive a fresh cryptographic CSP nonce for framework
+hydration. Inline handlers and scripts without trusted provenance are blocked;
+production does not allow script `unsafe-inline` or `unsafe-eval`. Connections
+are restricted to the app and the configured issuer origin. If discovery lists
+token/key endpoints on another origin, configure `RINGSENTINEL_OIDC_CONNECT_ORIGINS`
+as a JSON array of exact HTTPS origins (at most eight additional origins).
+Set this backend-only frontend variable at build and runtime. Do not use wildcard
+origins. API rewrites remain same-origin browser requests.
+
+All document routes render dynamically and use private/no-store responses so
+nonces are not reused by static output or shared caching. This increases server
+requests relative to static pages; verify the free hosting allowance. Styles still
+permit inline positioning used by the component libraries. Third-party scripts,
+iframes and provider widgets are not enabled; use the full-page PKCE flow.
+Production-browser tests cover framework hydration, fresh/non-caller-selected
+nonces, HTML script/handler injection and blocked unconfigured connections. The
+chosen live provider and hosted gateway must still pass their full workflow.

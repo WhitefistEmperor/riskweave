@@ -1,9 +1,11 @@
 import type { NextConfig } from 'next';
+import { connectionSources } from './lib/security-policy.mjs';
 
 const production = process.env.RINGSENTINEL_ENVIRONMENT === 'production';
 const target = process.env.RINGSENTINEL_API_PROXY_TARGET;
 const oidcAuthority = process.env.NEXT_PUBLIC_RISKWEAVE_OIDC_AUTHORITY;
 const oidcClientId = process.env.NEXT_PUBLIC_RISKWEAVE_OIDC_CLIENT_ID;
+connectionSources(oidcAuthority, process.env.RINGSENTINEL_OIDC_CONNECT_ORIGINS, production);
 if (Boolean(oidcAuthority) !== Boolean(oidcClientId))
   throw new Error('OIDC authority and client ID must be configured together');
 if (oidcAuthority) {
@@ -72,14 +74,14 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
-          },
           ...(production
             ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000' }]
             : []),
         ],
+      },
+      {
+        source: '/api/:path*',
+        headers: [{ key: 'Content-Security-Policy', value: "default-src 'none'; frame-ancestors 'none'; base-uri 'none'" }],
       },
     ];
   },
