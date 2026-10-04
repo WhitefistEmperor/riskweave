@@ -15,6 +15,7 @@ from sklearn.metrics import average_precision_score
 from ringsentinel import __version__
 from ringsentinel.data.ingestion import PaymentDataset, parse_input, single_currency
 from ringsentinel.data.schema import StrictModel
+from ringsentinel.evaluation.feature_drift import diagnostics
 from ringsentinel.features.extractor import extract_event_features
 from ringsentinel.models.artifact import load_artifact
 
@@ -245,9 +246,11 @@ def main():
         )
         model, threshold = load_artifact(args.model, args.model_sha256)
         features = extract_event_features(scoped)
+        feature_shift = diagnostics(features, plan, model.feature_names)
         predictions = model.predict_proba(features)
         scores = dict(zip(features.event_ids, map(float, predictions), strict=True))
         report = evaluate(data, labels, plan, scores, threshold)
+        report["feature_shift"] = feature_shift
         report["input_sha256"] = {
             name: hashlib.sha256(content).hexdigest() for name, content in inputs.items()
         }

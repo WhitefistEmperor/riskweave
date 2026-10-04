@@ -9,7 +9,8 @@ model trustworthy. Use a known build-owned model, never an uploaded model.
 Three separate UTF-8 JSON inputs are required. Keep inputs and reports in an
 ignored private `work/` directory. Do not commit real payments, labels, reports
 or personal identifiers. Reports omit event/customer IDs and per-event scores,
-but label definitions and aggregate small cells can still be sensitive.
+but label definitions, aggregate small cells and feature range summaries can
+still be sensitive.
 
 1. Payments use the existing strict `payments-v1` contract. CSV exports can be
    prepared with the explicit workflow in `docs/csv-payment-mapping.md`; retain
@@ -84,6 +85,20 @@ window. Brier error combines calibration and other properties; a low Brier value
 alone does not establish calibration. Customer overlap makes the result a measure
 of returning-customer behavior, not an unseen-customer generalization claim.
 
+The command also reports `feature_shift` on every event in the validation and test
+windows, regardless of label availability. It reuses the full causal scoring prefix
+and exact model feature names. Per-feature summaries include counts, minima/maxima,
+means, population standard deviations, maximum empirical CDF difference,
+Wasserstein-1 distance in feature units, mean change in validation standard deviations
+and the fraction of test values outside the observed validation range. Constant
+validation features have no defined standardized mean change (`null`). Missing,
+nonfinite or unrepresentable numeric inputs fail rather than being silently dropped.
+These are descriptive marginal comparisons. They supply no p-values, confidence
+intervals, automatic drift thresholds or admission decision; repeated customers and
+graph/history features are dependent. The validation window is not a certified
+training reference. Stable marginals cannot establish joint, outcome or calibration
+stability. No threshold/model selection uses these test-window diagnostics.
+
 All reports explicitly set `production_ready: false`. Missing labels can create
 selection bias. No confidence intervals, protected-group fairness audit, real
 ring-ground-truth matching, feature-drift admission, prospective label-maturation
@@ -97,3 +112,5 @@ prove the command path, not observed-data accuracy or approval.
 
 Method references: [scikit-learn metrics](https://scikit-learn.org/stable/modules/model_evaluation.html)
 and [time-series evaluation](https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-of-time-series-data).
+
+Feature distance definitions: [SciPy empirical CDF statistic](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html) and [Wasserstein-1 distance](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html). Only descriptive distances are implemented; independent-sample test assumptions are not claimed.

@@ -185,13 +185,21 @@ def test_cli_limits_scoring_to_prefix_and_never_overwrites_reports(
 
     data, plan, labels, _ = control
     plan = plan.model_copy(update={"test_end": datetime(2026, 1, 28, tzinfo=UTC)})
+    missing_id = next(
+        event.event_id
+        for event in data.events
+        if plan.validation_start <= event.timestamp < plan.test_start
+    )
+    labels = labels.model_copy(
+        update={"labels": tuple(label for label in labels.labels if label.event_id != missing_id)}
+    )
     inputs = {"payments": data, "labels": labels, "plan": plan}
     for name, value in inputs.items():
         (tmp_path / (name + ".json")).write_text(value.model_dump_json(), encoding="utf-8")
     seen = []
 
     class FrozenControl:
-        feature_names = ("synthetic-control-feature",)
+        feature_names = ("amount_log",)
 
         def predict_proba(self, table):
             seen.extend(row.timestamp for row in table.rows)
@@ -217,6 +225,11 @@ def test_cli_limits_scoring_to_prefix_and_never_overwrites_reports(
     assert report["data_origin"] == "synthetic-control" and not report["production_ready"]
     assert len(report["software"]["source_tree_sha256"]) == 64
     assert set(report["input_sha256"]) == {"payments", "labels", "plan"}
+    shift = report["feature_shift"]
+    assert shift["validation_events"] == report["windows"]["validation"]["events"]
+    assert report["windows"]["validation"]["unresolved_or_missing"] == 1
+    assert shift["test_events"] == report["windows"]["test"]["events"]
+    assert set(shift["features"]) == {"amount_log"} and shift["labels_used"] is False
     assert data.events[0].event_id not in output.read_text()
     original = output.read_bytes()
     capsys.readouterr()
