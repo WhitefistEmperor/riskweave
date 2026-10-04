@@ -35,11 +35,16 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
         importlib.import_module(
             "ringsentinel.platform.migrations.versions.0006_background_dispatch"
         ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0007_result_fragments"
+        ).upgrade()
     sql = output.getvalue()
     assert "CREATE TABLE analysis_runs" in sql
     assert "TIMESTAMP WITH TIME ZONE" in sql
     assert "UNIQUE (active_slot)" in sql
     assert "FOREIGN KEY(owner_id) REFERENCES users" in sql
+    assert "CREATE TABLE result_fragments" in sql
+    assert "ON DELETE CASCADE" in sql
     assert "CREATE TABLE candidate_reviews" in sql
     assert "CREATE TABLE review_audit" in sql
     assert "CREATE TABLE storage_deletions" in sql

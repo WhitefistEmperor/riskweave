@@ -83,7 +83,7 @@ managed dispatch and provider dependencies still need verification before releas
 A complete Vercel deployment still needs:
 
 1. A provisioned private PostgreSQL database with explicit migrations through
-   revision `0006`, TLS, a verified free allowance and an explicit storage budget.
+   revision `0007`, TLS, a verified free allowance and an explicit storage budget.
 2. Enable database object storage and verify authenticated reads, checksum checks,
    atomic byte admission/deletion and backup/restore against that deployed database.
    Local `/tmp` is suitable only for disposable analysis scratch files.

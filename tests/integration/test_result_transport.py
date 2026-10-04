@@ -6,14 +6,17 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
 from ringsentinel.api.app import create_app
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.database_storage import storage_for
 from ringsentinel.platform.deletion import DeletionService
-from ringsentinel.platform.models import AnalysisRun, StoredBlob
+from ringsentinel.platform.errors import ProductError
+from ringsentinel.platform.models import AnalysisRun, ResultFragment, StoredBlob
+from ringsentinel.platform.result_fragments import index_existing
+from ringsentinel.platform.result_transport import CHUNK_BYTES, ResultTransport
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
 
@@ -127,3 +130,126 @@ def test_unfinished_and_corrupt_sources_never_publish_chunks(source):
             response = client.get(f"{path}/{suffix}")
             assert response.status_code == 500
             assert "changed bytes" not in response.text
+
+
+def test_indexed_fragments_do_not_read_full_objects_and_erasure_removes_digests(
+    source, monkeypatch
+):
+    _, service, owner, case, run = source
+    service.claim()
+    service.finish(run.id, {"rings": [], "fixture": "x" * 4_000_011})
+    raw = service.result_content(owner, run.id)
+    ranges = []
+    original_range = service.storage.read_range
+
+    def bounded_range(key, offset, length):
+        ranges.append((offset, length))
+        return original_range(key, offset, length)
+
+    monkeypatch.setattr(service.storage, "read", lambda *_: pytest.fail("Whole result read"))
+    monkeypatch.setattr(service.storage, "read_range", bounded_range)
+    transport = ResultTransport(service)
+    info = transport.manifest(owner, run.id)
+    parts = [
+        base64.b64decode(transport.chunk(owner, run.id, index)["data"])
+        for index in range(info["chunk_count"])
+    ]
+    assert b"".join(parts) == raw
+    assert sum(length for _, length in ranges) == len(raw) + CHUNK_BYTES
+    assert max(length for _, length in ranges) == CHUNK_BYTES
+    with service.database.session() as session:
+        rows = list(session.scalars(select(ResultFragment).where(ResultFragment.run_id == run.id)))
+        assert len(rows) == info["chunk_count"]
+    DeletionService(service).remove(owner, case.id, case.name)
+    with service.database.session() as session:
+        assert (
+            list(session.scalars(select(ResultFragment).where(ResultFragment.run_id == run.id)))
+            == []
+        )
+
+
+def test_later_part_corruption_fails_without_claiming_manifest_is_full_integrity(source):
+    settings, service, owner, _, run = source
+    service.claim()
+    service.finish(run.id, {"rings": [], "fixture": "x" * 2_000_100})
+    raw = bytearray(service.result_content(owner, run.id))
+    raw[CHUNK_BYTES + 10] ^= 1
+    saved = service.run(owner, run.id)
+    if settings.storage_backend == "database":
+        with service.database.write() as session:
+            session.get(StoredBlob, saved.result_reference).content = bytes(raw)
+    else:
+        with (settings.storage_root / saved.result_reference).open("r+b") as stream:
+            stream.seek(CHUNK_BYTES + 10)
+            stream.write(bytes(raw[CHUNK_BYTES + 10 : CHUNK_BYTES + 11]))
+    transport = ResultTransport(service)
+    assert transport.manifest(owner, run.id)["chunk_count"] == 2
+    transport.chunk(owner, run.id, 0)
+    with pytest.raises(ProductError) as failed:
+        transport.chunk(owner, run.id, 1)
+    assert failed.value.code == "INTERNAL_ERROR"
+
+
+def test_legacy_result_fallback_preserves_checksums_and_incomplete_index_is_not_silently_rebuilt(
+    source,
+):
+    _, service, owner, _, run = source
+    service.claim()
+    service.finish(run.id, {"rings": []})
+    raw = service.result_content(owner, run.id)
+    transport = ResultTransport(service)
+    with service.database.write() as session:
+        session.execute(delete(ResultFragment).where(ResultFragment.run_id == run.id))
+    with pytest.raises(ProductError):
+        transport.manifest(owner, run.id)
+    with service.database.write() as session:
+        session.get(AnalysisRun, run.id).result_size_bytes = None
+    info = transport.manifest(owner, run.id)
+    part = transport.chunk(owner, run.id, 0)
+    assert info["sha256"] == hashlib.sha256(raw).hexdigest()
+    assert base64.b64decode(part["data"]) == raw
+
+
+def test_explicit_legacy_indexing_is_idempotent_and_preserves_evidence(source, monkeypatch):
+    _, service, owner, _, run = source
+    service.claim()
+    service.finish(run.id, {"rings": [], "fixture": "backfill-control"})
+    checksum = service.run(owner, run.id).result_checksum
+    raw = service.result_content(owner, run.id)
+    with service.database.write() as session:
+        session.execute(delete(ResultFragment).where(ResultFragment.run_id == run.id))
+        session.get(AnalysisRun, run.id).result_size_bytes = None
+    with pytest.raises(ValueError):
+        index_existing(service)
+    assert index_existing(service, writers_stopped=True, limit=1) == 1
+    assert index_existing(service, writers_stopped=True, limit=1) == 0
+    assert service.run(owner, run.id).result_checksum == checksum
+    assert service.result_content(owner, run.id) == raw
+    monkeypatch.setattr(
+        service.storage, "read", lambda *_: pytest.fail("Indexed fallback full read")
+    )
+    assert ResultTransport(service).manifest(owner, run.id)["sha256"] == checksum
+
+
+def test_legacy_indexing_refuses_active_and_corrupt_data_without_creating_digests(source):
+    settings, service, owner, _, run = source
+    with pytest.raises(ValueError, match="Active analysis"):
+        index_existing(service, writers_stopped=True)
+    service.claim()
+    service.finish(run.id, {"rings": []})
+    key = service.run(owner, run.id).result_reference
+    with service.database.write() as session:
+        session.execute(delete(ResultFragment).where(ResultFragment.run_id == run.id))
+        session.get(AnalysisRun, run.id).result_size_bytes = None
+        if settings.storage_backend == "database":
+            session.get(StoredBlob, key).content = b"corrupt"
+    if settings.storage_backend == "local":
+        (settings.storage_root / key).write_bytes(b"corrupt")
+    with pytest.raises(ProductError):
+        index_existing(service, writers_stopped=True)
+    with service.database.session() as session:
+        assert session.get(AnalysisRun, run.id).result_size_bytes is None
+        assert (
+            list(session.scalars(select(ResultFragment).where(ResultFragment.run_id == run.id)))
+            == []
+        )

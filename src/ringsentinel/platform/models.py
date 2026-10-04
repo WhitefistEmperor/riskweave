@@ -100,9 +100,24 @@ class AnalysisRun(Identity, Base):
     configuration_snapshot: Mapped[dict] = mapped_column(JSON)
     result_reference: Mapped[str | None] = mapped_column(String(100))
     result_checksum: Mapped[str | None] = mapped_column(String(64))
+    result_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
     execution_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     dispatch_state: Mapped[str | None] = mapped_column(String(16))
     executor_slot: Mapped[str | None] = mapped_column(String(80), unique=True)
+
+
+class ResultFragment(Base):
+    __tablename__ = "result_fragments"
+    __table_args__ = (
+        CheckConstraint("part_index >= 0 AND part_index < 250", name="result_fragment_index"),
+        CheckConstraint("size_bytes > 0 AND size_bytes <= 2000000", name="result_fragment_size"),
+    )
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    part_index: Mapped[int] = mapped_column(primary_key=True)
+    size_bytes: Mapped[int]
+    checksum: Mapped[str] = mapped_column(String(64))
 
 
 class ReviewDisposition(StrEnum):

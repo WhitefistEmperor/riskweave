@@ -458,6 +458,11 @@ class InvestigationService:
                 run.error_message_safe = ERRORS[error_code][1] if error_code else None
                 run.result_reference = saved.key if saved else None
                 run.result_checksum = saved.checksum if saved else None
+                run.result_size_bytes = saved.size_bytes if saved else None
+                if saved:
+                    from ringsentinel.platform.result_fragments import index_in
+
+                    index_in(session, run, content)
                 session.execute(
                     update(Investigation)
                     .where(Investigation.id == run.investigation_id)

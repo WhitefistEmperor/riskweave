@@ -14,6 +14,7 @@ from ringsentinel.platform.database import Database
 from ringsentinel.platform.database_storage import storage_for
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.operations import report
+from ringsentinel.platform.result_transport import ResultTransport
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
 
@@ -46,7 +47,9 @@ def databases():
 
 
 @pytest.mark.parametrize("backend", ["local", "database"])
-def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(databases, backend, tmp_path):
+def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
+    databases, backend, tmp_path, monkeypatch
+):
     source = Settings(
         environment="test",
         database_url=databases[0],
@@ -77,7 +80,14 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(databases, ba
         artifact = service.attach(owner, case.id, payload, "input.json", "application/json")
         run = service.start(owner, case.id, artifact.id, "backup-drill")
         service.claim()
-        service.finish(run.id, {"rings": [], "verification": "generated-lifecycle-fixture"})
+        service.finish(
+            run.id,
+            {
+                "rings": [],
+                "verification": "generated-lifecycle-fixture",
+                "transport_fixture": "x" * 2_000_032,
+            },
+        )
         checksum = service.run(owner, run.id).result_checksum
         snapshot = tmp_path / "snapshot"
         create_snapshot(source, snapshot, writers_stopped=True)
@@ -92,6 +102,14 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(databases, ba
         with pytest.raises(ProductError) as bounded:
             restored.result(owner, run.id, max_bytes=1)
         assert bounded.value.code == "RESULT_TRANSPORT_REQUIRED"
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                restored.storage, "read", lambda *_: pytest.fail("Full restored result read")
+            )
+            transport = ResultTransport(restored)
+            manifest = transport.manifest(owner, run.id)
+            assert manifest["chunk_count"] == 2
+            assert transport.chunk(owner, run.id, 1)["result_sha256"] == checksum
         assert restored.list(Principal("different-owner")) == []
         page = restored.page(owner, search="GENERATED RESTORE")
         assert page["total"] == page["matched"] == 1

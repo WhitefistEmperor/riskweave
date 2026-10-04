@@ -57,6 +57,29 @@ class DatabaseStorageBackend:
         with self.database.session() as session:
             return self.read_in(session, key)
 
+    def read_range(self, key: str, offset: int, length: int) -> bytes:
+        valid_key(key)
+        if (
+            type(offset) is not int
+            or offset < 0
+            or type(length) is not int
+            or not 0 < length <= 2_000_000
+        ):
+            raise ValueError("Invalid storage range")
+        with self.database.session() as session:
+            row = session.execute(
+                select(
+                    func.substr(StoredBlob.content, offset + 1, length),
+                    StoredBlob.size_bytes,
+                    func.length(StoredBlob.content),
+                ).where(StoredBlob.key == key)
+            ).first()
+            if row is None:
+                raise FileNotFoundError("Stored object missing")
+            if row[1] != row[2]:
+                raise ProductError("INTERNAL_ERROR")
+            return bytes(row[0])
+
     def size(self, key: str) -> int:
         valid_key(key)
         with self.database.session() as session:

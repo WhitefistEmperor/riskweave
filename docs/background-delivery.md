@@ -10,7 +10,7 @@ The default local scheduler and browser-dispatched request mode remain available
 
 First configure [database storage and bounded request execution](request-execution.md).
 Then set `RINGSENTINEL_BACKGROUND_DISPATCH=vercel_workflow`, enabled jobs and an
-analysis timeout no greater than 240 seconds. Apply migration `0006` explicitly;
+analysis timeout no greater than 240 seconds. Apply migration `0007` explicitly;
 it adds delivery intent, monthly start accounting and reconciler admission without
 rebuilding case/review tables. Readiness checks the new tables in this mode.
 

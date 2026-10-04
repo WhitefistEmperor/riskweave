@@ -22,6 +22,7 @@ class StorageBackend(Protocol):
     def save(self, content: bytes) -> StoredObject: ...
     def read(self, key: str) -> bytes: ...
     def size(self, key: str) -> int: ...
+    def read_range(self, key: str, offset: int, length: int) -> bytes: ...
     def exists(self, key: str) -> bool: ...
     def delete(self, key: str) -> None: ...
     def reference(self, key: str) -> str: ...
@@ -68,6 +69,18 @@ class LocalStorageBackend:
 
     def read(self, key: str) -> bytes:
         return self._path(key).read_bytes()
+
+    def read_range(self, key: str, offset: int, length: int) -> bytes:
+        if (
+            type(offset) is not int
+            or offset < 0
+            or type(length) is not int
+            or not 0 < length <= 2_000_000
+        ):
+            raise ValueError("Invalid storage range")
+        with self._path(key).open("rb") as stream:
+            stream.seek(offset)
+            return stream.read(length)
 
     def size(self, key: str) -> int:
         return self._path(key).stat().st_size

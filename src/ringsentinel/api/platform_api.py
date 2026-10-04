@@ -45,6 +45,7 @@ from ringsentinel.platform.models import (
     DispatchBudget,
     DispatchSchedule,
     Investigation,
+    ResultFragment,
     ReviewAudit,
     Status,
     StorageDeletion,
@@ -82,6 +83,7 @@ def dependencies_ready(service: InvestigationService) -> bool:
                 return False
             session.execute(select(Investigation.id).limit(1))
             session.execute(select(CandidateReview.candidate_id).limit(1))
+            session.execute(select(ResultFragment.run_id).limit(1))
             session.execute(select(ReviewAudit.id).limit(1))
             session.execute(select(StorageDeletion.key).limit(1))
             if service.settings.background_dispatch == "vercel_workflow":
