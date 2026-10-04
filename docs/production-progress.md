@@ -168,3 +168,18 @@ with all writers stopped. Local demo migration/indexing completed for 17 results
 readiness passed after restart. The new production inventory is 440,507,313 bytes.
 Legacy full reads, database server work, browser reconstruction and actual hosted
 capacity remain gates. Vercel scope access still returned 403 on 5 October.
+
+
+## Explicit CSV source preparation, 5 October 2026
+
+Source 3a7450277386c3cc0ea00fcf0c57aeecfe10374b adds private offline CSV conversion
+with versioned explicit mappings, strict minor units/timezones, source/output and
+converter hashes, canonical cross-record validation, no overwrite and sanitized
+failure handling. Unknown labels and arbitrary source metadata are not imported.
+Missing required source identities/history/retry counts remain a source-adapter gate.
+All 41 focused ingestion/evaluation tests passed, including 23 new mapping tests.
+The unchanged pinned-model CLI evaluated a converted 104-event synthetic control
+with exact causal-feature and metric/threshold preservation. This is command-path
+regression evidence, not observed-data validation. CI 37225632399 passed 237 Python
+and 66 browser tests, both containers and actual PostgreSQL inference/restore.
+Production inventory is 440,536,682 bytes; hosted packaging/capacity remain unverified.

@@ -5,7 +5,23 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
-- Current application source: `a7f848e9cc8d58f35de40141387bfa87835fe965`, pushed
+- Current application source: `3a7450277386c3cc0ea00fcf0c57aeecfe10374b`, pushed.
+  [Linux CI 37225632399](https://github.com/WhitefistEmperor/riskweave/actions/runs/37225632399)
+  passed 237 Python tests, 66 production-browser tests, both containers and actual
+  PostgreSQL inference/restore. Production dependency/model inventory is
+  440,536,682 bytes against 450 MB; actual hosted bundle size remains unverified.
+  PR CI 37225634646 also passed; all six exact-source push/PR checks are green.
+- Explicit private CSV conversion now supports versioned field mappings, strict
+  minor units/timezones/identities/refunds, bounded files/rows, input/output and
+  converter hashes, no overwrite and sanitized failures. It imports no labels or
+  arbitrary metadata. Missing required source features are rejected, not invented.
+  See `docs/csv-payment-mapping.md` and the synthetic mapping example in `schemas/`.
+- All 41 focused ingestion/evaluation checks passed (23 new mapping tests).
+  An actual unchanged pinned-model command evaluated converted synthetic-control
+  CSVs (104 events: 55 validation/49 test), preserving every causal feature and
+  all previous evaluation metrics/threshold. Both reports deny production readiness.
+  Local smoke artifacts are ignored under `work/csv-mapping-smoke-20261005/`.
+- Previous indexed-transport source: `a7f848e9cc8d58f35de40141387bfa87835fe965`, pushed
   to `codex/production-foundation`. [Linux CI 37224837358](https://github.com/WhitefistEmperor/riskweave/actions/runs/37224837358)
   and PR CI 37224840776 passed all six checks: 214 Python tests, 66 browser tests,
   both containers, actual PostgreSQL inference and both PostgreSQL 17 restore
@@ -263,7 +279,8 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    and erasure across exports/snapshots/provider workflow histories. The hourly
    reconciler does not delete expired case data automatically.
 9. Use the new offline frozen-model workflow in `docs/real-data-evaluation.md`
-   and validate the detector on permissioned real data: ingestion mappings, temporal
+   and validate the detector on permissioned real data: review actual source semantics
+   against the new CSV mapping contract, then use temporal
    holdouts, leakage controls, calibration, threshold costs, subgroup/error analysis,
    distribution shift and documented operating limits. Real-data evaluation needs
    authorized data; never fabricate results to fill that gap.

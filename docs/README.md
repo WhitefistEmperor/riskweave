@@ -37,3 +37,12 @@ Start with [Phase 5C final verification and remaining gates](phase5c-final.md).
 - [Container verification plan](phase5c-container-verification.md): outstanding, not deployed
 - [Original replay demo](demo-flow.md) and [original Phase 4 gallery](screenshots/)
 - [Persistence architecture decision](adr/0001-persisted-analysis-foundation.md)
+
+
+## Current payment preparation and release operations
+
+- [Payment input](payment-ingestion.md) and [private CSV mapping](csv-payment-mapping.md).
+- [Frozen-model temporal evaluation](real-data-evaluation.md): labels remain separate.
+- [Indexed result transport and maintenance](result-fragment-index.md).
+- [Current progress and release gates](production-progress.md).
+- [Continuation handoff](CLAUDE_HANDOFF.md): verified source and remaining work.

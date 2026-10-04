@@ -8,7 +8,11 @@ detector/evidence semantics and investigation endpoint shapes remain; the sessio
 and safe 429 quota category are explicit additions. See [production progress](production-progress.md)
 for the current deployment state and [request execution](request-execution.md) for optional durable
 database objects, atomic erasure, distributed claims and migration 0004. The local scheduler and
-filesystem limitations below describe the default mode. No completed public release is claimed.
+filesystem limitations below describe the default mode. Later increments also add
+unlabeled payments, explicit private CSV mapping, frozen-model evaluation, rotating
+JWKS, indexed result ranges and migration 0007. Follow the current progress and
+linked runbooks rather than the historical limitation list below. No completed
+public release is claimed.
 
 Phase 5B note: backend architecture and contracts below remain unchanged. The minimal frontend has
 been replaced by the investigation-first analyst UI described in [phase5b-frontend.md](phase5b-frontend.md).
