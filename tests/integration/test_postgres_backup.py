@@ -12,6 +12,7 @@ from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
 from ringsentinel.platform.backup import create_snapshot, restore_snapshot
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.database_storage import storage_for
+from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.operations import report
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
@@ -87,6 +88,10 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(databases, ba
         assert restored.result(owner, run.id) == service.result(owner, run.id)
         assert restored.run(owner, run.id).result_checksum == checksum
         assert restored.storage.read(artifact.storage_key) == payload
+        assert restored.storage.size(restored.run(owner, run.id).result_reference) > 1
+        with pytest.raises(ProductError) as bounded:
+            restored.result(owner, run.id, max_bytes=1)
+        assert bounded.value.code == "RESULT_TRANSPORT_REQUIRED"
         assert restored.list(Principal("different-owner")) == []
         page = restored.page(owner, search="GENERATED RESTORE")
         assert page["total"] == page["matched"] == 1

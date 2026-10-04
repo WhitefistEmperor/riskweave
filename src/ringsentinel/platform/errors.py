@@ -14,6 +14,11 @@ ERRORS = {
         "Analysis did not start in time. Retry after capacity becomes available.",
     ),
     "QUOTA_EXCEEDED": (429, "An operational limit was reached. Contact the operator."),
+    "RESULT_TRANSPORT_REQUIRED": (
+        409,
+        "This result requires fragment transport. "
+        "Use the authenticated result manifest and chunks.",
+    ),
     "INVALID_REQUEST": (400, "The request is not permitted."),
     "METHOD_NOT_ALLOWED": (405, "This HTTP method is not supported."),
     "VALIDATION_ERROR": (422, "Request validation failed."),

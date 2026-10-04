@@ -373,14 +373,18 @@ class InvestigationService:
                 return run
         return run
 
-    def result(self, principal: Principal, run_id: str) -> dict:
-        return json.loads(self.result_content(principal, run_id))
+    def result(self, principal: Principal, run_id: str, *, max_bytes: int | None = None) -> dict:
+        return json.loads(self.result_content(principal, run_id, max_bytes=max_bytes))
 
-    def result_content(self, principal: Principal, run_id: str) -> bytes:
+    def result_content(
+        self, principal: Principal, run_id: str, *, max_bytes: int | None = None
+    ) -> bytes:
         """Authorize and verify immutable bytes before any result transport."""
         run = self.run(principal, run_id)
         if run.status != Status.COMPLETED or not run.result_reference:
             raise ProductError("CONFLICT")
+        if max_bytes is not None and self.storage.size(run.result_reference) > max_bytes:
+            raise ProductError("RESULT_TRANSPORT_REQUIRED")
         content = self.storage.read(run.result_reference)
         if hashlib.sha256(content).hexdigest() != run.result_checksum:
             raise ProductError("INTERNAL_ERROR")

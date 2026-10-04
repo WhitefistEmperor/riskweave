@@ -44,7 +44,7 @@ def source(tmp_path, request):
     db.engine.dispose()
 
 
-def test_large_result_fragment_roundtrip_reopen_scope_and_deletion(source):
+def test_large_result_fragment_roundtrip_reopen_scope_and_deletion(source, monkeypatch):
     settings, service, owner, case, run = source
     assert service.claim() == run.id
     # A transport fixture, not model accuracy evidence. This serializes above 4.5MB.
@@ -62,6 +62,18 @@ def test_large_result_fragment_roundtrip_reopen_scope_and_deletion(source):
     with TestClient(create_app(settings=settings)) as client:
         client.headers["X-Development-User"] = owner.user_id
         path = f"/api/v1/runs/{run.id}/results"
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                client.app.state.platform.storage,
+                "read",
+                lambda *_: pytest.fail("Oversized inline request read the full result"),
+            )
+            inline = client.get(path)
+            assert inline.status_code == 409
+            assert inline.json()["error"]["code"] == "RESULT_TRANSPORT_REQUIRED"
+            client.headers["X-Development-User"] = "another-owner"
+            assert client.get(path).status_code == 404
+            client.headers["X-Development-User"] = owner.user_id
         manifest = client.get(f"{path}/manifest")
         assert manifest.status_code == 200, manifest.text
         info = manifest.json()

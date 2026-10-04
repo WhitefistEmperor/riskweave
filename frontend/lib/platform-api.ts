@@ -306,14 +306,29 @@ export const platformApi = {
         (v as AnalysisRun).id === value &&
         (v as AnalysisRun).investigation_id === investigationId,
     ),
-  results: (value: string, signal?: AbortSignal, savedRun?: AnalysisRun) =>
-    savedRun?.configuration_snapshot.execution_mode === 'request'
-      ? loadChunkedResult(savedRun, signal)
-      : apiRequest<AnalysisResult>(
-          `/v1/runs/${id(value)}/results`,
-          { signal },
-          validResult,
-        ),
+  results: async (
+    value: string,
+    signal?: AbortSignal,
+    savedRun?: AnalysisRun,
+  ) => {
+    if (savedRun?.configuration_snapshot.execution_mode === 'request')
+      return loadChunkedResult(savedRun, signal);
+    try {
+      return await apiRequest<AnalysisResult>(
+        `/v1/runs/${id(value)}/results`,
+        { signal },
+        validResult,
+      );
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.code === 'RESULT_TRANSPORT_REQUIRED' &&
+        savedRun
+      )
+        return loadChunkedResult(savedRun, signal);
+      throw error;
+    }
+  },
 };
 
 /** Dispatch an existing request-mode claim; never enqueue a second analysis implicitly. */

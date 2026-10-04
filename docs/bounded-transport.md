@@ -43,6 +43,17 @@ the authorized run, case and saved result checksum, checks each fragment, verifi
 the complete SHA-256, then decodes UTF-8 and validates JSON before showing findings.
 Navigation aborts delivery. No public storage URL, key or bearer token is issued.
 
+The inline `GET /api/v1/runs/{id}/results` route admits at most 2,000,000
+stored source bytes. It authorizes the run first, then inspects object size before
+reading/deserializing the full result. Larger results return 409 with
+`RESULT_TRANSPORT_REQUIRED` and use the existing manifest/chunk routes. Database
+size checks compare stored byte metadata with database byte length without
+transferring the complete object to the application; filesystem checks use stat.
+The console handles this explicit response for older local-mode runs too, binds
+fragments to their saved checksum and verifies the complete result before display.
+Other errors retain their existing behavior. This changes inline delivery, not
+which completed results are retained or admitted by the analysis byte budget.
+
 The application upload/result limits remain unchanged. These routes keep their
 request/response bodies below Vercel's 4.5 MB function transport ceiling; this has
 been verified locally and in CI, not on a hosted Vercel deployment. The legacy whole

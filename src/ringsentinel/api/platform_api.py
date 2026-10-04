@@ -347,7 +347,7 @@ async def reconcile_delivery(request: Request, service: Service):
 
 @router.get("/runs/{run_id}/results", response_model=ResultsResponse)
 def results(run_id: str, principal: CurrentPrincipal, service: Service):
-    return service.result(principal, run_id)
+    return service.result(principal, run_id, max_bytes=2_000_000)
 
 
 @router.get("/runs/{run_id}/results/manifest", response_model=ResultManifestResponse)

@@ -57,6 +57,20 @@ class DatabaseStorageBackend:
         with self.database.session() as session:
             return self.read_in(session, key)
 
+    def size(self, key: str) -> int:
+        valid_key(key)
+        with self.database.session() as session:
+            row = session.execute(
+                select(StoredBlob.size_bytes, func.length(StoredBlob.content)).where(
+                    StoredBlob.key == key
+                )
+            ).first()
+            if row is None:
+                raise FileNotFoundError("Stored object missing")
+            if row[0] != row[1]:
+                raise ProductError("INTERNAL_ERROR")
+            return row[0]
+
     def exists(self, key: str) -> bool:
         valid_key(key)
         with self.database.session() as session:

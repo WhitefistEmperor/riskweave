@@ -94,7 +94,10 @@ the project is already deployed or validated on real financial data.
 - Request-mode global SQL execution claim, killable bounded subprocess,
   queue/execution deadlines, scoped recovery and fencing of late results.
 - Private 2 MB upload parts, saved-part resume/discard/expiry, whole-file
-  validation/SHA-256 and atomic artifact acceptance. Private result manifests
+  validation/SHA-256 and atomic artifact acceptance. Inline result reads admit
+  at most 2 MB after owner authorization and object-size inspection; oversized
+  results use verified fragments, including older local-mode console runs.
+  Private result manifests
   and base64 fragments with fragment and complete-object integrity verification.
 - Optional Python Vercel Workflow adapter with transactional delivery intent,
   30-second submission leases, bounded retries/backoff, monthly start admission,

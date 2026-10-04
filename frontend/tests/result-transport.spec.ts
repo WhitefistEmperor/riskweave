@@ -44,46 +44,61 @@ const manifest = {
   chunk_count: Math.ceil(bytes.length / chunkBytes),
 };
 
-test('large request-mode evidence reassembles authenticated UTF-8 fragments before displaying findings', async ({
-  page,
-}) => {
-  expect(bytes.length).toBeGreaterThan(4_500_000);
-  await installWorkspace(page, savedRun);
-  let wholeRequests = 0;
-  const requested: number[] = [];
-  await page.route(`**/api/v1/runs/${runId}/results`, () => {
-    wholeRequests++;
-  });
-  await page.route(`**/api/v1/runs/${runId}/results/manifest`, (route) =>
-    route.fulfill({ json: manifest }),
-  );
-  await page.route(`**/api/v1/runs/${runId}/results/chunks/*`, (route) => {
-    const index = Number(
-      new URL(route.request().url()).pathname.split('/').at(-1),
+for (const mode of ['request', 'local']) {
+  test(`large ${mode}-mode evidence reassembles authenticated UTF-8 fragments before displaying findings`, async ({
+    page,
+  }) => {
+    expect(bytes.length).toBeGreaterThan(4_500_000);
+    await installWorkspace(page, {
+      ...savedRun,
+      configuration_snapshot: { execution_mode: mode },
+    });
+    let wholeRequests = 0;
+    const requested: number[] = [];
+    await page.route(`**/api/v1/runs/${runId}/results`, (route) => {
+      wholeRequests++;
+      return route.fulfill({
+        status: 409,
+        json: {
+          error: {
+            code: 'RESULT_TRANSPORT_REQUIRED',
+            message: 'Use fragment transport.',
+            request_id: 'transport-fixture',
+          },
+        },
+      });
+    });
+    await page.route(`**/api/v1/runs/${runId}/results/manifest`, (route) =>
+      route.fulfill({ json: manifest }),
     );
-    requested.push(index);
-    const part = bytes.subarray(index * chunkBytes, (index + 1) * chunkBytes);
-    const json = {
-      schema_version: '1',
-      run_id: runId,
-      index,
-      size_bytes: part.length,
-      result_sha256: digest,
-      sha256: sha(part),
-      data: part.toString('base64'),
-    };
-    expect(Buffer.byteLength(JSON.stringify(json))).toBeLessThan(4_500_000);
-    return route.fulfill({ json });
+    await page.route(`**/api/v1/runs/${runId}/results/chunks/*`, (route) => {
+      const index = Number(
+        new URL(route.request().url()).pathname.split('/').at(-1),
+      );
+      requested.push(index);
+      const part = bytes.subarray(index * chunkBytes, (index + 1) * chunkBytes);
+      const json = {
+        schema_version: '1',
+        run_id: runId,
+        index,
+        size_bytes: part.length,
+        result_sha256: digest,
+        sha256: sha(part),
+        data: part.toString('base64'),
+      };
+      expect(Buffer.byteLength(JSON.stringify(json))).toBeLessThan(4_500_000);
+      return route.fulfill({ json });
+    });
+    await page.goto(workspaceUrl);
+    await expect(
+      page.getByRole('heading', { name: 'Persisted findings' }),
+    ).toBeVisible();
+    expect(requested).toEqual(
+      Array.from({ length: manifest.chunk_count }, (_, index) => index),
+    );
+    expect(wholeRequests).toBe(mode === 'local' ? 1 : 0);
   });
-  await page.goto(workspaceUrl);
-  await expect(
-    page.getByRole('heading', { name: 'Persisted findings' }),
-  ).toBeVisible();
-  expect(requested).toEqual(
-    Array.from({ length: manifest.chunk_count }, (_, index) => index),
-  );
-  expect(wholeRequests).toBe(0);
-});
+}
 
 for (const changeChunkHash of [false, true]) {
   test(`corrupt evidence fails closed with ${changeChunkHash ? 'matching fragment but wrong whole' : 'wrong fragment'} checksum`, async ({
