@@ -183,3 +183,18 @@ with exact causal-feature and metric/threshold preservation. This is command-pat
 regression evidence, not observed-data validation. CI 37225632399 passed 237 Python
 and 66 browser tests, both containers and actual PostgreSQL inference/restore.
 Production inventory is 440,536,682 bytes; hosted packaging/capacity remain unverified.
+
+
+## Worklist review progress, 5 October 2026
+
+Application source 43066642662f10a0230b110732eff8b5eb958db3 passed all six push/PR
+checks: 240 Python tests, 69 browser tests, both containers and actual PostgreSQL
+inference/restore. Migration 0008 saves candidate totals at completion. The owner-
+scoped worklist aggregates current dispositions for the latest completed run
+without loading result bytes or notes. Legacy totals remain explicitly unknown;
+new empty results are zero. New runs do not inherit old reviews, and queued/failed
+runs do not obscure the most recent completed review. Browser checks cover run
+links, refresh and invalid summary rejection. PostgreSQL backup tests now preserve
+an escalated review/audit note and verify the restored worklist summary in both
+storage modes. Local migration, readiness, production build and direct browser
+verification passed. Inventory is 440,552,028 bytes; hosted capacity remains open.

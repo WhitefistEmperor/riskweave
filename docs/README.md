@@ -46,3 +46,5 @@ Start with [Phase 5C final verification and remaining gates](phase5c-final.md).
 - [Indexed result transport and maintenance](result-fragment-index.md).
 - [Current progress and release gates](production-progress.md).
 - [Continuation handoff](CLAUDE_HANDOFF.md): verified source and remaining work.
+
+- [Worklist review progress](worklist-review-progress.md): latest completed run, current dispositions and explicit legacy unknown totals.

@@ -5,7 +5,25 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
-- Current application source: `3a7450277386c3cc0ea00fcf0c57aeecfe10374b`, pushed.
+- Current application source: `43066642662f10a0230b110732eff8b5eb958db3`, pushed.
+  [Linux CI 37226537041](https://github.com/WhitefistEmperor/riskweave/actions/runs/37226537041)
+  and PR CI 37226539716 passed all six checks: 240 Python tests, 69 browser tests,
+  both containers and actual PostgreSQL inference/restore in both storage modes.
+  Production inventory is 440,552,028 bytes against 450 MB, not a hosted measurement.
+  Intermediate bbd25b1 had a missing readiness import, corrected in this source.
+- Local demo database was backed up and migrated explicitly to 0008 with no active
+  analysis. API readiness passed after restart; production frontend build passed.
+  Browser verification with agent-browser 0.38.2 showed the review column/links,
+  explicit legacy unknown totals, successful home navigation and no browser errors.
+  No case was deleted. The helper browser was closed; local API/UI remain running.
+- Migration 0008 persists candidate totals on new completed runs. Paged worklist
+  summaries use only owner-scoped database metadata and the latest completed run;
+  no result reads or notes are loaded. Current disposition counts refresh with
+  page responses. Older totals remain unknown; new empty results are known zero.
+  Browser tests cover run links, unknown totals, refresh and invalid scope/counts.
+  See `docs/worklist-review-progress.md`. PostgreSQL restore now includes an
+  escalated generated review and verifies the note and worklist summary.
+- Previous CSV-mapping application source: `3a7450277386c3cc0ea00fcf0c57aeecfe10374b`, pushed.
   [Linux CI 37225632399](https://github.com/WhitefistEmperor/riskweave/actions/runs/37225632399)
   passed 237 Python tests, 66 production-browser tests, both containers and actual
   PostgreSQL inference/restore. Production dependency/model inventory is
@@ -152,7 +170,7 @@ the project is already deployed or validated on real financial data.
   daily/hourly recovery, provider-status repair and no browser execution dependency.
   A changed model digest fails a queued run rather than changing its provenance.
   Erasure removes dispatch intent; stale steps cannot resurrect a case.
-- Alembic head is `0007`; upgrades preserve populated cases/reviews/foreign keys.
+- Alembic head is `0008`; upgrades preserve populated cases/reviews/foreign keys.
 - CI covers backend, native frontend and isolated PostgreSQL/container workflows.
 - Private read-only operator snapshot counts runs, overdue execution/delivery and
   recent failures, with sanitized CLI exit codes and no case details. PostgreSQL
@@ -255,7 +273,7 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    is not a hosted bundle measurement. Configure both cron secrets identically.
    Normal filesystem/scheduler defaults are unsafe for serverless; the dedicated
    entry point requires database/request/managed-workflow mode explicitly.
-4. Apply migrations explicitly through 0007 and provision a live OIDC provider.
+4. Apply migrations explicitly through 0008 and provision a live OIDC provider.
    Align issuer/audience/scope/JWKS and registered exact HTTPS callbacks/logout.
    Verify the implemented bounded HTTPS public-key cache/rotation against that
    provider, including overlap, removal, outages and cache expiry; see
@@ -284,7 +302,7 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    holdouts, leakage controls, calibration, threshold costs, subgroup/error analysis,
    distribution shift and documented operating limits. Real-data evaluation needs
    authorized data; never fabricate results to fill that gap.
-10. Complete product gaps supported by actual usage: worklist review summaries,
+10. Complete product gaps supported by actual usage: review workflows beyond the implemented worklist summaries,
     hosted/legacy capacity, permissions/teams where required, accessible onboarding,
     practical exports and operator documentation. Preserve evidence traceability.
 
