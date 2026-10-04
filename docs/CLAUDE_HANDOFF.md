@@ -5,29 +5,23 @@ the project is already deployed or validated on real financial data.
 
 ## Latest verified source
 
-- Database-paged worklist increment: local lint, TypeScript, production build,
-  Python lint and the owner/search/page-bound API test passed. Nine API tests
-  passed before the additional Unicode check, which also passed independently.
-  The first browser suite passed 62 cases; a restart interruption and a shared
-  legacy-response fixture caused two failures. Both passed on focused rerun,
-  together with all four paged-worklist cases, including metadata rejection and
-  history invalidation on case-version changes. Exact-head Linux CI is pending;
-  the earlier receipt below is the last completed Linux source verification.
-
-- Application source: `177e315fc3f9d44d891e95ddf905d87e88cde438`, pushed
+- Application source: `2afdf686f95dd9f2c88ece725b704bba37c6a69f`, pushed
   to `codex/production-foundation`. A subsequent documentation-only commit may
   update this handoff; verify the current Git and PR state before continuing.
-- [Linux CI 37218389349](https://github.com/WhitefistEmperor/riskweave/actions/runs/37218389349)
-  passed 191 Python tests, 63 production-browser tests, both container builds,
+- [Linux CI 37219967669](https://github.com/WhitefistEmperor/riskweave/actions/runs/37219967669)
+  passed 192 Python tests, 65 production-browser tests, both container builds,
   PostgreSQL local/request/SDK background inference and both actual PostgreSQL 17
   backup/restore storage modes. All six push/PR checks passed on this source.
-- Worklist name/case-ID search, combined case-status filters, first-page reset,
-  unmatched results and avoiding repeated successful history reads are verified.
-  Local lint, TypeScript and the production build also passed.
+- Database-paged worklist reads, owner-scoped counts, literal wildcard escaping,
+  Unicode SQLite search, status filtering and page bounds are verified. Browser
+  tests cover later-page matches, malformed page metadata, cancellation/revisit
+  and refreshing cached history when a case update timestamp changes. Restored
+  PostgreSQL drills also verify paged search, literal wildcards and owner counts.
+  Local lint, TypeScript, Python lint and the production build passed.
 - Backup drills preserve generated input, result checksums, ownership and migration
   state and reject populated restore targets. The operator snapshot also ran in
   the restored PostgreSQL database using a read-only transaction.
-- Production Python dependency/model inventory measured 440,392,722 bytes against
+- Production Python dependency/model inventory measured 440,407,082 bytes against
   a conservative 450,000,000-byte CI budget. Actual hosted function size, memory,
   subprocess support, generated Workflow authentication and capacity remain unverified.
 - Local operator report returned schema `0006`, 14 completed runs and no overdue
@@ -173,7 +167,9 @@ the embedded queue. Do not deploy the test harness as a durable worker.
   `sahilsinghkushwah10thb-9948s-projects`.
   No RiskWeave Vercel project or verified live deployment currently exists.
 - Access rechecked on 4 October: the Vercel connector can list the unrelated
-  project, but team/Git context remains empty. No RiskWeave project exists and
+  project, but team/Git context remains empty. Explicit access to the target
+  team returns 403 requiring re-authentication to that workspace; a RiskWeave
+  search without team scope returns no accessible projects. No RiskWeave project exists and
   the CLI was not authenticated. Browser import of the tested branch URL
   returned "Could not access the repository. Please ensure you have access to it."
   Account listing access does not establish permission to import this repository.
