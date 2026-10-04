@@ -14,7 +14,11 @@ The requested scope is `openid profile ringsentinel:analyst`. Disable implicit a
 password grants and self-registration for an invite-only analyst installation.
 
 The API must run with production JWT authentication and the same issuer, API audience,
-public JWKS file and analyst scope. Its current verifier requires integer `iat`,
+public JWKS source and analyst scope. Choose exactly one of
+`RINGSENTINEL_AUTH_JWKS_PATH` (offline file) or `RINGSENTINEL_AUTH_JWKS_URL`
+(operator-selected HTTPS endpoint). The rotating endpoint is described in
+[authentication key rotation](authentication-key-rotation.md).
+The verifier requires integer `iat`,
 `nbf` and `exp` claims, subject, issuer and audience; access-token lifetime must not
 exceed `RINGSENTINEL_AUTH_MAX_TOKEN_SECONDS` (900 seconds by default). Configure your
 provider accordingly. Public verification keys are not signing credentials. Follow

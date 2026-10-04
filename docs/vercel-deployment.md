@@ -51,8 +51,9 @@ Set `RINGSENTINEL_ENVIRONMENT=production`, execution mode `request`, storage
 backend `database`, background dispatch `vercel_workflow`, and storage root
 `/tmp/riskweave`, plus the explicit PostgreSQL, JWT, trusted hosts, frontend
 origins and budget settings described below and in `.env.example`. Enable Vercel
-system environment variables. Supply verification-only public JWKS through the
-configured path; never place private signing keys in a release. The entry point
+system environment variables. Supply verification-only public JWKS through a
+configured file or fixed HTTPS endpoint; see [key rotation](authentication-key-rotation.md).
+Never place private signing keys in a release. The entry point
 derives model path/checksum from its bundled manifest, so omit model overrides.
 
 The root `vercel.json` sets a 300-second function ceiling and daily recovery

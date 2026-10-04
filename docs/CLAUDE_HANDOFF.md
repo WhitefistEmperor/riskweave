@@ -50,6 +50,9 @@ the project is already deployed or validated on real financial data.
 - Browser OIDC authorization-code/PKCE, callback/logout, tab session storage,
   expiry handling; API RS256 public-JWKS/issuer/audience/scope validation.
   An actual identity provider has not been provisioned or live-tested.
+- Optional operator-selected HTTPS JWKS with bounded retrieval, per-process cache,
+  throttled refresh, atomic key retirement and expired-cache outage rejection.
+  Real-signature rotation tests pass; live provider rotation remains unverified.
 - Native Next.js 16.3.8 console, standalone non-root Docker build.
 - Optional private database object storage, atomic global byte admission,
   checksummed reads, offline verified file import and backup/restore tooling.
@@ -154,8 +157,9 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    entry point requires database/request/managed-workflow mode explicitly.
 4. Apply migrations explicitly through 0006 and provision a live OIDC provider.
    Align issuer/audience/scope/JWKS and registered exact HTTPS callbacks/logout.
-   Add safe public-key rotation/retrieval; static verification keys are insufficient
-   as a long-term operational rotation process. No public dev identity/demo in prod.
+   Verify the implemented bounded HTTPS public-key cache/rotation against that
+   provider, including overlap, removal, outages and cache expiry; see
+   `docs/authentication-key-rotation.md`. No public dev identity/demo in prod.
 5. Configure the backend daily recovery cron and matching private cron secrets.
    Default admission is 50 analysis starts/month and 10 pending managed runs
    unless overridden. These are application guards, not provider billing caps.

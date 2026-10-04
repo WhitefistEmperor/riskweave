@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     auth_mode: Literal["development", "disabled", "jwt"] = "development"
     auth_jwks_path: Path | None = None
+    auth_jwks_url: str = ""
+    auth_jwks_cache_seconds: int = Field(default=300, ge=60, le=900)
     auth_issuer: str = ""
     auth_audience: str = ""
     auth_required_scope: str = "ringsentinel:analyst"
@@ -99,7 +101,7 @@ class Settings(BaseSettings):
         if self.auth_mode == "jwt":
             issuer = urlsplit(self.auth_issuer)
             if (
-                not self.auth_jwks_path
+                bool(self.auth_jwks_path) == bool(self.auth_jwks_url)
                 or issuer.scheme != "https"
                 or not issuer.hostname
                 or issuer.username
@@ -112,6 +114,18 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "JWT authentication requires public JWKS, HTTPS issuer, audience and scope"
                 )
+            if self.auth_jwks_url:
+                endpoint = urlsplit(self.auth_jwks_url)
+                if (
+                    endpoint.scheme != "https"
+                    or not endpoint.hostname
+                    or endpoint.username is not None
+                    or endpoint.password is not None
+                    or endpoint.query
+                    or endpoint.fragment
+                    or endpoint.port not in {None, 443}
+                ):
+                    raise ValueError("Public JWKS endpoint must be an explicit HTTPS URL")
         for origin in self.frontend_origins:
             parsed = urlsplit(origin)
             if (

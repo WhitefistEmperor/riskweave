@@ -2,6 +2,9 @@
 
 ## Implemented
 
+- Optional fixed HTTPS public-JWKS retrieval and rotation, bounded response/cache,
+  refresh throttling, atomic key replacement and fail-closed expired-cache outages.
+  Static-file mode remains available. Live-provider lifecycle tests remain required.
 - Dedicated Vercel Python 3.13 release entry point and build-owned model bundle,
   cached-byte preservation, strict production admission and identical model admission
   in Workflow steps. Function duration, private-workspace exclusions and daily cron
