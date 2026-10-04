@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowRight, FolderSearch, Plus } from 'lucide-react';
@@ -39,53 +39,52 @@ export function InvestigationList() {
   const [status, setStatus] = useState('all');
   const removed = useSearchParams()?.get('removed');
   const inFlight = useRef(false);
-  const loadedHistory = useRef(new Set<string>());
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return records?.filter(
-      (item) =>
-        (status === 'all' || item.status === status) &&
-        (!needle ||
-          item.name.toLowerCase().includes(needle) ||
-          item.id.toLowerCase().includes(needle)),
-    );
-  }, [records, query, status]);
-  const currentPage = Math.min(
-    page,
-    Math.max(0, Math.ceil((filtered?.length ?? 0) / 10) - 1),
-  );
-  const visible = filtered?.slice(currentPage * 10, currentPage * 10 + 10);
+  const loadedHistory = useRef(new Map<string, string>());
+  const [total, setTotal] = useState(0);
+  const [matched, setMatched] = useState(0);
+  const currentPage = page;
+  const requestKey = JSON.stringify([page, query, status, attempt]);
+  const [loadedKey, setLoadedKey] = useState('');
+  const visible = loadedKey === requestKey ? records : null;
   useEffect(() => {
     const controller = new AbortController();
-    platformApi
-      .investigations(controller.signal)
-      .then((items) => {
-        if (!controller.signal.aborted) {
-          loadedHistory.current.clear();
-          setLatest({});
-          setRecords(
-            [...items].sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
-          );
-        }
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) setError(reason);
-      });
-    return () => controller.abort();
-  }, [attempt]);
+    const timer = setTimeout(
+      () =>
+        platformApi
+          .investigationPage(page * 10, query, status, controller.signal)
+          .then((items) => {
+            if (!controller.signal.aborted) {
+              setTotal(items.total);
+              setMatched(items.matched);
+              if (items.matched > 0 && items.offset >= items.matched) {
+                setPage(Math.ceil(items.matched / 10) - 1);
+              } else {
+                setRecords(items.items);
+                setLoadedKey(requestKey);
+                setError(null);
+              }
+            }
+          })
+          .catch((reason) => {
+            if (!controller.signal.aborted) setError(reason);
+          }),
+      150,
+    );
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [attempt, page, query, status, requestKey]);
   useEffect(() => {
     const controller = new AbortController();
     // Bound history reads to visible records, without fetching full results or polling.
-    for (const item of filtered?.slice(
-      currentPage * 10,
-      currentPage * 10 + 10,
-    ) ?? []) {
-      if (loadedHistory.current.has(item.id)) continue;
+    for (const item of records ?? []) {
+      if (loadedHistory.current.get(item.id) === item.updated_at) continue;
       platformApi
         .runs(item.id, controller.signal)
         .then((runs) => {
           if (!controller.signal.aborted) {
-            loadedHistory.current.add(item.id);
+            loadedHistory.current.set(item.id, item.updated_at);
             setLatest((current) => ({
               ...current,
               [item.id]:
@@ -98,7 +97,7 @@ export function InvestigationList() {
         .catch(() => undefined);
     }
     return () => controller.abort();
-  }, [filtered, currentPage]);
+  }, [records]);
   async function create() {
     if (inFlight.current || !name.trim()) return;
     inFlight.current = true;
@@ -132,7 +131,7 @@ export function InvestigationList() {
           </p>
         </div>
         <span className="workspace-count">
-          {records ? `${records.length} saved` : 'Loading'}
+          {records ? `${total} saved` : 'Loading'}
         </span>
       </div>
       <Failure
@@ -158,7 +157,7 @@ export function InvestigationList() {
           <div>
             <Input
               id="investigation-name"
-              disabled={records === null || busy}
+              disabled={visible === null || busy}
               placeholder="e.g. September shared-infrastructure review"
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -172,8 +171,8 @@ export function InvestigationList() {
           </div>
         </form>
       </Card>
-      {!records && !error && <LoadingState label="Loading investigations…" />}
-      {!!records?.length && (
+      {!visible && !error && <LoadingState label="Loading investigations…" />}
+      {total > 0 && (
         <Card className="panel p-4 mb-4">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex-1 min-w-48">
@@ -183,6 +182,7 @@ export function InvestigationList() {
               <Input
                 id="investigation-search"
                 type="search"
+                maxLength={120}
                 placeholder="Name or case ID"
                 value={query}
                 onChange={(event) => {
@@ -232,11 +232,13 @@ export function InvestigationList() {
             </Button>
           </div>
           <output className="block muted text-sm mt-3" aria-live="polite">
-            {filtered?.length} matching of {records.length} saved
+            {visible === null
+              ? 'Loading matches...'
+              : `${matched} matching of ${total} saved`}
           </output>
         </Card>
       )}
-      {!!records?.length && filtered?.length === 0 && (
+      {visible !== null && total > 0 && matched === 0 && (
         <Card className="panel workspace-empty">
           <h2>No investigations match these filters</h2>
           <p>
@@ -245,7 +247,7 @@ export function InvestigationList() {
           </p>
         </Card>
       )}
-      {records?.length === 0 && (
+      {visible !== null && total === 0 && (
         <Card className="panel workspace-empty">
           <FolderSearch size={32} />
           <h2>No investigations yet</h2>
@@ -329,9 +331,8 @@ export function InvestigationList() {
           </Table>
           <div className="list-pagination">
             <span>
-              {currentPage * 10 + 1}–
-              {Math.min((currentPage + 1) * 10, filtered!.length)} of{' '}
-              {filtered!.length}
+              {currentPage * 10 + 1}–{Math.min((currentPage + 1) * 10, matched)}{' '}
+              of {matched}
             </span>
             <Button
               variant="outline"
@@ -344,7 +345,7 @@ export function InvestigationList() {
             <Button
               variant="outline"
               size="sm"
-              disabled={(currentPage + 1) * 10 >= filtered!.length}
+              disabled={(currentPage + 1) * 10 >= matched}
               onClick={() => setPage(currentPage + 1)}
             >
               Next

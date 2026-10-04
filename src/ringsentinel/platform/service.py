@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import UTC, timedelta
 from pathlib import PurePosixPath
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from ringsentinel import __version__
@@ -89,6 +89,49 @@ class InvestigationService:
                     .order_by(Investigation.created_at, Investigation.id)
                 )
             )
+
+    def page(self, principal: Principal, *, offset=0, limit=10, search="", status=None):
+        if self.settings.execution_mode == "request":
+            self.expire_deadlines(principal=principal)
+            from ringsentinel.platform.upload_transport import UploadTransport
+
+            if isinstance(self.storage, DatabaseStorageBackend):
+                UploadTransport(self).expire(principal=principal)
+        conditions = [Investigation.owner_id == principal.user_id]
+        lower = (
+            func.riskweave_lower if self.database.engine.dialect.name == "sqlite" else func.lower
+        )
+        needle = search.strip().lower()
+        if needle:
+            # User wildcards are literal, not permission to match the whole worklist.
+            pattern = "%" + needle.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"
+            conditions.append(
+                or_(
+                    lower(Investigation.name).like(pattern, escape="!"),
+                    lower(Investigation.id).like(pattern, escape="!"),
+                )
+            )
+        if status is not None:
+            conditions.append(Investigation.status == status)
+        with self.database.session() as session:
+            total = session.scalar(
+                select(func.count())
+                .select_from(Investigation)
+                .where(Investigation.owner_id == principal.user_id)
+            )
+            matched = session.scalar(
+                select(func.count()).select_from(Investigation).where(*conditions)
+            )
+            items = list(
+                session.scalars(
+                    select(Investigation)
+                    .where(*conditions)
+                    .order_by(Investigation.updated_at.desc(), Investigation.id.desc())
+                    .offset(offset)
+                    .limit(limit)
+                )
+            )
+            return dict(items=items, total=total, matched=matched, offset=offset, limit=limit)
 
     def get(self, principal: Principal, investigation_id: str) -> Investigation:
         with self.database.session() as session:

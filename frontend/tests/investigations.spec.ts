@@ -170,15 +170,17 @@ test('empty investigation list and safe unauthorized/backend-unavailable states'
   page,
 }) => {
   // Transport fixtures exercise UI failure states; real backend auth is covered separately.
-  await page.route('**/api/v1/investigations', (route) =>
-    route.fulfill({ json: [] }),
+  await page.route('**/api/v1/investigations/page?*', (route) =>
+    route.fulfill({
+      json: { items: [], total: 0, matched: 0, offset: 0, limit: 10 },
+    }),
   );
   await page.goto('/investigations');
   await expect(
     page.getByRole('heading', { name: 'No investigations yet' }),
   ).toBeVisible();
-  await page.unroute('**/api/v1/investigations');
-  await page.route('**/api/v1/investigations', (route) =>
+  await page.unroute('**/api/v1/investigations/page?*');
+  await page.route('**/api/v1/investigations/page?*', (route) =>
     route.fulfill({
       status: 401,
       headers: { 'X-Request-ID': 'ui-auth-fixture' },
@@ -198,8 +200,8 @@ test('empty investigation list and safe unauthorized/backend-unavailable states'
   await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'ui-auth-fixture',
   );
-  await page.unroute('**/api/v1/investigations');
-  await page.route('**/api/v1/investigations', (route) =>
+  await page.unroute('**/api/v1/investigations/page?*');
+  await page.route('**/api/v1/investigations/page?*', (route) =>
     route.abort('failed'),
   );
   await page.reload();

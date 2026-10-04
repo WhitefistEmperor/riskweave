@@ -70,6 +70,14 @@ class InvestigationResponse(Record):
     analysis_metadata: dict[str, JsonValue]
 
 
+class InvestigationPage(Contract):
+    items: list[InvestigationResponse]
+    total: int
+    matched: int
+    offset: int
+    limit: int
+
+
 class ArtifactResponse(Record):
     investigation_id: str
     original_name: str

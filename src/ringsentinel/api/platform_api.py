@@ -4,7 +4,7 @@ import asyncio
 import hmac
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy import select, text
 from starlette.concurrency import run_in_threadpool
 
@@ -18,6 +18,7 @@ from ringsentinel.api.contracts import (
     InvestigationCreate,
     InvestigationDeleteRequest,
     InvestigationDeleteResponse,
+    InvestigationPage,
     InvestigationResponse,
     InvestigatorRequest,
     InvestigatorResponse,
@@ -45,6 +46,7 @@ from ringsentinel.platform.models import (
     DispatchSchedule,
     Investigation,
     ReviewAudit,
+    Status,
     StorageDeletion,
 )
 from ringsentinel.platform.result_transport import ResultTransport
@@ -123,6 +125,18 @@ def investigations(principal: CurrentPrincipal, service: Service):
 @router.post("/investigations", response_model=InvestigationResponse, status_code=201)
 def create_investigation(body: InvestigationCreate, principal: CurrentPrincipal, service: Service):
     return service.create(principal, body.name)
+
+
+@router.get("/investigations/page", response_model=InvestigationPage)
+def investigation_page(
+    principal: CurrentPrincipal,
+    service: Service,
+    offset: Annotated[int, Query(ge=0, le=100000)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    search: Annotated[str, Query(max_length=120)] = "",
+    status: Status | None = None,
+):
+    return service.page(principal, offset=offset, limit=limit, search=search, status=status)
 
 
 @router.get("/investigations/{investigation_id}", response_model=InvestigationResponse)

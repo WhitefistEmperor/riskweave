@@ -5,6 +5,15 @@ the project is already deployed or validated on real financial data.
 
 ## Latest verified source
 
+- Database-paged worklist increment: local lint, TypeScript, production build,
+  Python lint and the owner/search/page-bound API test passed. Nine API tests
+  passed before the additional Unicode check, which also passed independently.
+  The first browser suite passed 62 cases; a restart interruption and a shared
+  legacy-response fixture caused two failures. Both passed on focused rerun,
+  together with all four paged-worklist cases, including metadata rejection and
+  history invalidation on case-version changes. Exact-head Linux CI is pending;
+  the earlier receipt below is the last completed Linux source verification.
+
 - Application source: `177e315fc3f9d44d891e95ddf905d87e88cde438`, pushed
   to `codex/production-foundation`. A subsequent documentation-only commit may
   update this handoff; verify the current Git and PR state before continuing.
@@ -80,7 +89,9 @@ the project is already deployed or validated on real financial data.
 - Native Next.js 16.3.8 console, standalone non-root Docker build.
 - Owner worklist name/case-ID search and case-status filters across loaded pages,
   first-page reset, explicit unmatched results and cached history reads restricted
-  to ten visible cases. Server-side pagination/capacity remains outstanding.
+  to ten visible cases. The new database-paged endpoint scopes counts to the owner,
+  bounds page/search parameters and escapes literal wildcard characters. See
+  `docs/worklist-pagination.md`; hosted and legacy capacity remain outstanding.
 - Per-request nonce script CSP, dynamic/private document rendering, explicit OIDC
   connection origins, blocked inline handlers and unconfigured external connections.
   Inline styles remain allowed for component positioning; verify hosted auth/CDN.
@@ -224,7 +235,7 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    distribution shift and documented operating limits. Real-data evaluation needs
    authorized data; never fabricate results to fill that gap.
 10. Complete product gaps supported by actual usage: worklist review summaries,
-    server-side pagination/capacity, permissions/teams where required, accessible onboarding,
+    hosted/legacy capacity, permissions/teams where required, accessible onboarding,
     practical exports and operator documentation. Preserve evidence traceability.
 
 ## Working instructions for the next assistant

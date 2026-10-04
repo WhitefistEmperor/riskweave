@@ -64,6 +64,13 @@ export type InvestigationRecord = {
   created_at: string;
   updated_at: string;
 };
+export type InvestigationPage = {
+  items: InvestigationRecord[];
+  total: number;
+  matched: number;
+  offset: number;
+  limit: number;
+};
 export type ArtifactRecord = {
   id: string;
   investigation_id: string;
@@ -166,6 +173,37 @@ export const platformApi = {
       { signal },
       list(validInvestigation),
     ),
+  investigationPage: (
+    offset: number,
+    search: string,
+    status: string,
+    signal?: AbortSignal,
+  ) => {
+    const params = new URLSearchParams({
+      offset: String(offset),
+      limit: '10',
+      search,
+    });
+    if (status !== 'all') params.set('status', status);
+    return apiRequest<InvestigationPage>(
+      `/v1/investigations/page?${params}`,
+      { signal },
+      (v) =>
+        object(v) &&
+        list(validInvestigation)(v.items) &&
+        Number.isSafeInteger(v.total) &&
+        Number(v.total) >= 0 &&
+        Number.isSafeInteger(v.matched) &&
+        Number(v.matched) >= 0 &&
+        Number(v.matched) <= Number(v.total) &&
+        v.offset === offset &&
+        v.limit === 10 &&
+        Array.isArray(v.items) &&
+        v.items.length ===
+          Math.min(10, Math.max(0, Number(v.matched) - offset)) &&
+        new Set(v.items.map((x) => x.id)).size === v.items.length,
+    );
+  },
   create: (name: string) =>
     apiRequest<InvestigationRecord>(
       '/v1/investigations',

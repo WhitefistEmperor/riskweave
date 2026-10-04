@@ -45,7 +45,7 @@ test('built frontend sends security headers and renders verified session without
   await page.route('**/api/v1/session', route => route.fulfill({ json: {
     user_id: 'jwt_verified_fixture', authentication_mode: 'jwt', production_authentication: true,
   } }));
-  await page.route('**/api/v1/investigations', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/investigations/page?*', route => route.fulfill({ json: { items: [], total: 0, matched: 0, offset: 0, limit: 10 } }));
   const response = await page.goto('/investigations');
   expect(response?.headers()['x-content-type-options']).toBe('nosniff');
   expect(response?.headers()['x-frame-options']).toBe('DENY');

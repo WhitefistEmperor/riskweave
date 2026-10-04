@@ -23,6 +23,12 @@ def make_engine(url: str):
 
         @event.listens_for(engine, "connect")
         def sqlite_constraints(connection, _):
+            connection.create_function(
+                "riskweave_lower",
+                1,
+                lambda value: value.lower() if isinstance(value, str) else value,
+                deterministic=True,
+            )
             connection.execute("PRAGMA foreign_keys=ON")
             connection.execute("PRAGMA busy_timeout=10000")
 

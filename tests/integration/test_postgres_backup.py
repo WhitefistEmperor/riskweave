@@ -88,6 +88,11 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(databases, ba
         assert restored.run(owner, run.id).result_checksum == checksum
         assert restored.storage.read(artifact.storage_key) == payload
         assert restored.list(Principal("different-owner")) == []
+        page = restored.page(owner, search="GENERATED RESTORE")
+        assert page["total"] == page["matched"] == 1
+        assert [item.id for item in page["items"]] == [case.id]
+        assert restored.page(owner, search="%_")["matched"] == 0
+        assert restored.page(Principal("different-owner"))["total"] == 0
         assert report(target_db)["status"] == "ok"
         with pytest.raises(ValueError, match="empty PostgreSQL"):
             restore_snapshot(
