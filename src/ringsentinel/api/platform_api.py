@@ -41,6 +41,7 @@ from ringsentinel.platform.deletion import DeletionService
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import (
     AnalysisDispatch,
+    AnalysisRun,
     CandidateReview,
     DispatchBudget,
     DispatchSchedule,
