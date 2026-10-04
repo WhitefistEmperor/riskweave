@@ -80,7 +80,14 @@ SQLite round-trip tests restored actual generated input, completed result, owner
 checksums and migration state into a new database/storage directory. Tests reject active executor,
 missing acknowledgement, overwrite, checksum corruption and traversal without damaging source data.
 The test result payload is explicitly a small lifecycle fixture, not a new detector benchmark.
-PostgreSQL executable paths are implemented but **not live tested on this host**: Docker, Podman,
-psql, pg_dump and pg_restore are absent. Do not treat the SQLite test as PostgreSQL verification.
+PostgreSQL executable paths are **not live tested on this Windows host**: Docker,
+Podman, psql, pg_dump and pg_restore are absent. Linux CI now runs the actual
+snapshot and restore code against PostgreSQL 17 with matching clients in ephemeral
+containers, for both local and database object storage. The drill creates unique
+test databases under a fixed loopback-only CI role and removes only those databases.
+It verifies input bytes, result checksum, owner isolation, repeated migration and
+existing-target rejection. Consult the exact source commit's backend CI result
+before claiming that drill passed. Its small result is a generated lifecycle
+fixture, not a new detector evaluation or a hosted production restore drill.
 
 Reference: [PostgreSQL SQL dump consistency](https://www.postgresql.org/docs/17/backup-dump.html).

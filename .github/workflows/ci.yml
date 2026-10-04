@@ -11,6 +11,19 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: riskweave_backup_ci
+          POSTGRES_PASSWORD: ci-only-backup-drill
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U riskweave_backup_ci -d postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      RINGSENTINEL_TEST_POSTGRES_URL: postgresql+psycopg://riskweave_backup_ci:ci-only-backup-drill@127.0.0.1:5432/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -19,8 +32,24 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked --extra dev
+      - name: Use matching PostgreSQL 17 clients for isolated backup drills
+        shell: bash
+        run: |
+          mkdir -p work/bin
+          cat > work/bin/pg_dump <<'SH'
+          #!/bin/sh
+          exec docker run --rm --network host --user "$(id -u):$(id -g)" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=$GITHUB_WORKSPACE" \
+            --workdir "$GITHUB_WORKSPACE" \
+            --env PGHOST --env PGPORT --env PGUSER --env PGPASSWORD \
+            --env PGDATABASE --env PGCONNECT_TIMEOUT \
+            postgres:17-bookworm "$(basename "$0")" "$@"
+          SH
+          cp work/bin/pg_dump work/bin/pg_restore
+          chmod +x work/bin/pg_dump work/bin/pg_restore
+          echo "$PWD/work/bin" >> "$GITHUB_PATH"
       - run: uv run --no-sync ruff check .
-      - run: uv run --no-sync pytest
+      - run: uv run --no-sync pytest --basetemp work/ci-pytest
       - name: Migrate a fresh database, then verify an idempotent second upgrade
         env:
           RINGSENTINEL_DATABASE_URL: sqlite:///./work/ci-migrations.db

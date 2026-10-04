@@ -1,0 +1,100 @@
+"""Isolated real pg_dump/pg_restore drill. Never accepts a non-CI database target."""
+
+import os
+from uuid import uuid4
+
+import psycopg
+import pytest
+from psycopg import sql
+from sqlalchemy.engine import make_url
+
+from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
+from ringsentinel.platform.backup import create_snapshot, restore_snapshot
+from ringsentinel.platform.database import Database
+from ringsentinel.platform.database_storage import storage_for
+from ringsentinel.platform.service import InvestigationService, Principal
+from ringsentinel.platform.settings import Settings
+
+
+@pytest.fixture
+def databases():
+    configured = os.getenv("RINGSENTINEL_TEST_POSTGRES_URL")
+    if not configured:
+        pytest.skip("Dedicated PostgreSQL backup drill is configured in Linux CI")
+    url = make_url(configured)
+    if (
+        url.host != "127.0.0.1"
+        or url.username != "riskweave_backup_ci"
+        or url.database != "postgres"
+    ):
+        pytest.fail("Backup drill requires its isolated loopback CI administrator")
+    names = ["riskweave_drill_" + uuid4().hex for _ in range(2)]
+    created = []
+    with psycopg.connect(
+        url.set(drivername="postgresql").render_as_string(hide_password=False), autocommit=True
+    ) as admin:
+        try:
+            for name in names:
+                admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+                created.append(name)
+            yield [url.set(database=name).render_as_string(hide_password=False) for name in names]
+        finally:
+            for name in created:
+                admin.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+
+
+@pytest.mark.parametrize("backend", ["local", "database"])
+def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(databases, backend, tmp_path):
+    source = Settings(
+        environment="test",
+        database_url=databases[0],
+        storage_root=tmp_path / "source",
+        storage_backend=backend,
+        jobs_enabled=False,
+    )
+    target = Settings(
+        environment="test",
+        database_url=databases[1],
+        storage_root=tmp_path / "target",
+        storage_backend=backend,
+        jobs_enabled=False,
+    )
+    source_db = Database(databases[0])
+    target_db = Database(databases[1])
+    try:
+        source_db.migrate()
+        service = InvestigationService(source_db, storage_for(source_db, source), source)
+        owner = Principal("ci-backup-owner")
+        case = service.create(owner, "Generated restore fixture")
+        payload = (
+            SyntheticPaymentGenerator(GenerationConfig(transactions=100))
+            .generate()
+            .model_dump_json()
+            .encode()
+        )
+        artifact = service.attach(owner, case.id, payload, "input.json", "application/json")
+        run = service.start(owner, case.id, artifact.id, "backup-drill")
+        service.claim()
+        service.finish(run.id, {"rings": [], "verification": "generated-lifecycle-fixture"})
+        checksum = service.run(owner, run.id).result_checksum
+        snapshot = tmp_path / "snapshot"
+        create_snapshot(source, snapshot, writers_stopped=True)
+        assert restore_snapshot(target, snapshot, writers_stopped=True)["status"] == "restored"
+        target_db.migrate()
+        restored = InvestigationService(target_db, storage_for(target_db, target), target)
+        assert restored.get(owner, case.id).name == "Generated restore fixture"
+        assert restored.result(owner, run.id) == service.result(owner, run.id)
+        assert restored.run(owner, run.id).result_checksum == checksum
+        assert restored.storage.read(artifact.storage_key) == payload
+        assert restored.list(Principal("different-owner")) == []
+        with pytest.raises(ValueError, match="empty PostgreSQL"):
+            restore_snapshot(
+                target.model_copy(update={"storage_root": tmp_path / "never-written"}),
+                snapshot,
+                writers_stopped=True,
+            )
+        assert not (tmp_path / "never-written").exists()
+        assert service.result(owner, run.id)["verification"] == "generated-lifecycle-fixture"
+    finally:
+        source_db.engine.dispose()
+        target_db.engine.dispose()
