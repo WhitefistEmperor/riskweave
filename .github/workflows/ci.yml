@@ -28,6 +28,12 @@ jobs:
           uv run --no-sync ringsentinel-migrate
           uv run --no-sync ringsentinel-migrate
       - run: uv build
+      - name: Build and verify a cached release model with only production dependencies
+        run: |
+          uv sync --locked --no-dev --no-editable
+          uv run --no-sync python -m ringsentinel.platform.vercel_build
+          uv run --no-sync python -m ringsentinel.platform.vercel_build
+          uv run --no-sync python scripts/check_vercel_inventory.py
 
   frontend:
     runs-on: ubuntu-latest

@@ -2,6 +2,11 @@
 
 ## Implemented
 
+- Dedicated Vercel Python 3.13 release entry point and build-owned model bundle,
+  cached-byte preservation, strict production admission and identical model admission
+  in Workflow steps. Function duration, private-workspace exclusions and daily cron
+  are configured. CI checks a conservative production dependency inventory; actual
+  provider-generated bundle sizes and hosted behavior remain release gates.
 - An unlabeled `payments-v1` contract, without fabricated outcome labels or generator
   metadata. Upload and worker both validate it. Synthetic uploads remain supported.
 - Referential checks shared with the synthetic contract, stricter refund identity,

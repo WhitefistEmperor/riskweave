@@ -65,6 +65,10 @@ the project is already deployed or validated on real financial data.
   Erasure removes dispatch intent; stale steps cannot resurrect a case.
 - Alembic head is `0006`; upgrades preserve populated cases/reviews/foreign keys.
 - CI covers backend, native frontend and isolated PostgreSQL/container workflows.
+- Dedicated Vercel ASGI entry, Python 3.13, cached build-owned model, checksum
+  admission in API and Workflow steps, disposable scratch and daily cron config.
+  Private workspaces are excluded; CI checks production dependency inventory.
+  Actual hosted bundles and generated queue authentication remain unverified.
 
 Read these documents before redesigning anything:
 `docs/production-progress.md`, `docs/vercel-deployment.md`,
@@ -72,6 +76,12 @@ Read these documents before redesigning anything:
 `docs/bounded-transport.md`, and the existing security/model/backup documentation.
 
 ## Verification and model caveats
+
+The next packaging increment passed all 172 Python tests locally, Ruff and
+source/wheel builds. Eight release tests cover cached model preservation,
+tamper rejection before deserialization, override rejection, incomplete caches
+and production identity/demo admission. Linux production inventory and hosted
+packaging are separate checks; consult current PR CI for the exact pushed SHA.
 
 The previously fully passing remote baseline is commit
 `df45a981308b62f15a598bdc829e2310c3932324`, CI run `37187259202`:
@@ -135,12 +145,13 @@ the embedded queue. Do not deploy the test harness as a durable worker.
 2. Finish free-account access and provisioning. Import the tested branch into
    Vercel with console root `frontend`. Establish a private TLS PostgreSQL
    database with verified free storage/transfer allowances and explicit budgets.
-3. Complete the Python API's actual Vercel entry point/build configuration:
-   supported Python runtime, trusted artifact/manifest packaging, writable `/tmp`
-   scratch, generated authenticated Workflow queue functions, function duration,
-   memory, bundle limits and routing. `pyproject.toml` registry metadata alone is
-   not proof of a deployable API. Normal filesystem/scheduler defaults are unsafe
-   for serverless; select database/request/managed-workflow mode explicitly.
+3. Verify the implemented Python API packaging on Vercel: root `app.py`, Python
+   3.13, build-owned model/manifest, production admission and `/tmp` scratch,
+   authenticated generated Workflow queue functions, duration, memory, bundle
+   limits and routing. See `docs/vercel-deployment.md`. CI's conservative inventory
+   is not a hosted bundle measurement. Configure both cron secrets identically.
+   Normal filesystem/scheduler defaults are unsafe for serverless; the dedicated
+   entry point requires database/request/managed-workflow mode explicitly.
 4. Apply migrations explicitly through 0006 and provision a live OIDC provider.
    Align issuer/audience/scope/JWKS and registered exact HTTPS callbacks/logout.
    Add safe public-key rotation/retrieval; static verification keys are insufficient

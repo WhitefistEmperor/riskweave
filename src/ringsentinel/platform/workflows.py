@@ -10,10 +10,20 @@ wf = workflow.Workflows(namespace="riskweave")
 def _service():
     # Each step invocation gets fresh durable dependencies. No database/client in
     # the deterministic workflow sandbox or in serialized arguments/results.
+    # Generated workflow functions may load the registry without importing app.py.
+    # They must use the identical release-owned artifact, never runtime retraining.
+    import os
+    from pathlib import Path
+
     from ringsentinel.platform.database import Database
     from ringsentinel.platform.database_storage import storage_for
     from ringsentinel.platform.service import InvestigationService
     from ringsentinel.platform.settings import Settings
+
+    if os.getenv("VERCEL_DEPLOYMENT_ID") and os.getenv("RINGSENTINEL_ENVIRONMENT") == "production":
+        from ringsentinel.platform.vercel_entry import configure_bundle
+
+        configure_bundle(Path.cwd())
 
     settings = Settings()
     database = Database(settings.database_url.get_secret_value())

@@ -38,13 +38,39 @@ before deploying the analyst workflow.
 
 ## API release gates
 
-The default Python API entry point is **not ready for Vercel Functions**. Its
-default queue uses a long-lived scheduler and filesystem objects. Optional
+The repository now supplies a dedicated `app.py` / `app:app` Vercel entry point,
+Python 3.13 selection, FastAPI configuration and a build-time trusted model.
+Create a separate backend project rooted at the repository root. Keep the
+configured build command `python -m ringsentinel.platform.vercel_build`.
+It trains the existing synthetic baseline only during build, validates the
+artifact and preserves cached model bytes. Runtime admission rejects corrupt
+artifacts, substituted model settings and development configuration. Generated
+Workflow steps admit the same release artifact before inference.
+
+Set `RINGSENTINEL_ENVIRONMENT=production`, execution mode `request`, storage
+backend `database`, background dispatch `vercel_workflow`, and storage root
+`/tmp/riskweave`, plus the explicit PostgreSQL, JWT, trusted hosts, frontend
+origins and budget settings described below and in `.env.example`. Enable Vercel
+system environment variables. Supply verification-only public JWKS through the
+configured path; never place private signing keys in a release. The entry point
+derives model path/checksum from its bundled manifest, so omit model overrides.
+
+The root `vercel.json` sets a 300-second function ceiling and daily recovery
+cron. Set Vercel's `CRON_SECRET` and `RINGSENTINEL_DISPATCH_CRON_SECRET` to the
+same private random value (at least 32 characters). Neither secret belongs in
+the frontend. Private development workspaces and frontend dependencies are
+excluded. CI builds the model twice without replacing cached bytes and measures
+a conservative production-dependency inventory against a 450 MB budget.
+That inventory is not the actual provider-generated function size.
+
+This packaging is implemented but **not verified in a hosted Vercel build**.
+The general-purpose API defaults still use a long-lived scheduler and filesystem
+objects; deploy only the explicit managed entry point. Optional
 [database storage and request execution](request-execution.md) now provide atomic
 durable bytes, distributed single-run claims, deadlines and late-worker fencing.
 They preserve case data across instances without a lifespan scheduler. This is
-a tested foundation; hosted transport capacity, managed dispatch and dependencies still
-need completion before release.
+a tested foundation; hosted transport capacity, generated function packaging,
+managed dispatch and provider dependencies still need verification before release.
 
 A complete Vercel deployment still needs:
 
@@ -65,9 +91,10 @@ A complete Vercel deployment still needs:
 5. Analysis bounded below the Hobby function duration of 300 seconds, allowing
    time to persist results and report failures. Resource/capacity tests must
    also verify the 2 GB memory ceiling and bundle allowance.
-6. The trusted model artifact and manifest packaged in the release, with the
-   existing digest/compatibility checks retained. Never accept executable model
-   artifacts from an analyst upload.
+6. Inspect the generated API and Workflow function bundles for the build-owned
+   model, manifest and dependencies. Verify checksum/compatibility admission and
+   cold starts on the actual platform. Never accept executable model artifacts
+   from an analyst upload.
 7. Real JWT issuer/audience/JWKS/scope configuration, sign-in and cross-owner
    isolation checks, external readiness monitoring and a verified restore path.
 

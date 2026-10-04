@@ -41,7 +41,7 @@ packages = ["src/ringsentinel"]
 "results/phase3/phase3_results.json" = "ringsentinel/resources/phase3_results.json"
 
 [tool.hatch.build.targets.sdist]
-only-include = ["src", "tests", "docs", "results", "schemas", "scripts", "pyproject.toml", "uv.lock", "README.md", "LICENSE", ".env.example"]
+only-include = ["src", "tests", "docs", "results", "schemas", "scripts", "pyproject.toml", "uv.lock", "README.md", "LICENSE", ".env.example", "app.py", "vercel.json", ".python-version"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
@@ -53,6 +53,12 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.vercel]
+entrypoint = "app:app"
+
+[tool.vercel.scripts]
+build = "python -m ringsentinel.platform.vercel_build"
 
 [[tool.vercel.workflows]]
 entrypoint = "ringsentinel.platform.workflows:wf"
