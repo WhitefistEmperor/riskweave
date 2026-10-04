@@ -49,11 +49,12 @@ $env:OMP_NUM_THREADS = '1'
   --labels work/evaluation/labels.json `
   --plan work/evaluation/plan.json `
   --model work/models/network-hgb.joblib `
-  --model-sha256 <TRUSTED_BUILD_SHA256> `
+  --model-sha256 'REPLACE_WITH_TRUSTED_BUILD_SHA256' `
   --output work/evaluation/report.json
 ```
 
-The output directory must already exist. Existing reports are never overwritten.
+Replace the quoted SHA placeholder with the trusted release digest. Do not
+obtain a trust pin from an unknown uploaded pickle. The output directory must already exist. Existing reports are never overwritten.
 Input files are individually bounded to 100 MB. Console failures return exit 2
 with a sanitized error code, excluding paths and input contents. Read the input
 contracts locally to resolve a failure; never publish raw validation exceptions.
