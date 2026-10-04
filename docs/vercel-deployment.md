@@ -43,20 +43,21 @@ default queue uses a long-lived scheduler and filesystem objects. Optional
 [database storage and request execution](request-execution.md) now provide atomic
 durable bytes, distributed single-run claims, deadlines and late-worker fencing.
 They preserve case data across instances without a lifespan scheduler. This is
-a tested foundation; transport capacity, background dispatch and hosted dependencies still
+a tested foundation; hosted transport capacity, managed dispatch and dependencies still
 need completion before release.
 
 A complete Vercel deployment still needs:
 
 1. A provisioned private PostgreSQL database with explicit migrations through
-   revision `0005`, TLS, a verified free allowance and an explicit storage budget.
+   revision `0006`, TLS, a verified free allowance and an explicit storage budget.
 2. Enable database object storage and verify authenticated reads, checksum checks,
    atomic byte admission/deletion and backup/restore against that deployed database.
    Local `/tmp` is suitable only for disposable analysis scratch files.
-3. Complete durable background dispatch around the persisted request-mode claims,
-   with retry scheduling and hosted interruption/recovery checks. Browser polling
-   currently dispatches existing queued runs; closing it before dispatch does not
-   guarantee background completion. No ASGI lifespan daemon is a durable worker.
+3. Configure [managed background delivery](background-delivery.md), the SDK registry,
+   authenticated generated queue routes and daily recovery cron. Local SDK inference
+   and SQL delivery recovery are implemented; verify hosted interruption/recovery.
+   Default request mode still relies on browser dispatch. No ASGI lifespan daemon
+   is a durable worker.
 4. Verify [bounded uploads and result fragments](bounded-transport.md) on the hosted
    gateway against Vercel's 4.5 MB function limit. These retain ownership, validation,
    retries and whole-object checksums; large legacy evidence and investigator replies

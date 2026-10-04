@@ -30,6 +30,13 @@
   global single-analysis capacity slot, deadlines, late-result fencing and scoped
   recovery. Migration 0004 preserves populated review history and foreign keys.
   See [configuration and remaining serverless gates](request-execution.md).
+- Optional Vercel Workflow delivery with atomic SQL intent, submission leases,
+  bounded retries/backoff, monthly admission and daily/hourly recovery. Managed
+  runs no longer require browser execution. SDK steps retain owner/claim checks,
+  model-version provenance, deadlines and erasure fencing. Migration 0006 preserves
+  existing cases. See [background behavior and hosted gates](background-delivery.md).
+- A [Claude handoff](CLAUDE_HANDOFF.md) records continuation instructions, verified
+  evidence, free-hosting constraints, access blockers and remaining acceptance work.
 
 ## Verified so far
 
@@ -38,7 +45,16 @@ discard and expiry, shared byte admission, complete dataset validation and atomi
 artifact acceptance. Migration 0005 adds private upload sessions without rebuilding
 existing case/review tables. Request-mode result delivery verifies fragment and whole
 checksums before displaying findings. See [transport behavior and limits](bounded-transport.md).
-Hosted capacity and durable background dispatch remain release gates.
+Hosted capacity and managed background dispatch verification remain release gates.
+
+The background increment's first full local Python run passed 163 tests and found
+one obsolete table-list assertion. After updating it for migration 0006, all 18
+final dispatch/persistence/PostgreSQL-DDL checks passed. Three focused production
+browser checks passed. The real local SDK HTTP smoke completed analysis without
+posting `/execute`, with review reload, owner isolation, erasure and the unchanged
+frozen-model result checksum. Ruff, lint, TypeScript, production build and wheel/
+source packaging passed. The current suites contain 164 backend and 58 browser
+checks; consult the pull request for full-suite and container CI results.
 
 Local transport validation passed a full 148-test backend regression, then the
 three added session-history, metadata-rollback and streamed-size regressions.
@@ -122,6 +138,7 @@ joblib is executable serialization and must never accept user-uploaded model fil
    Synthetic results cannot substitute for this validation.
 
 The default executor remains single-host and single-worker. Request execution
-has distributed database claims and bounded upload/result transport but still
-needs durable background dispatch and hosted runtime/bundle/capacity validation. Production
+has distributed database claims, bounded upload/result transport and optional
+workflow delivery. Managed hosting still needs dispatch interruption/recovery,
+hosted runtime/bundle/capacity validation and actual provider configuration. Production
 scalability, real-data model performance and completed public deployment are not claimed.

@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     storage_root: Path = Path("work/storage")
     storage_backend: Literal["local", "database"] = "local"
     execution_mode: Literal["local", "request"] = "local"
+    background_dispatch: Literal["none", "vercel_workflow"] = "none"
+    dispatch_cron_secret: SecretStr = SecretStr("")
+    dispatch_starts_per_month: int = Field(default=50, ge=1, le=1000)
     frontend_origins: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173"]
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8000, ge=1, le=65535)
@@ -59,6 +62,19 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def deployment_boundary(self) -> "Settings":
+        if self.background_dispatch != "none":
+            if "max_pending_runs" not in self.model_fields_set:
+                self.max_pending_runs = 10
+            if self.execution_mode != "request" or not self.jobs_enabled:
+                raise ValueError("Background delivery requires enabled request execution")
+            if (
+                self.environment == "production"
+                and len(self.dispatch_cron_secret.get_secret_value()) < 32
+            ):
+                raise ValueError(
+                    "Production background delivery requires a cron secret "
+                    "of at least 32 characters"
+                )
         if self.execution_mode == "request":
             if self.storage_backend != "database" or self.analysis_timeout_seconds > 240:
                 raise ValueError(

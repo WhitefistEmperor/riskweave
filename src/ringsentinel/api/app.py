@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import Any, Protocol
@@ -53,6 +54,7 @@ def create_app(
     runtime_factory: Callable[[], RuntimeProvider] = get_demo_runtime,
     *,
     settings: Settings | None = None,
+    workflow_delivery=None,
 ) -> FastAPI:
     settings = settings or Settings()
     database = Database(settings.database_url.get_secret_value())
@@ -108,6 +110,20 @@ def create_app(
     application.state.settings = settings
     application.state.platform = platform
     application.state.executor = executor
+    application.state.dispatcher = None
+    if settings.background_dispatch == "vercel_workflow":
+        if settings.environment == "production" and (
+            not os.getenv("VERCEL_DEPLOYMENT_ID")
+            or os.getenv("WORKFLOW_TARGET_WORLD", "vercel") != "vercel"
+        ):
+            raise ValueError("Production workflows require the Vercel managed runtime")
+        from ringsentinel.platform.dispatch import DeliveryCoordinator
+
+        if workflow_delivery is None:
+            from ringsentinel.platform.workflows import VercelWorkflowDelivery
+
+            workflow_delivery = VercelWorkflowDelivery()
+        application.state.dispatcher = DeliveryCoordinator(platform, workflow_delivery)
     if settings.auth_mode == "jwt":
         from ringsentinel.api.authentication import TokenVerifier
 

@@ -1,5 +1,7 @@
 """Versioned investigation APIs and owner-scoped execution dispatch."""
 
+import asyncio
+import hmac
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Request
@@ -37,7 +39,10 @@ from ringsentinel.investigation.investigator import InvestigatorService
 from ringsentinel.platform.deletion import DeletionService
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import (
+    AnalysisDispatch,
     CandidateReview,
+    DispatchBudget,
+    DispatchSchedule,
     Investigation,
     ReviewAudit,
     StorageDeletion,
@@ -77,6 +82,10 @@ def dependencies_ready(service: InvestigationService) -> bool:
             session.execute(select(CandidateReview.candidate_id).limit(1))
             session.execute(select(ReviewAudit.id).limit(1))
             session.execute(select(StorageDeletion.key).limit(1))
+            if service.settings.background_dispatch == "vercel_workflow":
+                session.execute(select(AnalysisDispatch.run_id).limit(1))
+                session.execute(select(DispatchBudget.month).limit(1))
+                session.execute(select(DispatchSchedule.day).limit(1))
         return service.storage.ready()
     except Exception:
         return False
@@ -268,14 +277,23 @@ def runs(investigation_id: str, principal: CurrentPrincipal, service: Service):
 
 
 @router.post("/investigations/{investigation_id}/runs", response_model=RunResponse, status_code=202)
-def start_run(
+async def start_run(
     investigation_id: str,
     body: RunCreate,
     principal: CurrentPrincipal,
     service: Service,
+    request: Request,
     idempotency_key: Annotated[str, Header(min_length=1, max_length=80, pattern=r"^[\w-]+$")],
 ):
-    return service.start(principal, investigation_id, body.artifact_id, idempotency_key)
+    run = await run_in_threadpool(
+        service.start, principal, investigation_id, body.artifact_id, idempotency_key
+    )
+    if request.app.state.dispatcher is not None:
+        # Queue acceptance completes before the HTTP reply; inference runs in
+        # the durable SDK step. An interrupted publish retains its SQL intent.
+        run = await request.app.state.dispatcher.publish_owned(principal, run.id)
+        await request.app.state.dispatcher.ensure_reconciler()
+    return run
 
 
 @router.get("/runs/{run_id}", response_model=RunResponse)
@@ -284,11 +302,33 @@ def run(run_id: str, principal: CurrentPrincipal, service: Service):
 
 
 @router.post("/runs/{run_id}/execute", response_model=RunResponse)
-def execute_run(run_id: str, request: Request, principal: CurrentPrincipal, service: Service):
-    service.run(principal, run_id)
+async def execute_run(run_id: str, request: Request, principal: CurrentPrincipal, service: Service):
+    saved = await run_in_threadpool(service.run, principal, run_id)
     if service.settings.execution_mode != "request":
         raise ProductError("CONFLICT")
-    return request.app.state.executor.execute_owned(principal, run_id)
+    if (
+        request.app.state.dispatcher is not None
+        and saved.configuration_snapshot.get("background_dispatch") == "vercel_workflow"
+    ):
+        return await request.app.state.dispatcher.publish_owned(principal, run_id)
+    return await run_in_threadpool(request.app.state.executor.execute_owned, principal, run_id)
+
+
+@router.get("/operations/reconcile-delivery")
+async def reconcile_delivery(request: Request, service: Service):
+    secret = service.settings.dispatch_cron_secret.get_secret_value()
+    supplied = request.headers.get("authorization", "")
+    if not secret or not hmac.compare_digest(
+        supplied.encode("utf-8"), ("Bearer " + secret).encode("utf-8")
+    ):
+        raise ProductError("UNAUTHORIZED")
+    if request.app.state.dispatcher is None:
+        raise ProductError("NOT_READY")
+    await request.app.state.dispatcher.ensure_reconciler()
+    # A bounded immediate pass also repairs a failed reconciler registration.
+    async with asyncio.timeout(150):
+        count = await request.app.state.dispatcher.reconcile()
+    return {"status": "checked", "batch_size": count}
 
 
 @router.get("/runs/{run_id}/results", response_model=ResultsResponse)

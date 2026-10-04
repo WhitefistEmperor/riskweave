@@ -30,7 +30,7 @@ def make_engine(url: str):
 
 
 class Database:
-    revision = "0005"
+    revision = "0006"
 
     def __init__(self, url: str):
         self.engine = make_engine(url)

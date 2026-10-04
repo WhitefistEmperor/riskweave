@@ -1,6 +1,18 @@
 """Public errors never contain internal exception strings."""
 
 ERRORS = {
+    "MODEL_VERSION_UNAVAILABLE": (
+        503,
+        "This run's model version is unavailable. Contact the operator before retrying.",
+    ),
+    "DISPATCH_FAILED": (
+        503,
+        "Background analysis could not be delivered. Contact the operator before retrying.",
+    ),
+    "CAPACITY_TIMEOUT": (
+        503,
+        "Analysis did not start in time. Retry after capacity becomes available.",
+    ),
     "QUOTA_EXCEEDED": (429, "An operational limit was reached. Contact the operator."),
     "INVALID_REQUEST": (400, "The request is not permitted."),
     "METHOD_NOT_ALLOWED": (405, "This HTTP method is not supported."),

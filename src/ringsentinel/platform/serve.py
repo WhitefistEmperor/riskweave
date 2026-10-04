@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 
-def main():
+def configure_model_manifest():
     manifest = os.environ.get("RINGSENTINEL_MODEL_ARTIFACT_MANIFEST")
     if manifest:
         metadata = json.loads(Path(manifest).read_text())
@@ -13,6 +13,10 @@ def main():
             "RINGSENTINEL_MODEL_ARTIFACT_PATH", str(Path(manifest).parent / "network-hgb.joblib")
         )
         os.environ.setdefault("RINGSENTINEL_MODEL_ARTIFACT_SHA256", metadata["sha256"])
+
+
+def main():
+    configure_model_manifest()
 
     import uvicorn
 

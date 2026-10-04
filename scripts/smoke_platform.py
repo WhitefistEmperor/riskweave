@@ -23,11 +23,18 @@ def main():
         help="Dispatch the persisted run through its owner-scoped request endpoint",
     )
     parser.add_argument(
+        "--background-execution",
+        action="store_true",
+        help="Verify SDK-backed analysis without calling the browser execution endpoint",
+    )
+    parser.add_argument(
         "--delete-created",
         action="store_true",
         help="Delete only the investigation created by this smoke run",
     )
     args = parser.parse_args()
+    if args.background_execution:
+        args.request_execution = True
     # Explicitly scoped to local tests; never upload generated data to an arbitrary host.
     url = httpx.URL(args.base_url)
     if url.host not in {"localhost", "127.0.0.1", "::1"}:
@@ -136,7 +143,11 @@ def main():
         deadline = time.monotonic() + 360
         while time.monotonic() < deadline:
             run = get(f"/runs/{run_id}")
-            if args.request_execution and run["status"] == "queued":
+            if (
+                args.request_execution
+                and not args.background_execution
+                and run["status"] == "queued"
+            ):
                 executed = client.post(f"/api/v1/runs/{run_id}/execute")
                 assert executed.status_code == 200, executed.text
                 run = executed.json()
@@ -146,6 +157,9 @@ def main():
                 break
             time.sleep(0.1)
         assert run["status"] == "completed", run
+        if args.background_execution:
+            assert run["configuration_snapshot"]["background_dispatch"] == "vercel_workflow"
+            assert run["dispatch_state"] == "accepted"
         if args.request_execution:
             assert run["started_at"] and run["completed_at"]
         else:

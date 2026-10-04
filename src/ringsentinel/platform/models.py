@@ -101,6 +101,7 @@ class AnalysisRun(Identity, Base):
     result_reference: Mapped[str | None] = mapped_column(String(100))
     result_checksum: Mapped[str | None] = mapped_column(String(64))
     execution_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    dispatch_state: Mapped[str | None] = mapped_column(String(16))
     executor_slot: Mapped[str | None] = mapped_column(String(80), unique=True)
 
 
@@ -200,3 +201,37 @@ class UploadPart(Base):
     content: Mapped[bytes] = mapped_column(LargeBinary)
     size_bytes: Mapped[int] = mapped_column(BigInteger)
     checksum: Mapped[str] = mapped_column(String(64))
+
+
+class AnalysisDispatch(Base):
+    """Transactional queue-delivery intent; no analyst token or payment bytes."""
+
+    __tablename__ = "analysis_dispatches"
+    run_id: Mapped[str] = mapped_column(ForeignKey("analysis_runs.id"), primary_key=True)
+    ticket: Mapped[str] = mapped_column(String(36))
+    budget_month: Mapped[str] = mapped_column(String(7))
+    attempts: Mapped[int] = mapped_column(default=0)
+    workflow_id: Mapped[str | None] = mapped_column(String(80))
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, index=True
+    )
+    last_error_code: Mapped[str | None] = mapped_column(String(40))
+
+
+class DispatchBudget(Base):
+    __tablename__ = "dispatch_budgets"
+    month: Mapped[str] = mapped_column(String(7), primary_key=True)
+    starts: Mapped[int] = mapped_column(default=0)
+
+
+class DispatchSchedule(Base):
+    """Daily reconciler registration, bounded even after an ambiguous start."""
+
+    __tablename__ = "dispatch_schedules"
+    day: Mapped[str] = mapped_column(String(10), primary_key=True)
+    attempts: Mapped[int] = mapped_column(default=0)
+    workflow_id: Mapped[str | None] = mapped_column(String(80))
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

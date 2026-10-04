@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = [
+  "vercel-workflow==0.11.0",
   "pyjwt[crypto]>=2.13,<3",
   "alembic>=1.16,<2",
   "sqlalchemy>=2.0,<3",
@@ -52,3 +53,6 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[[tool.vercel.workflows]]
+entrypoint = "ringsentinel.platform.workflows:wf"

@@ -73,6 +73,7 @@ export type ArtifactRecord = {
   content_type: string;
 };
 export type AnalysisRun = {
+  dispatch_state?: 'pending' | 'accepted' | 'failed' | null;
   id: string;
   investigation_id: string;
   artifact_id: string;
@@ -289,6 +290,7 @@ export async function pollRun(
     onUpdate(run);
     if (
       run.status === 'queued' &&
+      run.configuration_snapshot.background_dispatch !== 'vercel_workflow' &&
       run.configuration_snapshot.execution_mode === 'request'
     ) {
       run = await platformApi.execute(value, run.investigation_id, signal);

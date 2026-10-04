@@ -3,7 +3,8 @@
 Migration `0004` adds private database objects and run execution deadlines. The
 default remains the single local scheduler and filesystem storage. Request mode
 is an explicitly selected deployment foundation; it is not yet a complete Vercel
-release or a durable background dispatcher.
+release. Optional [managed background delivery](background-delivery.md) builds on
+these persisted claims; its hosted verification remains a release gate.
 
 ## Storage and consistency
 
@@ -49,8 +50,10 @@ capacity. An explicit new start/idempotency key is required to retry failed work
 
 The console dispatches the same queued run while polling. **Closing the console
 before dispatch can leave work queued until the case is reopened or expires.**
-A durable dispatcher and retry scheduling remain release gates. Request mode
-alone does not promise completion after every browser or network interruption.
+Enable [managed background delivery](background-delivery.md) to submit saved runs
+server-side with SQL retry intent and workflow recovery. Its real local SDK test
+completes inference without a browser execution request; hosted interruption and
+recovery checks remain required. Request mode alone keeps the browser limitation.
 
 Next.js's self-hosted rewrite timeout is bounded at 280 seconds, above the worker
 deadline. Vercel's own routing/duration limits require separate hosted verification.

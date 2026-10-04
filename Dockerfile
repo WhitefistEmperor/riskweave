@@ -32,6 +32,7 @@ RUN groupadd --gid 10001 ringsentinel \
     && chown -R ringsentinel:ringsentinel /app/work
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/models /app/models
+COPY scripts/serve_background_test.py /app/scripts/serve_background_test.py
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \

@@ -23,6 +23,9 @@ def test_migration_persistence_and_foreign_keys(tmp_path):
         "stored_objects",
         "upload_sessions",
         "upload_parts",
+        "analysis_dispatches",
+        "dispatch_budgets",
+        "dispatch_schedules",
     }
     with first.session.begin() as session:
         session.add(User(id="alice"))

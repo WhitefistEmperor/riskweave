@@ -12,6 +12,7 @@ from ringsentinel.platform.database import Database
 from ringsentinel.platform.database_storage import DatabaseStorageBackend, storage_for
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import (
+    AnalysisDispatch,
     AnalysisRun,
     Artifact,
     CandidateReview,
@@ -131,6 +132,7 @@ class DeletionService:
                 elif session.get(StorageDeletion, key) is None:
                     session.add(StorageDeletion(key=key))
             run_ids = select(AnalysisRun.id).where(AnalysisRun.investigation_id == item.id)
+            session.execute(delete(AnalysisDispatch).where(AnalysisDispatch.run_id.in_(run_ids)))
             upload_ids = select(UploadSession.id).where(UploadSession.investigation_id == item.id)
             session.execute(delete(UploadPart).where(UploadPart.upload_id.in_(upload_ids)))
             session.execute(delete(UploadSession).where(UploadSession.investigation_id == item.id))

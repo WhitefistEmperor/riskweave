@@ -45,6 +45,11 @@ export const validRun = (v: unknown) =>
   nullable(v.error_code, str) &&
   nullable(v.error_message_safe, str) &&
   nullable(v.result_checksum, str) &&
+  (v.dispatch_state === undefined ||
+    v.dispatch_state === null ||
+    v.dispatch_state === 'pending' ||
+    v.dispatch_state === 'accepted' ||
+    v.dispatch_state === 'failed') &&
   object(v.configuration_snapshot);
 export const validCandidate = (v: unknown) =>
   object(v) &&

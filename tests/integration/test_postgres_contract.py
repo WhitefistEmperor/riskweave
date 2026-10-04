@@ -32,6 +32,9 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
         importlib.import_module(
             "ringsentinel.platform.migrations.versions.0005_chunked_upload"
         ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0006_background_dispatch"
+        ).upgrade()
     sql = output.getvalue()
     assert "CREATE TABLE analysis_runs" in sql
     assert "TIMESTAMP WITH TIME ZONE" in sql
@@ -43,6 +46,9 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
     assert "CREATE TABLE stored_objects" in sql and "BYTEA" in sql
     assert "CREATE UNIQUE INDEX uq_analysis_runs_executor_slot" in sql
     assert "CREATE TABLE upload_sessions" in sql and "CREATE TABLE upload_parts" in sql
+    assert "CREATE TABLE analysis_dispatches" in sql
+    assert "CREATE TABLE dispatch_budgets" in sql and "CREATE TABLE dispatch_schedules" in sql
+    assert "ADD COLUMN dispatch_state" in sql
     assert "FOREIGN KEY(run_id, candidate_id)" in sql
     statements = []
     engine = create_mock_engine(

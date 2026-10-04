@@ -101,9 +101,15 @@ export function InvestigationDetail({
                   </output>
                   <p className="muted">
                     {run.status === 'queued'
-                      ? run.configuration_snapshot.execution_mode === 'request'
-                        ? 'Waiting to start analysis. Keep this page open until processing begins. If you leave now, reopen this investigation to resume.'
-                        : 'Waiting for the analysis worker. You can leave this page and return later.'
+                      ? run.configuration_snapshot.background_dispatch ===
+                        'vercel_workflow'
+                        ? run.dispatch_state === 'accepted'
+                          ? 'Queued for background analysis. You can close this page and return to check the saved outcome.'
+                          : 'Background delivery is pending. This run is saved; delivery recovery will retry it. You can return later.'
+                        : run.configuration_snapshot.execution_mode ===
+                            'request'
+                          ? 'Waiting to start analysis. Keep this page open until processing begins. If you leave now, reopen this investigation to resume.'
+                          : 'Waiting for the analysis worker. You can leave this page and return later.'
                       : run.status === 'running'
                         ? 'Computing network relationships and evidence. Reopen this investigation to check the saved outcome; no percentage estimate is available.'
                         : run.status === 'completed'

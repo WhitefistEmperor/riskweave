@@ -129,6 +129,7 @@ class ResultChunkResponse(Contract):
 
 
 class RunResponse(Record):
+    dispatch_state: Literal["pending", "accepted", "failed"] | None = None
     investigation_id: str
     artifact_id: str
     status: Status

@@ -284,12 +284,18 @@ class InvestigationService:
                         "input_checksum": artifact.checksum,
                         "timeout_seconds": self.settings.analysis_timeout_seconds,
                         "execution_mode": self.settings.execution_mode,
+                        "background_dispatch": self.settings.background_dispatch,
                     },
                     execution_deadline=utcnow() + timedelta(hours=24)
                     if self.settings.execution_mode == "request"
                     else None,
                 )
                 session.add(run)
+                if self.settings.background_dispatch == "vercel_workflow":
+                    from ringsentinel.platform.dispatch import reserve_dispatch
+
+                    session.flush()
+                    reserve_dispatch(session, run, self.settings)
             return run
         except IntegrityError:
             raise ProductError("CONFLICT") from None
