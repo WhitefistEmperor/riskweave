@@ -11,7 +11,9 @@ ignored private `work/` directory. Do not commit real payments, labels, reports
 or personal identifiers. Reports omit event/customer IDs and per-event scores,
 but label definitions and aggregate small cells can still be sensitive.
 
-1. Payments use the existing strict `payments-v1` contract. Ground truth is not
+1. Payments use the existing strict `payments-v1` contract. CSV exports can be
+   prepared with the explicit workflow in `docs/csv-payment-mapping.md`; retain
+   its private provenance sidecar alongside the evaluation report. Ground truth is not
    attached to the inference input. Currency is singular; no FX conversion is
    performed. Non-INR model validity still requires independent validation.
 2. Labels use `resolved-labels-v1` with `labels` containing `event_id`, strict

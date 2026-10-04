@@ -254,9 +254,9 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    reload, verified result fragments, evidence, review retry/conflict, two-user
    isolation and case erasure. Exercise process interruption, queue publish loss,
    duplicate delivery, deadline fencing, rollback and restore against hosted PG.
-7. Benchmark actual deployment memory/latency/input bounds. Fragment endpoints
-   currently read/hash entire results repeatedly; the browser assembles complete
-   objects. Large legacy evidence, candidate and investigator replies still need
+7. Benchmark actual deployment memory/latency/input bounds. Indexed fragment endpoints use bounded reads; legacy results still use
+   whole-object verification until explicit indexing. The browser assembles
+   complete objects. Large legacy evidence, candidate and investigator replies still need
    bounds/capacity review. Verify subprocess support/termination in Python Functions.
 8. Add external readiness/queue/error monitoring and alerts, scheduled encrypted
    backups, restore drills, rollback and operator runbooks. Define retention/holds

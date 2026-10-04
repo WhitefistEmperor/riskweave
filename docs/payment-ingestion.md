@@ -41,4 +41,5 @@ evidence apply; support for observed records does not demonstrate real-data accu
 
 Upload bytes remain checksummed and immutable. Source metadata records the contract
 and whether label metadata was supplied. The worker independently parses and validates
-the stored bytes after checking their checksum. Arbitrary CSV mapping is still pending.
+the stored bytes after checking their checksum. Explicit offline CSV mapping is available; see [CSV payment mapping](csv-payment-mapping.md).
+Provider-specific semantics and missing source features still require review.
