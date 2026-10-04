@@ -5,22 +5,20 @@ the project is already deployed or validated on real financial data.
 
 ## Latest verified source
 
-- New worklist search/status/history-cache increment: local production build,
-  lint, TypeScript and all 63 browser tests passed on 4 October. The earlier
-  Linux source receipt below remains authoritative until this increment
-  finishes its own push/PR checks; inspect the latest branch SHA and CI.
-
-- Application source: `7956679a3b9d21c8de88f64db52160f1048ee09f`, pushed
+- Application source: `177e315fc3f9d44d891e95ddf905d87e88cde438`, pushed
   to `codex/production-foundation`. A subsequent documentation-only commit may
   update this handoff; verify the current Git and PR state before continuing.
-- [Linux CI 37210749572](https://github.com/WhitefistEmperor/riskweave/actions/runs/37210749572)
-  passed 191 Python tests, 61 production-browser tests, both container builds,
+- [Linux CI 37218389349](https://github.com/WhitefistEmperor/riskweave/actions/runs/37218389349)
+  passed 191 Python tests, 63 production-browser tests, both container builds,
   PostgreSQL local/request/SDK background inference and both actual PostgreSQL 17
   backup/restore storage modes. All six push/PR checks passed on this source.
+- Worklist name/case-ID search, combined case-status filters, first-page reset,
+  unmatched results and avoiding repeated successful history reads are verified.
+  Local lint, TypeScript and the production build also passed.
 - Backup drills preserve generated input, result checksums, ownership and migration
   state and reject populated restore targets. The operator snapshot also ran in
   the restored PostgreSQL database using a read-only transaction.
-- Production Python dependency/model inventory measured 440,392,724 bytes against
+- Production Python dependency/model inventory measured 440,392,722 bytes against
   a conservative 450,000,000-byte CI budget. Actual hosted function size, memory,
   subprocess support, generated Workflow authentication and capacity remain unverified.
 - Local operator report returned schema `0006`, 14 completed runs and no overdue
