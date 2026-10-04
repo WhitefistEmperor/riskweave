@@ -1,11 +1,26 @@
 # RiskWeave continuation handoff
 
-Updated 4 October 2026. This document is a continuation brief, not a claim that
+Updated 5 October 2026. This document is a continuation brief, not a claim that
 the project is already deployed or validated on real financial data.
 
-## Latest verified source
+## Latest source and verification
 
-- Application source: `d974b07ffd9f914941e643a2e4d1b47fac62be13`, pushed
+- Current application source: `a7f848e9cc8d58f35de40141387bfa87835fe965`, pushed
+  to `codex/production-foundation`. [Linux CI 37224837358](https://github.com/WhitefistEmperor/riskweave/actions/runs/37224837358)
+  and PR CI 37224840776 passed all six checks: 214 Python tests, 66 browser tests,
+  both containers, actual PostgreSQL inference and both PostgreSQL 17 restore
+  storage modes, including multipart bounded range reads after restore.
+  Production dependency/model inventory is 440,507,313 bytes against 450 MB.
+  This remains an inventory check, not a hosted function measurement.
+- Migration 0007 records result sizes and fragment digests, with no payload copy.
+  Indexed requests verify at most 2 MB per range; incomplete metadata fails closed.
+  Legacy indexing requires stopped writers, bounded batches and whole-checksum
+  validation. Tests cover active-job/corrupt-object refusal and cascading erasure.
+  Read `docs/result-fragment-index.md` before operating the maintenance command.
+- Local demo database was backed up, explicitly migrated to 0007 and 17 existing
+  results indexed during stopped-writer maintenance. The restarted API returns
+  ready/database ready/storage ready. This is local evidence, not deployment.
+- Previous evaluation source: `d974b07ffd9f914941e643a2e4d1b47fac62be13`, pushed
   to `codex/production-foundation`. A subsequent documentation-only commit may
   update this handoff; verify the current Git and PR state before continuing.
 - [Linux CI 37222724943](https://github.com/WhitefistEmperor/riskweave/actions/runs/37222724943)
@@ -23,8 +38,8 @@ the project is already deployed or validated on real financial data.
   storage modes, after owner authorization. Browser tests verify large legacy
   local-mode fallback, UTF-8 reconstruction, fragment/whole checksum rejection
   and cancellation. Actual PostgreSQL restore drills verify storage-size queries
-  and the service byte guard. Fragment full-object reads and complete browser
-  allocation remain unoptimized; no hosted capacity claim is established.
+  and the service byte guard. Indexed fragments now use bounded storage ranges; legacy whole-object reads,
+  database server work and complete browser allocation remain capacity gates.
 - Database-paged worklist reads, owner-scoped counts, literal wildcard escaping,
   Unicode SQLite search, status filtering and page bounds are verified. Browser
   tests cover later-page matches, malformed page metadata, cancellation/revisit
@@ -34,7 +49,7 @@ the project is already deployed or validated on real financial data.
 - Backup drills preserve generated input, result checksums, ownership and migration
   state and reject populated restore targets. The operator snapshot also ran in
   the restored PostgreSQL database using a read-only transaction.
-- Production Python dependency/model inventory measured 440,455,620 bytes against
+- Previous production Python dependency/model inventory measured 440,455,620 bytes against
   a conservative 450,000,000-byte CI budget. Actual hosted function size, memory,
   subprocess support, generated Workflow authentication and capacity remain unverified.
 - Local operator report returned schema `0006`, 14 completed runs and no overdue
@@ -121,7 +136,7 @@ the project is already deployed or validated on real financial data.
   daily/hourly recovery, provider-status repair and no browser execution dependency.
   A changed model digest fails a queued run rather than changing its provenance.
   Erasure removes dispatch intent; stale steps cannot resurrect a case.
-- Alembic head is `0006`; upgrades preserve populated cases/reviews/foreign keys.
+- Alembic head is `0007`; upgrades preserve populated cases/reviews/foreign keys.
 - CI covers backend, native frontend and isolated PostgreSQL/container workflows.
 - Private read-only operator snapshot counts runs, overdue execution/delivery and
   recent failures, with sanitized CLI exit codes and no case details. PostgreSQL
@@ -139,7 +154,8 @@ the project is already deployed or validated on real financial data.
 Read these documents before redesigning anything:
 `docs/production-progress.md`, `docs/vercel-deployment.md`,
 `docs/request-execution.md`, `docs/background-delivery.md`,
-`docs/bounded-transport.md`, and the existing security/model/backup documentation.
+`docs/bounded-transport.md`, `docs/result-fragment-index.md`, and the existing
+security/model/backup documentation.
 
 ## Verification and model caveats
 
@@ -186,7 +202,7 @@ the embedded queue. Do not deploy the test harness as a durable worker.
 - Target: Vercel Hobby, account/workspace
   `sahilsinghkushwah10thb-9948s-projects`.
   No RiskWeave Vercel project or verified live deployment currently exists.
-- Access rechecked on 4 October: the Vercel connector can list the unrelated
+- Access rechecked on 5 October: the Vercel connector can list the unrelated
   project, but team/Git context remains empty. Explicit access to the target
   team returns 403 requiring re-authentication to that workspace; a RiskWeave
   search without team scope returns no accessible projects. No RiskWeave project exists and
@@ -223,7 +239,7 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    is not a hosted bundle measurement. Configure both cron secrets identically.
    Normal filesystem/scheduler defaults are unsafe for serverless; the dedicated
    entry point requires database/request/managed-workflow mode explicitly.
-4. Apply migrations explicitly through 0006 and provision a live OIDC provider.
+4. Apply migrations explicitly through 0007 and provision a live OIDC provider.
    Align issuer/audience/scope/JWKS and registered exact HTTPS callbacks/logout.
    Verify the implemented bounded HTTPS public-key cache/rotation against that
    provider, including overlap, removal, outages and cache expiry; see

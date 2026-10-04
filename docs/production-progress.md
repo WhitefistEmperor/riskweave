@@ -154,3 +154,17 @@ has distributed database claims, bounded upload/result transport and optional
 workflow delivery. Managed hosting still needs dispatch interruption/recovery,
 hosted runtime/bundle/capacity validation and actual provider configuration. Production
 scalability, real-data model performance and completed public deployment are not claimed.
+
+
+## Indexed result delivery, 5 October 2026
+
+Source a7f848e9cc8d58f35de40141387bfa87835fe965 passed all six push/PR checks.
+Linux CI 37224837358 passed 214 Python and 66 browser tests, both containers and
+actual PostgreSQL 17 backup/restore with multipart ranges in both storage modes.
+Migration 0007 adds per-fragment digests and result sizes without payload copies.
+Requests authorize ownership and verify at most 2 MB per indexed range; incomplete
+metadata fails closed. A maintenance CLI verifies and indexes bounded legacy batches
+with all writers stopped. Local demo migration/indexing completed for 17 results;
+readiness passed after restart. The new production inventory is 440,507,313 bytes.
+Legacy full reads, database server work, browser reconstruction and actual hosted
+capacity remain gates. Vercel scope access still returned 403 on 5 October.

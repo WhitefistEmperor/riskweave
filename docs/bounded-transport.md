@@ -61,7 +61,10 @@ result and evidence APIs remain available and may exceed that ceiling on large
 cases. Investigator source responses also require a separate large-case review.
 
 Assembly and browser decoding still allocate the complete file/result in memory.
-The current result server reads and hashes the full object for every fragment.
+Migration 0007 indexes new results with per-fragment digests. Indexed requests
+read and verify only the requested range (the manifest probes the first part);
+legacy results retain whole-object verification until explicit stopped-writer
+indexing. See `docs/result-fragment-index.md` for maintenance and integrity semantics.
 Database transfer, memory, fragment count and worst-case latency need capacity tests
 before a large-workload release. Chunk transport does not provide durable background
 analysis dispatch or establish hosted runtime, identity or provider readiness.
