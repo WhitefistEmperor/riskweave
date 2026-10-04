@@ -5,6 +5,11 @@ the project is already deployed or validated on real financial data.
 
 ## Latest verified source
 
+- New worklist search/status/history-cache increment: local production build,
+  lint, TypeScript and all 63 browser tests passed on 4 October. The earlier
+  Linux source receipt below remains authoritative until this increment
+  finishes its own push/PR checks; inspect the latest branch SHA and CI.
+
 - Application source: `7956679a3b9d21c8de88f64db52160f1048ee09f`, pushed
   to `codex/production-foundation`. A subsequent documentation-only commit may
   update this handoff; verify the current Git and PR state before continuing.
@@ -75,6 +80,9 @@ the project is already deployed or validated on real financial data.
   throttled refresh, atomic key retirement and expired-cache outage rejection.
   Real-signature rotation tests pass; live provider rotation remains unverified.
 - Native Next.js 16.3.8 console, standalone non-root Docker build.
+- Owner worklist name/case-ID search and case-status filters across loaded pages,
+  first-page reset, explicit unmatched results and cached history reads restricted
+  to ten visible cases. Server-side pagination/capacity remains outstanding.
 - Per-request nonce script CSP, dynamic/private document rendering, explicit OIDC
   connection origins, blocked inline handlers and unconfigured external connections.
   Inline styles remain allowed for component positioning; verify hosted auth/CDN.
@@ -155,8 +163,11 @@ the embedded queue. Do not deploy the test harness as a durable worker.
 - Target: Vercel Hobby, account/workspace
   `sahilsinghkushwah10thb-9948s-projects`.
   No RiskWeave Vercel project or verified live deployment currently exists.
-- The Vercel connector returned empty teams/403 for the owning workspace;
-  Vercel CLI was not authenticated. Do not assume connector access has changed.
+- Access rechecked on 4 October: the Vercel connector can list the unrelated
+  project, but team/Git context remains empty. No RiskWeave project exists and
+  the CLI was not authenticated. Browser import of the tested branch URL
+  returned "Could not access the repository. Please ensure you have access to it."
+  Account listing access does not establish permission to import this repository.
 - Browser import needs GitHub connection. Its connection popup previously had an
   invalid URL and browser policy rejected it. The human was asked to complete
   GitHub connection manually and reply `connected`; no such reply was received.
@@ -215,7 +226,7 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    distribution shift and documented operating limits. Real-data evaluation needs
    authorized data; never fabricate results to fill that gap.
 10. Complete product gaps supported by actual usage: worklist review summaries,
-    filtering/search, permissions/teams where required, accessible onboarding,
+    server-side pagination/capacity, permissions/teams where required, accessible onboarding,
     practical exports and operator documentation. Preserve evidence traceability.
 
 ## Working instructions for the next assistant
