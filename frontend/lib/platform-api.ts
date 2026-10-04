@@ -64,13 +64,63 @@ export type InvestigationRecord = {
   created_at: string;
   updated_at: string;
 };
+export type WorklistReviewSummary = {
+  run_id: string;
+  candidate_count: number | null;
+  assessed: number;
+  unreviewed: number | null;
+  investigating: number;
+  escalated: number;
+  dismissed: number;
+};
 export type InvestigationPage = {
+  review_summaries?: Record<string, WorklistReviewSummary | null>;
   items: InvestigationRecord[];
   total: number;
   matched: number;
   offset: number;
   limit: number;
 };
+function validWorklistSummaries(
+  value: unknown,
+  items: { id: string }[],
+): boolean {
+  // Older servers may omit summaries; absence is unavailable, never zero progress.
+  if (value === undefined) return true;
+  if (!object(value) || Object.keys(value).length !== items.length)
+    return false;
+  const count = (v: unknown) => Number.isSafeInteger(v) && Number(v) >= 0;
+  return items.every(({ id }) => {
+    if (!Object.hasOwn(value, id)) return false;
+    const summary = value[id];
+    if (summary === null) return true;
+    if (
+      !object(summary) ||
+      typeof summary.run_id !== 'string' ||
+      !summary.run_id ||
+      !count(summary.assessed) ||
+      !count(summary.investigating) ||
+      !count(summary.escalated) ||
+      !count(summary.dismissed)
+    )
+      return false;
+    if (
+      Number(summary.assessed) !==
+      Number(summary.investigating) +
+        Number(summary.escalated) +
+        Number(summary.dismissed)
+    )
+      return false;
+    if (summary.candidate_count === null) return summary.unreviewed === null;
+    return (
+      count(summary.candidate_count) &&
+      count(summary.unreviewed) &&
+      Number(summary.assessed) + Number(summary.unreviewed) ===
+        summary.candidate_count
+    );
+  });
+}
+
 export type ArtifactRecord = {
   id: string;
   investigation_id: string;
@@ -201,7 +251,8 @@ export const platformApi = {
         Array.isArray(v.items) &&
         v.items.length ===
           Math.min(10, Math.max(0, Number(v.matched) - offset)) &&
-        new Set(v.items.map((x) => x.id)).size === v.items.length,
+        new Set(v.items.map((x) => x.id)).size === v.items.length &&
+        validWorklistSummaries(v.review_summaries, v.items),
     );
   },
   create: (name: string) =>

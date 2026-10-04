@@ -131,7 +131,16 @@ class InvestigationService:
                     .limit(limit)
                 )
             )
-            return dict(items=items, total=total, matched=matched, offset=offset, limit=limit)
+            from ringsentinel.platform.worklist_reviews import summaries
+
+            return dict(
+                items=items,
+                total=total,
+                matched=matched,
+                offset=offset,
+                limit=limit,
+                review_summaries=summaries(session, items),
+            )
 
     def get(self, principal: Principal, investigation_id: str) -> Investigation:
         with self.database.session() as session:
@@ -460,6 +469,9 @@ class InvestigationService:
                 run.result_checksum = saved.checksum if saved else None
                 run.result_size_bytes = saved.size_bytes if saved else None
                 if saved:
+                    from ringsentinel.platform.worklist_reviews import candidate_count
+
+                    run.candidate_count = candidate_count(result)
                     from ringsentinel.platform.result_fragments import index_in
 
                     index_in(session, run, content)

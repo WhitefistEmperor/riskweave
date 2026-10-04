@@ -83,10 +83,22 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
         service.finish(
             run.id,
             {
-                "rings": [],
+                "rings": [{"candidate": {"candidate_id": "restore-candidate"}}],
                 "verification": "generated-lifecycle-fixture",
                 "transport_fixture": "x" * 2_000_032,
             },
+        )
+        from ringsentinel.platform.models import ReviewDisposition
+        from ringsentinel.platform.reviews import ReviewService
+
+        ReviewService(service).save(
+            owner,
+            run.id,
+            "restore-candidate",
+            ReviewDisposition.ESCALATED,
+            "Generated restore review",
+            0,
+            "restore-review",
         )
         checksum = service.run(owner, run.id).result_checksum
         snapshot = tmp_path / "snapshot"
@@ -114,6 +126,13 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
         page = restored.page(owner, search="GENERATED RESTORE")
         assert page["total"] == page["matched"] == 1
         assert [item.id for item in page["items"]] == [case.id]
+        summary = page["review_summaries"][case.id]
+        assert summary["run_id"] == run.id
+        assert summary["candidate_count"] == len(service.result(owner, run.id)["rings"])
+        assert summary["assessed"] == summary["escalated"] == 1
+        assert summary["unreviewed"] == 0
+        review = ReviewService(restored).get(owner, run.id, "restore-candidate")
+        assert review["history"][0].note == "Generated restore review"
         assert restored.page(owner, search="%_")["matched"] == 0
         assert restored.page(Principal("different-owner"))["total"] == 0
         assert report(target_db)["status"] == "ok"

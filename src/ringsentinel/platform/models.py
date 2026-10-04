@@ -101,6 +101,7 @@ class AnalysisRun(Identity, Base):
     result_reference: Mapped[str | None] = mapped_column(String(100))
     result_checksum: Mapped[str | None] = mapped_column(String(64))
     result_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    candidate_count: Mapped[int | None] = mapped_column(nullable=True)
     execution_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     dispatch_state: Mapped[str | None] = mapped_column(String(16))
     executor_slot: Mapped[str | None] = mapped_column(String(80), unique=True)

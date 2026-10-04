@@ -70,8 +70,19 @@ class InvestigationResponse(Record):
     analysis_metadata: dict[str, JsonValue]
 
 
+class WorklistReviewSummary(Contract):
+    run_id: str
+    candidate_count: int | None
+    assessed: int
+    unreviewed: int | None
+    investigating: int
+    escalated: int
+    dismissed: int
+
+
 class InvestigationPage(Contract):
     items: list[InvestigationResponse]
+    review_summaries: dict[str, WorklistReviewSummary | None]
     total: int
     matched: int
     offset: int

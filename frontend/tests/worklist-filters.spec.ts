@@ -153,3 +153,85 @@ test('a refreshed case version reloads its cached analysis history', async ({
     )
     .toBe(2);
 });
+
+test('review progress binds to the latest completed run, preserves unknown totals and refreshes', async ({
+  page,
+}) => {
+  const { records } = await worklist(page);
+  const summary = {
+    run_id: '00000000-0000-4000-8000-000000000777',
+    candidate_count: 7,
+    assessed: 3,
+    unreviewed: 4,
+    investigating: 1,
+    escalated: 1,
+    dismissed: 1,
+  };
+  const legacy = { ...summary, candidate_count: null, unreviewed: null };
+  await page.route('**/api/v1/investigations/page?*', (route) =>
+    route.fulfill({
+      json: {
+        items: records.slice(0, 2),
+        total: 12,
+        matched: 2,
+        offset: 0,
+        limit: 10,
+        review_summaries: { [records[0].id]: summary, [records[1].id]: legacy },
+      },
+    }),
+  );
+  await page.getByLabel('Search investigations').fill('review');
+  const progress = page.getByRole('link', { name: /3 of 7 assessed/ });
+  await expect(progress).toHaveAttribute(
+    'href',
+    `/investigations/${records[0].id}?run=${summary.run_id}`,
+  );
+  await expect(
+    page.getByText('3 assessed · total unknown', { exact: true }),
+  ).toBeVisible();
+  summary.assessed = 4;
+  summary.unreviewed = 3;
+  summary.escalated = 2;
+  await page.getByLabel('Search investigations').fill('refreshed review');
+  await expect(
+    page.getByText('4 of 7 assessed', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('1 investigating · 2 escalated · 1 dismissed', {
+      exact: true,
+    }),
+  ).toBeVisible();
+});
+
+for (const invalid of ['wrong-case', 'inconsistent-counts']) {
+  test(`invalid review summary is rejected: ${invalid}`, async ({ page }) => {
+    const { records } = await worklist(page);
+    const summary = {
+      run_id: 'completed-run',
+      candidate_count: 1,
+      assessed: 2,
+      unreviewed: 0,
+      investigating: 1,
+      escalated: 1,
+      dismissed: 0,
+    };
+    await page.route('**/api/v1/investigations/page?*', (route) =>
+      route.fulfill({
+        json: {
+          items: [records[0]],
+          total: 12,
+          matched: 1,
+          offset: 0,
+          limit: 10,
+          review_summaries: {
+            [invalid === 'wrong-case' ? 'another-case' : records[0].id]:
+              summary,
+          },
+        },
+      }),
+    );
+    await page.getByLabel('Search investigations').fill('invalid review');
+    await expect(page.getByRole('main').getByRole('alert')).toBeVisible();
+    await expect(page.getByRole('table')).toHaveCount(0);
+  });
+}

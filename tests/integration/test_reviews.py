@@ -233,3 +233,66 @@ def test_upgrade_preserves_existing_investigation_and_requires_new_tables(tmp_pa
     assert dependencies_ready(service)
     assert service.get(Principal("existing-owner"), inv.id).name == "Existing case"
     db.engine.dispose()
+
+
+def test_worklist_summary_is_latest_completed_metadata_only_and_owner_scoped(saved, monkeypatch):
+    service, owner, run_id = saved
+    run = service.run(owner, run_id)
+    initial = service.page(owner)["review_summaries"][run.investigation_id]
+    assert initial["candidate_count"] == initial["unreviewed"] == 1
+    assert initial["assessed"] == 0
+    reviews = ReviewService(service)
+    reviews.save(owner, run_id, "review-candidate", ReviewDisposition.ESCALATED, "Escalate", 0, "a")
+    with monkeypatch.context() as patch:
+        patch.setattr(service.storage, "read", lambda *_: pytest.fail("Worklist read result bytes"))
+        summary = service.page(owner)["review_summaries"][run.investigation_id]
+        assert summary["assessed"] == summary["escalated"] == 1 and summary["unreviewed"] == 0
+        assert service.page(Principal("other-owner"))["review_summaries"] == {}
+    reviews.save(owner, run_id, "review-candidate", ReviewDisposition.UNREVIEWED, "Reset", 1, "b")
+    assert service.page(owner)["review_summaries"][run.investigation_id]["assessed"] == 0
+    newer = service.start(owner, run.investigation_id, run.artifact_id, "newer")
+    assert service.page(owner)["review_summaries"][run.investigation_id]["run_id"] == run_id
+    service.claim()
+    service.finish(
+        newer.id,
+        {
+            "rings": [
+                {"candidate": {"candidate_id": "second"}},
+                {"candidate": {"candidate_id": "third"}},
+            ]
+        },
+    )
+    summary = service.page(owner)["review_summaries"][run.investigation_id]
+    assert summary["run_id"] == newer.id and summary["unreviewed"] == 2
+    assert summary["assessed"] == 0  # Earlier dispositions do not carry into a new run.
+
+
+def test_legacy_summary_total_unknown_and_new_empty_result_known_zero(saved):
+    from ringsentinel.platform.models import AnalysisRun
+
+    service, owner, run_id = saved
+    run = service.run(owner, run_id)
+    with service.database.write() as session:
+        session.get(AnalysisRun, run_id).candidate_count = None
+    summary = service.page(owner)["review_summaries"][run.investigation_id]
+    assert summary["candidate_count"] is None and summary["unreviewed"] is None
+    assert summary["assessed"] == 0
+    newer = service.start(owner, run.investigation_id, run.artifact_id, "empty")
+    service.claim()
+    service.finish(newer.id, {"rings": []})
+    summary = service.page(owner)["review_summaries"][run.investigation_id]
+    assert summary["candidate_count"] == summary["unreviewed"] == 0
+    created = service.create(owner, "Not analyzed")
+    assert service.page(owner)["review_summaries"][created.id] is None
+
+
+def test_http_worklist_review_summary_contract(saved):
+    service, owner, run_id = saved
+    with TestClient(create_app(settings=service.settings)) as client:
+        client.headers["X-Development-User"] = owner.user_id
+        page = client.get("/api/v1/investigations/page").json()
+        assert len(page["review_summaries"]) == 1
+        summary = next(iter(page["review_summaries"].values()))
+        assert summary["run_id"] == run_id and summary["candidate_count"] == 1
+        client.headers["X-Development-User"] = "other-owner"
+        assert client.get("/api/v1/investigations/page").json()["review_summaries"] == {}

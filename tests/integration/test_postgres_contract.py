@@ -38,7 +38,11 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
         importlib.import_module(
             "ringsentinel.platform.migrations.versions.0007_result_fragments"
         ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0008_review_summary"
+        ).upgrade()
     sql = output.getvalue()
+    assert "candidate_count INTEGER" in sql
     assert "CREATE TABLE analysis_runs" in sql
     assert "TIMESTAMP WITH TIME ZONE" in sql
     assert "UNIQUE (active_slot)" in sql

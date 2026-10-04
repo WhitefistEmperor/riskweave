@@ -25,11 +25,15 @@ import {
   platformApi,
   type InvestigationRecord,
   type AnalysisRun,
+  type WorklistReviewSummary,
 } from '@/lib/platform-api';
 
 export function InvestigationList() {
   const [records, setRecords] = useState<InvestigationRecord[] | null>(null);
   const [latest, setLatest] = useState<Record<string, AnalysisRun | null>>({});
+  const [reviews, setReviews] = useState<
+    Record<string, WorklistReviewSummary | null> | undefined
+  >();
   const [name, setName] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -60,6 +64,7 @@ export function InvestigationList() {
                 setPage(Math.ceil(items.matched / 10) - 1);
               } else {
                 setRecords(items.items);
+                setReviews(items.review_summaries);
                 setLoadedKey(requestKey);
                 setError(null);
               }
@@ -276,6 +281,7 @@ export function InvestigationList() {
                 <TableHead>Status</TableHead>
                 <TableHead>Last updated</TableHead>
                 <TableHead>Latest analysis</TableHead>
+                <TableHead>Review progress</TableHead>
                 <TableHead>
                   <span className="sr-only">Open</span>
                 </TableHead>
@@ -311,6 +317,35 @@ export function InvestigationList() {
                       <span className="muted text-xs">No runs yet</span>
                     ) : (
                       <span className="muted text-xs">Not loaded</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {reviews?.[item.id] ? (
+                      <Link
+                        className="text-xs record-link"
+
+                        href={`/investigations/${item.id}?run=${reviews[item.id]!.run_id}`}
+                      >
+                        <span>
+                          {reviews[item.id]!.candidate_count === null
+                            ? `${reviews[item.id]!.assessed} assessed · total unknown`
+                            : `${reviews[item.id]!.assessed} of ${reviews[item.id]!.candidate_count} assessed`}
+                        </span>
+                        <span className="record-subtitle">
+                          Latest completed analysis
+                        </span>
+                        <span className="record-subtitle">
+                          {reviews[item.id]!.investigating} investigating ·{' '}
+                          {reviews[item.id]!.escalated} escalated ·{' '}
+                          {reviews[item.id]!.dismissed} dismissed
+                        </span>
+                      </Link>
+                    ) : (
+                      <span className="muted text-xs">
+                        {reviews === undefined
+                          ? 'Review summary unavailable'
+                          : 'No completed analysis'}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
