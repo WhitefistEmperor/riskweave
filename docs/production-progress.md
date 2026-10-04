@@ -198,3 +198,20 @@ links, refresh and invalid summary rejection. PostgreSQL backup tests now preser
 an escalated review/audit note and verify the restored worklist summary in both
 storage modes. Local migration, readiness, production build and direct browser
 verification passed. Inventory is 440,552,028 bytes; hosted capacity remains open.
+
+
+## Label-independent temporal feature diagnostics, 5 October 2026
+
+Source d5b9e18a45e6abf31a4e75aa7582e56c47338042 adds descriptive validation/test
+input shift for every feature used by the frozen model. All events count regardless
+of resolved-label coverage, using the same causal scoring prefix. Marginal CDF and
+Wasserstein distances, ranges/means/population standard deviations and out-of-range
+fractions have no p-values, automatic admission thresholds or approval claims.
+Constant-reference standardized changes are null. Nine new tests compare hand
+arithmetic and independent library distances, reject invalid numeric inputs and
+verify half-open windows and private output. All 21 focused evaluation tests passed.
+An actual unchanged pinned-model synthetic-control command produced all 33 feature
+diagnostics for 55 validation/49 test events with unchanged metrics and threshold.
+Full CI results are recorded in the current continuation handoff.
+
+Exact-source CI 37227298824 and PR CI 37227303053 passed all six checks: 249 Python/69 browser tests, both containers and actual PostgreSQL inference/restore. Inventory: 440,566,612 bytes; actual hosted packaging remains unverified.

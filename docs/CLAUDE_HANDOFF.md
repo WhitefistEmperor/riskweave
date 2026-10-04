@@ -5,7 +5,23 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
-- Current application source: `43066642662f10a0230b110732eff8b5eb958db3`, pushed.
+- Current application source: `d5b9e18a45e6abf31a4e75aa7582e56c47338042`, pushed.
+  [Linux CI 37227298824](https://github.com/WhitefistEmperor/riskweave/actions/runs/37227298824)
+  and PR CI 37227303053 passed all six checks: 249 Python tests, 69 browser tests,
+  both containers and actual PostgreSQL inference/restore in both storage modes.
+  Production inventory is 440,566,612 bytes against 450 MB, not hosted bundle size.
+  Ruff and all 21 focused feature/temporal tests also passed locally.
+- Frozen-model evaluation now reports descriptive shift on all events, independent
+  of resolved-label coverage, for each model feature. Causal prefix extraction is
+  reused; no test-window diagnostic changes scoring or threshold selection. It has
+  empirical CDF/Wasserstein distances, mean/std/ranges and out-of-reference-range
+  fractions, with explicit constant-reference nulls. No p-values, confidence
+  intervals, universal cutoffs, admission, calibration or retraining is claimed.
+- Actual unchanged pinned-model smoke produced diagnostics for 33 features on
+  55 validation/49 test synthetic-control events; all previous metrics and the
+  selected threshold stayed unchanged. Report is ignored at
+  `work/csv-mapping-smoke-20261005/evaluation-with-drift.json`.
+- Previous review-progress application source: `43066642662f10a0230b110732eff8b5eb958db3`, pushed.
   [Linux CI 37226537041](https://github.com/WhitefistEmperor/riskweave/actions/runs/37226537041)
   and PR CI 37226539716 passed all six checks: 240 Python tests, 69 browser tests,
   both containers and actual PostgreSQL inference/restore in both storage modes.
