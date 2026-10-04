@@ -66,6 +66,10 @@ the project is already deployed or validated on real financial data.
 
 ## Implemented foundation
 
+- Private offline temporal evaluation with separately resolved labels, input/model
+  hashes, explicit missing-label coverage and validation-only threshold selection.
+  Synthetic-control command and leakage/identity/CLI tests pass; no real-data
+  validation, calibration, retraining or production approval has been achieved.
 - Strict unlabeled `payments-v1` ingestion alongside explicitly synthetic bundles.
   Referential validation, refund identity/cumulative limits and currency isolation.
   No fabricated labels on observed data. New results record currency provenance;
@@ -235,7 +239,8 @@ the embedded queue. Do not deploy the test harness as a durable worker.
    backups, restore drills, rollback and operator runbooks. Define retention/holds
    and erasure across exports/snapshots/provider workflow histories. The hourly
    reconciler does not delete expired case data automatically.
-9. Validate the detector on permissioned real data: ingestion mappings, temporal
+9. Use the new offline frozen-model workflow in `docs/real-data-evaluation.md`
+   and validate the detector on permissioned real data: ingestion mappings, temporal
    holdouts, leakage controls, calibration, threshold costs, subgroup/error analysis,
    distribution shift and documented operating limits. Real-data evaluation needs
    authorized data; never fabricate results to fill that gap.
