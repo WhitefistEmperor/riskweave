@@ -3,6 +3,27 @@
 Updated 4 October 2026. This document is a continuation brief, not a claim that
 the project is already deployed or validated on real financial data.
 
+## Latest verified source
+
+- Application source: `7956679a3b9d21c8de88f64db52160f1048ee09f`, pushed
+  to `codex/production-foundation`. A subsequent documentation-only commit may
+  update this handoff; verify the current Git and PR state before continuing.
+- [Linux CI 37210749572](https://github.com/WhitefistEmperor/riskweave/actions/runs/37210749572)
+  passed 191 Python tests, 61 production-browser tests, both container builds,
+  PostgreSQL local/request/SDK background inference and both actual PostgreSQL 17
+  backup/restore storage modes. All six push/PR checks passed on this source.
+- Backup drills preserve generated input, result checksums, ownership and migration
+  state and reject populated restore targets. The operator snapshot also ran in
+  the restored PostgreSQL database using a read-only transaction.
+- Production Python dependency/model inventory measured 440,392,724 bytes against
+  a conservative 450,000,000-byte CI budget. Actual hosted function size, memory,
+  subprocess support, generated Workflow authentication and capacity remain unverified.
+- Local operator report returned schema `0006`, 14 completed runs and no overdue
+  work or recent failures. It exposed aggregates only and did not change jobs.
+- The requested usage-threshold handoff was prepared at 10% remaining and updated
+  through the latest verified source. The full original objective is unfinished;
+  continue the numbered release/model/product work below without claiming completion.
+
 ## User instructions
 
 - Finish RiskWeave as a complete product/model, beyond its hackathon foundation.
@@ -77,8 +98,8 @@ the project is already deployed or validated on real financial data.
   see `docs/operator-monitoring.md`.
 - PostgreSQL backup/restore drill now targets isolated CI databases with matching
   PostgreSQL 17 clients, generated lifecycle fixtures, local/database object modes,
-  owner/checksum/migration preservation and existing-target rejection. Check the
-  current CI result before claiming this new drill passed; local host skips it.
+  owner/checksum/migration preservation and existing-target rejection. The latest
+  verified Linux source passed both cases; this Windows host skips them.
 - Dedicated Vercel ASGI entry, Python 3.13, cached build-owned model, checksum
   admission in API and Workflow steps, disposable scratch and daily cron config.
   Private workspaces are excluded; CI checks production dependency inventory.
