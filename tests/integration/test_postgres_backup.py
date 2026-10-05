@@ -8,6 +8,7 @@ from uuid import uuid4
 import psycopg
 import pytest
 from psycopg import sql
+from sqlalchemy import delete
 from sqlalchemy.engine import make_url
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
@@ -83,15 +84,44 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
         artifact = service.attach(owner, case.id, payload, "input.json", "application/json")
         run = service.start(owner, case.id, artifact.id, "backup-drill")
         service.claim()
+        candidate_fixture = {
+            "candidate_id": "restore-candidate",
+            "risk_score": 0.8,
+            "estimated_exposure_minor": 123,
+            "member_entity_ids": ["generated-one", "generated-two"],
+            "related_event_ids": ["generated-event"],
+        }
         service.finish(
             run.id,
             {
-                "rings": [{"candidate": {"candidate_id": "restore-candidate"}}],
+                "rings": [{"candidate": candidate_fixture}],
                 "verification": "generated-lifecycle-fixture",
                 "transport_fixture": "x" * 2_000_032,
             },
         )
-        from ringsentinel.platform.models import ReviewDisposition
+        from ringsentinel.platform import result_sections
+        from ringsentinel.platform.models import AnalysisRun, ResultSection, ReviewDisposition
+
+        with source_db.session.begin() as session:
+            session.execute(
+                delete(ResultSection).where(
+                    ResultSection.run_id == run.id,
+                    ResultSection.kind.in_(list(result_sections.QUEUE_FIELDS.values())),
+                )
+            )
+            saved = session.get(AnalysisRun, run.id)
+            saved.candidate_index = {
+                key: value for key, value in saved.candidate_index.items() if key != "queue_present"
+            }
+        original_checksum = service.run(owner, run.id).result_checksum
+        assert (
+            result_sections.index_existing(service, writers_stopped=True, upgrade_queue=True) == 1
+        )
+        assert (
+            result_sections.index_existing(service, writers_stopped=True, upgrade_queue=True) == 0
+        )
+        assert service.run(owner, run.id).result_checksum == original_checksum
+
         from ringsentinel.platform.reviews import ReviewService
 
         ReviewService(service).save(
@@ -135,13 +165,18 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
             from ringsentinel.platform import result_sections
             from ringsentinel.platform.reviews import ReviewService
 
-            assert result_sections.value(
-                restored, owner, run.id, "restore-candidate", "candidate"
-            ) == {"candidate_id": "restore-candidate"}
+            assert (
+                result_sections.value(restored, owner, run.id, "restore-candidate", "candidate")
+                == candidate_fixture
+            )
             assert ReviewService(restored).get(owner, run.id, "restore-candidate")["version"] == 1
             from ringsentinel.platform.section_transport import SectionTransport
 
             assert result_sections.page(restored, owner, run.id, limit=1)["total"] == 1
+            summary = result_sections.queue_page(restored, owner, run.id, limit=1)
+            assert summary["items"][0]["member_count"] == 2
+            assert summary["items"][0]["event_count"] == 1
+            assert "member_entity_ids" not in summary["items"][0]
             section = SectionTransport(restored)
             section_manifest = section.manifest(owner, run.id, "restore-candidate", "candidate")
             section_chunk = section.chunk(owner, run.id, "restore-candidate", "candidate", 0)

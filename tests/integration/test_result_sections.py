@@ -453,3 +453,76 @@ def test_bounded_queue_ignores_large_membership_and_preserves_selected_fragments
     with pytest.raises(ProductError) as missing:
         result_sections.queue_page(service, owner, run.id, limit=1)
     assert missing.value.code == "INTERNAL_ERROR"
+
+
+def test_explicit_queue_upgrade_preserves_bytes_is_idempotent_and_rolls_back(saved, monkeypatch):
+    service, owner, case, run_id, result = saved
+    original = service.run(owner, run_id)
+
+    def legacy():
+        with service.database.session.begin() as session:
+            session.execute(
+                delete(ResultSection).where(
+                    ResultSection.run_id == run_id,
+                    ResultSection.kind.in_(list(result_sections.QUEUE_FIELDS.values())),
+                )
+            )
+            row = session.get(AnalysisRun, run_id)
+            row.candidate_index = {
+                k: v for k, v in row.candidate_index.items() if k != "queue_present"
+            }
+
+    legacy()
+    assert result_sections.index_existing(service, writers_stopped=True) == 0
+    with pytest.raises(ValueError):
+        result_sections.index_existing(service, upgrade_queue=True)
+    assert result_sections.index_existing(service, writers_stopped=True, upgrade_queue=True) == 1
+    assert result_sections.index_existing(service, writers_stopped=True, upgrade_queue=True) == 0
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            service.storage, "read", lambda *_: pytest.fail("Whole read after queue upgrade")
+        )
+        assert (
+            result_sections.queue_page(service, owner, run_id, limit=1)["items"][0]["member_count"]
+            == 1
+        )
+    assert service.run(owner, run_id).result_reference == original.result_reference
+    assert service.run(owner, run_id).result_checksum == original.result_checksum
+    legacy()
+    real_upgrade = result_sections.upgrade_queue_index
+
+    def fail_after_staging(session, run, result, content):
+        real_upgrade(session, run, result, content)
+        raise ValueError("Injected failure after replacing metadata")
+
+    monkeypatch.setattr(result_sections, "upgrade_queue_index", fail_after_staging)
+    with pytest.raises(ValueError):
+        result_sections.index_existing(service, writers_stopped=True, upgrade_queue=True)
+    assert "queue_present" not in service.run(owner, run_id).candidate_index
+    monkeypatch.setattr(result_sections, "upgrade_queue_index", real_upgrade)
+    with service.database.session.begin() as session:
+        row = session.get(ResultSection, (run_id, "candidate", "first"))
+        row.checksum = "0" * 64
+    with pytest.raises(ProductError):
+        result_sections.index_existing(service, writers_stopped=True, upgrade_queue=True)
+    assert "queue_present" not in service.run(owner, run_id).candidate_index
+
+
+def test_queue_upgrade_rejects_active_analysis_and_compiles_for_postgres(saved):
+    from sqlalchemy.dialects import postgresql
+
+    service, owner, case, run_id, _ = saved
+    with service.database.session.begin() as session:
+        row = session.get(AnalysisRun, run_id)
+        row.candidate_index = {k: v for k, v in row.candidate_index.items() if k != "queue_present"}
+    artifact = service.artifacts(owner, case.id)[0]
+    service.start(owner, case.id, artifact.id, "active-queue-upgrade")
+    with pytest.raises(ValueError, match="Active analysis"):
+        result_sections.index_existing(service, writers_stopped=True, upgrade_queue=True)
+    assert "queue_present" not in service.run(owner, run_id).candidate_index
+    sql = str(
+        select(AnalysisRun)
+        .where(AnalysisRun.candidate_index["queue_present"].as_boolean().is_not(True))
+        .compile(dialect=postgresql.dialect())
+    )
+    assert "IS NOT true" in sql

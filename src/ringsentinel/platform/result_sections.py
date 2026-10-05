@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import ResultSection, Status
@@ -241,13 +241,15 @@ def currency(service, principal, run_id):
     return read(service, run, row)
 
 
-def index_existing(service, *, writers_stopped=False, limit=100):
+def index_existing(service, *, writers_stopped=False, limit=100, upgrade_queue=False):
     from ringsentinel.platform.models import AnalysisRun
     from ringsentinel.platform.result_fragments import existing_database
     from ringsentinel.platform.worklist_reviews import candidate_count
 
     if not writers_stopped or type(limit) is not int or not 1 <= limit <= 1000:
         raise ValueError("Stop all writers and choose a bounded batch")
+    if type(upgrade_queue) is not bool:
+        raise ValueError("Invalid queue upgrade option")
     existing_database(service.database)
     indexed, cursor = 0, ""
     for _ in range(limit):
@@ -263,7 +265,9 @@ def index_existing(service, *, writers_stopped=False, limit=100):
                 .where(
                     AnalysisRun.status == Status.COMPLETED,
                     AnalysisRun.id > cursor,
-                    AnalysisRun.candidate_index.is_(None),
+                    AnalysisRun.candidate_index["queue_present"].as_boolean().is_not(True)
+                    if upgrade_queue
+                    else AnalysisRun.candidate_index.is_(None),
                 )
                 .order_by(AnalysisRun.id)
                 .limit(1)
@@ -271,7 +275,7 @@ def index_existing(service, *, writers_stopped=False, limit=100):
             if run is None:
                 break
             cursor = run.id
-            if session.scalar(
+            if run.candidate_index is None and session.scalar(
                 select(ResultSection.run_id).where(ResultSection.run_id == run.id).limit(1)
             ):
                 raise ProductError("INTERNAL_ERROR")
@@ -285,6 +289,11 @@ def index_existing(service, *, writers_stopped=False, limit=100):
             count = candidate_count(result)
             if count is None:
                 continue
+            if upgrade_queue and any(
+                any(field not in ring["candidate"] for field in QUEUE_FIELDS)
+                for ring in result["rings"]
+            ):
+                raise ValueError("Result has no complete queue summary fields")
             run.candidate_count = count
             if run.result_size_bytes is None:
                 from ringsentinel.platform.result_fragments import index_in as index_fragments
@@ -292,9 +301,77 @@ def index_existing(service, *, writers_stopped=False, limit=100):
                 index_fragments(session, run, content)
             elif run.result_size_bytes != len(content):
                 raise ProductError("INTERNAL_ERROR")
-            index_in(session, run, result, content)
+            if run.candidate_index is not None:
+                upgrade_queue_index(session, run, result, content)
+            else:
+                index_in(session, run, result, content)
             indexed += 1
     return indexed
+
+
+def upgrade_queue_index(session, run, result, content):
+    from types import SimpleNamespace
+
+    marker = run.candidate_index
+    if (
+        not isinstance(marker, dict)
+        or not {"version", "count", "currency_present"} <= set(marker)
+        or not set(marker)
+        <= {"version", "count", "currency_present", "overview_present", "queue_present"}
+    ):
+        raise ProductError("INTERNAL_ERROR")
+    if any(
+        type(marker[key]) is not bool
+        for key in ("currency_present", "overview_present", "queue_present")
+        if key in marker
+    ):
+        raise ProductError("INTERNAL_ERROR")
+    if (
+        type(marker["version"]) is not int
+        or marker["version"] != 1
+        or type(marker["count"]) is not int
+        or marker["count"] != run.candidate_count
+    ):
+        raise ProductError("INTERNAL_ERROR")
+    if marker["currency_present"] != ("currency" in result):
+        raise ProductError("INTERNAL_ERROR")
+    replacement = []
+
+    class Collector:
+        def add_all(self, rows):
+            replacement.extend(rows)
+
+    staged = SimpleNamespace(id=run.id, candidate_count=run.candidate_count)
+    index_in(Collector(), staged, result, content)
+    if not staged.candidate_index["queue_present"]:
+        raise ValueError("Result has no complete queue summary fields")
+    expected = {(row.kind, row.candidate_id): row for row in replacement}
+    existing = list(session.scalars(select(ResultSection).where(ResultSection.run_id == run.id)))
+    actual = {(row.kind, row.candidate_id): row for row in existing}
+    required = {
+        key
+        for key in expected
+        if key[0] in ("candidate", "evidence")
+        or key[0] == "currency"
+        and marker["currency_present"]
+        or key[0] in OVERVIEW_FIELDS
+        and marker.get("overview_present")
+    }
+    if (
+        not required <= actual.keys()
+        or sum(row.kind == "candidate" for row in existing) != marker["count"]
+    ):
+        raise ProductError("INTERNAL_ERROR")
+    for key, row in actual.items():
+        target = expected.get(key)
+        if target is None or any(
+            getattr(row, field) != getattr(target, field)
+            for field in ("ordinal", "byte_offset", "size_bytes", "checksum")
+        ):
+            raise ProductError("INTERNAL_ERROR")
+    session.execute(delete(ResultSection).where(ResultSection.run_id == run.id))
+    session.add_all(replacement)
+    run.candidate_index = staged.candidate_index
 
 
 def main():
@@ -310,6 +387,11 @@ def main():
     )
     parser.add_argument("--writers-stopped", action="store_true")
     parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument(
+        "--upgrade-queue",
+        action="store_true",
+        help="Verify and atomically upgrade older indexed queue metadata",
+    )
     args = parser.parse_args()
     database = None
     try:
@@ -318,7 +400,9 @@ def main():
         settings = Settings()
         database = Database(settings.database_url.get_secret_value())
         service = InvestigationService(database, storage_for(database, settings), settings)
-        count = index_existing(service, writers_stopped=True, limit=args.limit)
+        count = index_existing(
+            service, writers_stopped=True, limit=args.limit, upgrade_queue=args.upgrade_queue
+        )
         print(json.dumps({"status": "indexed", "count": count}))
     except Exception:
         print(json.dumps({"status": "unavailable", "code": "RESULT_SECTION_INDEX_UNAVAILABLE"}))

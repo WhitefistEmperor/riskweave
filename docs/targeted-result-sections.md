@@ -49,3 +49,35 @@ complete results. A single huge candidate can exceed a page response budget, so 
 its fragment endpoint. Hosted memory, response and PostgreSQL server decompression
 bounds still require measurement and browser adoption. Do not claim the large-case
 release gate closed solely from these API tests.
+
+## Upgrade older indexed queue metadata
+
+With every API/worker/cron writer stopped and a verified private backup, use:
+
+```text
+uv run --locked python -m ringsentinel.platform.result_sections --writers-stopped --upgrade-queue --limit 100
+```
+
+This explicitly selects completed runs lacking a true queue_present marker (both
+null legacy and older existing indexes). Existing current indexes are skipped.
+The batch remains 1–1,000 runs. Any queued/running analysis refuses maintenance.
+Original result checksum/size and canonical bytes are verified. Before replacing
+an older index, every existing row must match the regenerated original range,
+checksum and ordinal; required candidate/evidence/currency/declared overview rows
+must exist. Corrupt or incomplete indexes fail rather than being silently repaired.
+Complete queue fields are required for older nonnull indexes.
+
+Replacement rows and the marker are committed in the same transaction. Original
+result bytes/reference/hash and reviews are preserved. Failure after deleting old
+rows rolls back their deletion. Successful upgrades are idempotent; repeat bounded
+batches until count=0. CLI output remains aggregate-only and errors sanitized.
+The command assembles the original result during offline verification; budget
+operator memory accordingly. It never runs automatically during API requests,
+migrates schemas or overrides the need to actually stop writers.
+
+Both local storage modes test verified upgrade, rollback after replacing metadata,
+corrupt index denial, active-job refusal and whole-read-free upgraded queue output.
+The PostgreSQL encrypted restore drill now executes the upgrade before backup and
+checks restored bounded summaries; its exact-source CI result must be inspected.
+The console now uses bounded queue summaries and selected sections. Hosted and
+large selected-evidence/investigator memory remain separate release gates.

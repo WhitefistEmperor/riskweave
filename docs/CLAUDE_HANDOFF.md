@@ -11,8 +11,8 @@ commit is a917dd4; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
-1. Implement explicit stopped-writer queue metadata backfill for already-indexed
-   legacy results, verifying original result bytes/hash and atomic rollback. Current
+1. Verify and apply the implemented explicit stopped-writer --upgrade-queue
+   backfill for already-indexed legacy results, preserving original hashes/reviews. Current
    new-run metadata does not automatically rewrite legacy rows. Add dense-case
    response, memory and actual PostgreSQL measurements, not only sparse controls.
 2. Implement an exact decimal-string monetary contract through API/UI if totals
@@ -40,6 +40,33 @@ reproduction is in docs/vercel-deployment.md. Source/main and unrelated projects
 must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
+
+### Queue backfill continuation checkpoint
+
+This source adds explicit --upgrade-queue to the stopped-writer section index CLI.
+It selects completed runs whose queue marker is absent/false, verifies original
+hash/size/canonical bytes and every existing index row, then atomically replaces
+metadata and sets the current marker. Corrupt/missing declared index rows and
+active analyses are rejected; original bytes/references/checksums/reviews survive.
+No schema migration, API-request rewrite or actual-case maintenance is automatic.
+See docs/targeted-result-sections.md for the exact private backed-up command.
+
+All 28 section tests passed locally before a strengthened rollback assertion;
+its four upgrade checks subsequently passed after testing rollback following
+actual metadata deletion/replacement. The final focused rerun passed all four upgrade checks in both stores. PostgreSQL SQL compilation passed; the real encrypted PostgreSQL
+backup/restore drill now also upgrades older queue metadata and reopens bounded
+summaries. That runtime proof awaits exact-source CI. Do not claim it observed yet.
+
+Application UI remains a917dd4's verified production build (291 Python/74 browser
+checks). Next inspect new source CI, fix failures and record the exact commit.
+Before applying backfill to existing actual cases, stop all writers, verify a private
+backup and preservation fingerprints, run bounded maintenance, confirm hashes and
+reviews, then restart the tested source. Current loopback API remains session3405
+and frontend96900 on a917dd4; no maintenance was run on their actual saved cases.
+Remaining full-release gates: exact large monetary contract, dense/browser/hosted
+capacity, supported Vercel access/private DB/live identity, workflow/cron/monitoring/
+scheduled off-host recovery and authorized observed model approval.
+
 
 ### Current bounded-queue implementation checkpoint
 

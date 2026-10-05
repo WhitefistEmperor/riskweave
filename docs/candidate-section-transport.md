@@ -95,8 +95,9 @@ The console downloads eight bounded queue summaries, then the full selected
 candidate/evidence via verified fragments. Older indexes without queue_present
 retain targeted/full candidate fallback on the server; older APIs returning 404
 retain the original browser page path. Other failures never trigger fallback.
-Legacy queue indexing needs explicit stopped-writer maintenance before claiming
-bounded legacy server memory. Original results, model hashes and old routes stay
+Legacy queue indexing uses the explicit --upgrade-queue stopped-writer command
+in targeted-result-sections.md; run and verify it before claiming bounded legacy
+server memory for an existing deployment. Original results, model hashes and old routes stay
 compatible; no schema migration or existing-case rewrite occurs automatically.
 
 Generated tests use a candidate with 100,000 member IDs: the queue response is
