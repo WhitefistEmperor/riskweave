@@ -79,6 +79,7 @@ def main():
     from ringsentinel.platform.settings import Settings
     from ringsentinel.platform.storage import LocalStorageBackend
 
+    source_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     root = args.directory.resolve()
     database_url = "sqlite:///" + (root / "fixture.db").as_posix()
     settings = Settings(
@@ -86,6 +87,9 @@ def main():
         jobs_enabled=False,
         database_url=database_url,
         storage_root=root / "objects",
+        model_artifact_path=model,
+        model_artifact_sha256=args.model_sha256,
+        build_commit=source_commit,
     )
     database = Database(database_url)
     database.migrate()
@@ -103,12 +107,14 @@ def main():
         RINGSENTINEL_MODEL_ARTIFACT_PATH=str(model),
         RINGSENTINEL_MODEL_ARTIFACT_SHA256=args.model_sha256,
         RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS="300",
+        RINGSENTINEL_BUILD_COMMIT=source_commit,
         OMP_NUM_THREADS="1",
     )
     report = dict(
         schema_version="windows-worker-baseline-v1",
         production_ready=False,
-        source_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        source_commit=source_commit,
+        measurement_driver_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         python_version=platform.python_version(),
         platform=platform.platform(),
         logical_cpus=os.cpu_count(),
@@ -142,6 +148,8 @@ def main():
             measured = json.loads(process.stdout)
             saved = service.run(owner, run.id)
             assert saved.status.value == "completed"
+            assert saved.version_metadata["model_artifact_sha256"] == args.model_sha256
+            assert saved.version_metadata["build_commit"] == source_commit
             result = service.result_content(owner, run.id)
             assert hashlib.sha256(result).hexdigest() == saved.result_checksum
             sample = dict(
