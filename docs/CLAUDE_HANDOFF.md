@@ -5,6 +5,39 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+### Current continuation checkpoint — email investigation and frontend integration
+
+The four latest RiskWeave GitHub failure emails were read through the connected
+Gmail account on 5 October 2026. They are historical CI notifications, not proof
+of a failed live deployment:
+
+- 799e75b, push run 37261238329: frontend keyboard selection at 1024px failed.
+  Its failed-job retry passed; do not call the initial failure fixed solely by retry.
+  Trace keys occurred within 18 ms of opening the select, with ArrowDown and Enter
+  only 3 ms apart. Current work adds observable open/option/focus waits, retaining
+  the final selected-entity assertion; browser verification is pending.
+- 6f8c578, push 37260047761 and PR 37260050224: persistence test expected the
+  old exact table list. Corrected in ab475ae; subsequent complete CI passed.
+- 19d6917, push 37255956899: adversarial encrypted archive fixture omitted
+  persisted object files. Fixed in 36bcc25; later encrypted restore checks passed.
+
+Latest pushed application remains 799e75b; documentation head before this
+checkpoint was b2dffc3. Both b2dffc3 push/PR runs 37262024146/37262028670 passed.
+Current local implementation adds a verified lightweight overview endpoint,
+8-item candidate pages in the console, and checksum-verified selected candidate
+and evidence chunks with cancellation and stale-selection protection. Existing
+whole-result transport is retained for older API compatibility. No new migration
+is required beyond 0010. Local lint/typecheck and 22 targeted Python section tests
+passed. Production frontend build and new browser checks are in progress.
+Do not describe these uncommitted changes as pushed or browser-verified yet.
+
+Next: finish production build; run new section-workspace tests and responsive
+keyboard tests, correct failures, then full required CI. Push source and refresh
+this checkpoint with exact commit/results. Keep this file on GitHub current.
+Deployment still needs Vercel account/project access; real-data model validation
+still needs authorized data and labels. Full release gates below remain open.
+
+
 - New application source `799e75b6def2be3f190ca87d3f40cfde1b9bd5a9`, pushed.
   Adds owner-scoped candidate pages (1–100 items, stable ordinal ranges) and
   candidate/evidence section manifest/chunk endpoints. Indexed fragment delivery
