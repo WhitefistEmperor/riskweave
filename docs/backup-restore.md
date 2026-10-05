@@ -3,7 +3,8 @@
 Use a private operator shell with existing environment configuration. Snapshots contain sensitive
 data: restrict filesystem permissions, encrypt off-host copies with standard platform tooling,
 keep encryption keys separately, and test restoration regularly. No encryption key or DB password
-belongs in Git or a command argument. This tool does not implement encryption, PITR or scheduling.
+belongs in Git or a command argument. The snapshot command produces plaintext. The separate [age envelope tool](snapshot-encryption.md)
+adds standard encryption; PITR and hosted scheduling remain unimplemented.
 
 ## Consistency and backup
 

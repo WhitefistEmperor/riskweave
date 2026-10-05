@@ -23,6 +23,7 @@ jobs:
           --health-cmd "pg_isready -U riskweave_backup_ci -d postgres"
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
+      RINGSENTINEL_TEST_AGE: ${{ github.workspace }}/work/age-ci/age
       RINGSENTINEL_TEST_POSTGRES_URL: postgresql+psycopg://riskweave_backup_ci:ci-only-backup-drill@127.0.0.1:5432/postgres
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +33,8 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked --extra dev
+      - name: Install digest-pinned standard encryption tool for isolated restore drills
+        run: uv run --no-sync python scripts/install_age_ci.py
       - name: Use matching PostgreSQL 17 clients for isolated backup drills
         shell: bash
         run: |

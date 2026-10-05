@@ -1,6 +1,8 @@
 """Isolated real pg_dump/pg_restore drill. Never accepts a non-CI database target."""
 
 import os
+import subprocess
+from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -17,6 +19,7 @@ from ringsentinel.platform.operations import report
 from ringsentinel.platform.result_transport import ResultTransport
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
+from ringsentinel.platform.snapshot_encryption import seal, unseal
 
 
 @pytest.fixture
@@ -103,6 +106,17 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
         checksum = service.run(owner, run.id).result_checksum
         snapshot = tmp_path / "snapshot"
         create_snapshot(source, snapshot, writers_stopped=True)
+        age = os.getenv("RINGSENTINEL_TEST_AGE")
+        if age:
+            identity = tmp_path / "drill-identity.txt"
+            keygen = str(Path(age).with_name("age-keygen.exe" if os.name == "nt" else "age-keygen"))
+            subprocess.run([keygen, "-o", str(identity)], check=True, stderr=subprocess.DEVNULL)
+            recipient = subprocess.check_output([keygen, "-y", str(identity)], text=True).strip()
+            ciphertext = tmp_path / "snapshot.age"
+            seal(snapshot, ciphertext, recipient, binary=age)
+            decoded = tmp_path / "authenticated-snapshot"
+            unseal(ciphertext, decoded, identity, binary=age)
+            snapshot = decoded
         assert restore_snapshot(target, snapshot, writers_stopped=True)["status"] == "restored"
         target_db.migrate()
         restored = InvestigationService(target_db, storage_for(target_db, target), target)
