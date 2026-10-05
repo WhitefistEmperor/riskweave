@@ -45,6 +45,30 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Repeated mixed dense capacity: measured source 3e0487b
+
+Three fresh sequential worker processes complete the same 10207-event mixed
+device/IP/card input with 3120 customers and 15401 entities. Input/result hashes
+match across all runs; a 1573841-byte result with one candidate. Worker time 42.789–44.576s
+(median 43.044), process wall 51.243–55.135s (median 51.565), peak worker working set
+285.954–286.609MB. Trusted model pin unchanged; worker/analysis/detector/features
+are identical to 198d2db, and application/check tree identical to 32af28f.
+Full measured-source CI 37323791168 / 37323799792 passes all six jobs.
+
+Aggregate report: results/capacity/windows-worker-mixed-dense-repeated-20261005.json.
+Private fixtures remain under ignored work/mixed-dense-repeated-20261005; no
+original user cases/model were changed. See capacity-baseline.md for timing scope.
+These 3 sequential samples are not reliable percentiles, concurrent/hosted limits,
+database/API/browser peak measurements or observed fraud accuracy. No admission
+limit/production approval changed. A real-data location/provider clarification is
+pending; no authorized observed exports or independently matured labels are available.
+
+Next: profile mixed structural-density work and preserve exact causal features and
+output hashes before optimizing. PostgreSQL/hosted repetitions and concurrency,
+free Vercel/TLS/identity access, monitoring/backup destinations and observed model
+validation still remain. Existing tested application source 32af28f is below.
+
+
 ### Queue and erasure monitoring: verified source 32af28f
 
 Private operator reporting now detects queued jobs older than a configurable wait

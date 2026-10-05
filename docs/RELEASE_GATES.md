@@ -47,6 +47,14 @@ Source00037c4 separately adds the client session privacy boundary; see
 | Operations and recovery | Private aggregate operator CLI with queue-wait/pending-erasure age alerts, explicit retention/erasure, offline and consistent online PostgreSQL/database-object snapshots, standard age envelopes with actual local encrypted restores, and PostgreSQL 17 restore in both storage modes | External uptime/queue/error monitoring, authorized alert destinations, scheduled encrypted backups, hosted restore/rollback and RPO/RTO ownership |
 | Source requirements | Repository and user instructions inspected | Instinct source link remains unread: prior phone/auth/terms gate; current fetch inaccessible. Do not invent its contents |
 
+Repeated measured source3e0487b adds three fresh sequential mixed device/IP/card
+workers for the same10207-event generated input. Identical input/result hashes,
+42.789–44.576s worker time (median43.044), peak worker286.609MB. This closes the
+absence of large mixed-topology repetitions at this one seed, not percentiles,
+PostgreSQL/concurrency/hosted bounds or observed model accuracy. Source CI
+37323791168/37323799792 passes all six jobs; application/check tree unchanged
+from32af28f. See capacity-baseline.md and the pinned aggregate report.
+
 ## Next actions
 
 1. Restore Vercel connector access to `sahilsinghkushwah10thb-9948s-projects`

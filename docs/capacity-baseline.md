@@ -358,3 +358,36 @@ indexed-reads-native-fragments-20261005.json and
 dense-browser-native-fragments-20261005.json. This closes the missing generated
 two-fragment sample; higher fragment/candidate extremes, repeated worker
 percentiles, actual PostgreSQL capacity and hosted admission remain open.
+
+
+### Repeated large mixed-infrastructure workers (3e0487b)
+
+Three sequential fresh worker processes consumed the same valid generated input:
+10207 events, 15401 entities, 3120 customers, two overlapping device groups plus
+shared IP/card groups. The trusted model pin, worker/analysis/detector/features
+remain unchanged from198d2db; the application/check tree is unchanged from32af28f.
+All three input and saved-result hashes match; each result is1573841 bytes with
+one candidate. No source/model data or production limits were changed.
+
+| Observation | Sample minimum | Sample median | Sample maximum |
+|---|---:|---:|---:|
+| Worker main seconds |42.789|43.044|44.576|
+| Process wall seconds |51.243|51.565|55.135|
+| Worker peak working set MB (decimal) |285.954|286.183|286.609|
+| Worker peak commit MB (decimal) |254.419|254.439|254.837|
+
+Worker-main timing starts after importing the worker module. Process wall includes
+child startup and subsequent saved-result verification, excluding earlier input
+generation/upload. Peak counters cover the worker child, not parent/API/database
+or browser memory. Uses SQLite/local storage and OMP_NUM_THREADS=1 on an ambient
+Windows desktop. Three repetitions of one seed are not reliable p95/p99, concurrent
+capacity, hosted cold/warm timing or real-data model validation. The prior25.332s
+single shared-device sample has a different topology; it is not a paired speedup
+comparison. Mixed topology is a material capacity dimension alongside input bytes.
+
+Report: results/capacity/windows-worker-mixed-dense-repeated-20261005.json.
+Full source3e0487b CI37323791168(push)/37323799792(PR) passes all six jobs; the
+application/check tree is identical to verified32af28f (316 backend /80 workspace
+browser +4 separate session controls). Next: profile mixed structural-density
+work, preserve exact causal features/results, then repeat PostgreSQL/hosted and
+concurrent measurements before selecting admission limits.
