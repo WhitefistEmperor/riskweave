@@ -99,9 +99,16 @@ class LocalStorageBackend:
 
     def ready(self) -> bool:
         try:
-            obj = self.save(b"{}")
-            valid = self.read(obj.key) == b"{}"
-            self.delete(obj.key)
-            return valid
-        except (OSError, ProductError):
+            # Own one lock through write/read/unlink: readiness must not orphan its
+            # probe or reacquire a contended lock after releasing admission.
+            with FileLock(self.root / ".write.lock"):
+                used = sum(p.stat().st_size for p in self.root.glob("*.json") if p.is_file())
+                if used + 2 > self.limit_bytes:
+                    return False
+                obj = self._save(b"{}")
+                try:
+                    return self.read(obj.key) == b"{}"
+                finally:
+                    self._path(obj.key).unlink(missing_ok=True)
+        except (OSError, RuntimeError, ValueError, ProductError):
             return False
