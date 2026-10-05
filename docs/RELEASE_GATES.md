@@ -2,12 +2,12 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source e2926f4 (all six push/PR checks green without retries), the actual account-access response and
+uses source ab475ae (all six push/PR checks green), the actual account-access response and
 the measured local worker baseline; consult the handoff for newer exact commits.
 
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|
-| Private investigation workflow | 267 Python/69 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
+| Private investigation workflow | 279 Python/69 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
 | Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Re-authentication: target workspace still returns 403; verify free account allowances, actual projects/deployment, TLS/database/identity |
@@ -23,7 +23,7 @@ the measured local worker baseline; consult the handoff for newer exact commits.
    An instruction to deploy does not itself supply account credentials. Preserve
    unrelated projects; never bypass the rejected login popup or substitute old main.
 2. Follow `vercel-deployment.md` using the tested branch, verified free allowances,
-   private TLS PostgreSQL, explicit migration 0008, live OIDC and managed Workflow.
+   private TLS PostgreSQL, explicit migration 0009, live OIDC and managed Workflow.
    Do not invent a deployed URL or claim provider durability from embedded tests.
 3. Provide authorized private payment exports and independently resolved fraud labels,
    with actual meaning/resolution time and agreed error/review costs. Analyst
@@ -39,7 +39,7 @@ the measured local worker baseline; consult the handoff for newer exact commits.
 See `CLAUDE_HANDOFF.md` for state/continuation instructions and
 `capacity-baseline.md` for method, hashes, reproducibility and measurement limits.
 
-## Confirmed targeted-read gap
+## Targeted-read gap and remaining contracts
 
 Audit of source e2926f4 confirms that `src/ringsentinel/api/platform_api.py`
 loads the entire immutable result for ring listing, individual candidates, evidence
@@ -62,3 +62,11 @@ reads disabled, another owner's denial, missing/corrupt index rejection, failed
 persistence rollback, legacy maintenance, deletion and actual PostgreSQL restore.
 Retain the limitation until these paths are implemented and verified; a passing
 small-case suite alone does not close it.
+
+Source 6f8c578 implements atomic section indexing, verified owner-scoped targeted
+candidate/query/currency reads, review membership, compatible legacy fallback and
+explicit legacy maintenance. All six corrected-source CI checks passed: 279 Python and 69 browser
+tests, containers and encrypted PostgreSQL restores in both storage modes. See targeted-result-sections.md. Original bytes/hashes stay unchanged.
+The remaining gap is candidate pagination, evidence fragment responses, selected
+section/browser memory and actual hosted capacity. Retain the historical audit
+above as its trigger; it describes e2926f4, not the new targeted implementation.

@@ -5,6 +5,33 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+- New application source `ab475aeb93dc493e530ec087183199ed2aa52a14`, pushed.
+  Migration 0009 adds immutable candidate/query/currency range metadata and an
+  explicit index marker. New ring/evidence/investigator/review membership paths
+  use verified targeted reads; original result bytes/checksums are preserved.
+  Both storage modes passed 12 new tests on generated results with >2 MB selected
+  evidence and unrelated large fields, with whole-object reads disabled. They cover
+  owner denial, reviews, checksum corruption, missing rows, erasure, rollback,
+  legacy maintenance and active-job refusal. All 34 focused section/review/transport
+  checks plus the PostgreSQL migration compilation passed locally.
+  First 6f8c578 CI passed browser/containers and 278 Python tests; its one failure
+  was the persistence test's exact table list omitting result_sections. That
+  expectation is corrected in ab475ae; all three local persistence tests passed.
+  Corrected [push CI 37260356018](https://github.com/WhitefistEmperor/riskweave/actions/runs/37260356018)
+  and PR CI 37260360209 passed all six checks: 279 Python tests, 69 browser tests,
+  both containers, actual inference/background delivery and encrypted PostgreSQL
+  restores with targeted candidate/review reads in both storage modes.
+  Production inventory is 440,662,028 bytes against 450 MB, not hosted bundle size.
+  The earlier Windows capacity baseline predates this indexing change; remeasure
+  new persistence overhead alongside the remaining large-case contracts.
+  PostgreSQL restore drill now verifies targeted reads and restored review membership
+  with whole reads disabled. See `docs/targeted-result-sections.md` for maintenance.
+  Existing local browser DB remains at 0008; do not start this source against it
+  before stopping all writers, backing up and explicitly applying migration 0009.
+  Selected evidence sections still assemble in memory; listing lacks pagination,
+  individual evidence HTTP responses lack fragments and browser assembly is unchanged.
+  No claim of hosted/worst-case capacity or whole large-case release completion.
+
 - Documentation/audit head `3692d3d09a8c3709e761ef64a4e0a31b5d920cb6`
   passed all six push/PR checks (37259040665 / 37259044441). Application source
   remains e2926f4. The next independent implementation is targeted candidate and
@@ -344,12 +371,11 @@ the embedded queue. Do not deploy the test harness as a durable worker.
 
 ## Next work, in order
 
-Immediate independent code task: close the targeted-read gap documented at the end
-of `docs/RELEASE_GATES.md`. Current ring/evidence/investigator and review-membership
-paths load the whole result. Implement atomic candidate indexing and owner-scoped
-verified targeted reads while preserving result hashes, legacy runs and full analyst
-functionality. Do not replace this work with blanket large-result rejection or more
-small-case tests. Deployment/data blockers remain separate.
+Next independent code work: finish the remaining contracts in
+`docs/targeted-result-sections.md`: candidate pagination and individual evidence
+fragment delivery, then measure selected-section and browser memory. The current
+source implements targeted immutable reads without discarding large workflows.
+Verify the exact-source CI before release. Deployment/data blockers remain separate.
 
 1. Verify the pushed branch/PR checks and preserve the passing source. Fix concrete
    failures before release. Update this file with exact tested commits/results.
@@ -363,7 +389,7 @@ small-case tests. Deployment/data blockers remain separate.
    is not a hosted bundle measurement. Configure both cron secrets identically.
    Normal filesystem/scheduler defaults are unsafe for serverless; the dedicated
    entry point requires database/request/managed-workflow mode explicitly.
-4. Apply migrations explicitly through 0008 and provision a live OIDC provider.
+4. Apply migrations explicitly through 0009 and provision a live OIDC provider.
    Align issuer/audience/scope/JWKS and registered exact HTTPS callbacks/logout.
    Verify the implemented bounded HTTPS public-key cache/rotation against that
    provider, including overlap, removal, outages and cache expiry; see
