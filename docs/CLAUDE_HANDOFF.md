@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is f36eb31; documentation may have a newer head. Inspect git status and
+commit is a8d316d; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -22,8 +22,8 @@ The current goal is still the complete deployed product and validated model.
    the audit now reports zero advisories. Verify final CSS/browser/source-CI
    proof at the dependency checkpoint below; preserve the distributed MIT notice.
 3. Restore supported Vercel scope/repository access and verify free allowances,
-   private TLS PostgreSQL and a real identity issuer. The connector recheck on5 October2026 still
-   returned403; deployment is not verified. Do not bypass the rejected auth popup.
+   private TLS PostgreSQL and a real identity issuer. The connector recheck on 5 October 2026 still
+   returned 403; deployment is not verified. Do not bypass the rejected auth popup.
 4. Apply migration 0010 explicitly with writers stopped; configure hosted workflow,
    cron and secrets. Verify full HTTPS login/expiry/logout, owner isolation, upload,
    browser-close analysis, review/conflict/erasure and interruption/restore on the
@@ -45,7 +45,7 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Online PostgreSQL backup: source checks pending
+### Online PostgreSQL backup: verified source a8d316d
 
 Added opt-in `backup --online-database` for PostgreSQL/database object storage.
 Reference checks and pg_dump share one exported read-only REPEATABLE READ snapshot;
@@ -53,14 +53,24 @@ ordinary writers continue. Filesystem/SQLite keep the offline requirement and al
 restore targets remain offline/new/empty. See docs/backup-restore.md for operational
 limits, in-flight recovery and reconciling later erasures before cutover.
 
-New real PostgreSQL regression commits case/object erasure and a new case/upload
-between export and dump, then checks the restored pre-export case, bytes, checksum
-and owner isolation. This Windows host lacks PostgreSQL clients: local focused
-checks passed8 with19 environment skips (including5 PostgreSQL and14 age controls).
-Repository Ruff passes. Exact-source full CI is pending; do not claim live online
-backup proof until its backend job executes this new test successfully.
-Latest usage:53% current-window remaining /32% weekly remaining.
-Previous docs35b6ea8 push/PR CI37319701430/37319709524 completed successfully.
+The real PostgreSQL regression commits case/object erasure and a new case/upload
+between export and dump. Fresh-target restore retains the pre-export case, exact
+input/result bytes, result checksum and ownership while excluding the late case.
+Exact source a8d316decd6b33e84e475c5f4fec413c3e118495 push 37321333408 / PR 37321347090
+passed all six jobs: 309 Python/80 workspace browser plus 4 separate OIDC production
+browser controls, zero audit vulnerabilities, containers and actual SDK delivery.
+All 5 PostgreSQL backup-module cases executed (no skips), including existing age
+encrypted offline restores in both stores and the new concurrent online restore.
+CI repository inventory 440889514 bytes remains below 450000000; this is not an
+actual hosted bundle/capacity proof. Aggregate evidence:
+results/operations/online-backup-source-verification-20261005.json.
+
+Local focused checks passed 8 with 19 environment skips (5 PostgreSQL/14 age);
+repository Ruff passes. Latest usage: 53% current-window remaining / 32% weekly
+remaining. Prior docs 35b6ea8 push/PR CI 37319701430 / 37319709524 also passed.
+Next: restore supported Vercel workspace access and verify free TLS database/live
+identity, hosted delivery/recovery/capacity and scheduled encrypted off-host backups;
+obtain authorized observed exports and independently matured labels for model approval.
 
 ### Cross-tab session privacy: verified source f36eb31
 
