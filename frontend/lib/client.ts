@@ -1,3 +1,4 @@
+import { parseExactJson } from '@/lib/exact-money';
 /** Single transport boundary for both the unchanged demo and persisted API. */
 import { accessToken, authenticationEnabled } from '@/lib/auth';
 const baseUrl = (
@@ -84,7 +85,10 @@ export async function apiRequest<T>(
       returnedId,
     );
   }
-  const value: unknown = await response.json().catch(() => undefined);
+  const value: unknown = await response
+    .text()
+    .then(parseExactJson)
+    .catch(() => undefined);
   if (value === undefined || (validate && !validate(value)))
     throw new ApiError(
       'The API returned an unreadable response. Reload or contact the operator with this request ID.',

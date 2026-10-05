@@ -78,9 +78,10 @@ GET /api/v1/runs/{run_id}/queue-page?offset=0&limit=50 returns the same run/hash
 ordinal pagination envelope, with only candidate_id (up to 100 characters), finite
 risk_score (0–1), estimated_exposure_minor, member_count and event_count per item.
 Limit is 1–100; no membership/event arrays, evidence or arbitrary text are returned.
-Exposure is restricted to nonnegative JavaScript-safe integers; supporting larger
-exact monetary totals across the existing UI still requires a decimal-string
-contract rather than rounded JavaScript numbers. Do not claim that gate closed.
+Exposure is a nonnegative canonical decimal string in API responses, including
+totals above JavaScript safe integers. Original section bytes remain unchanged;
+the browser losslessly decodes verified legacy integer tokens. See
+docs/exact-monetary-values.md for client compatibility and exact formatting.
 
 New persisted results add score/exposure/members/events section metadata atomically
 inside migration 0009's existing table; schema revision stays 0010. Scalar ranges

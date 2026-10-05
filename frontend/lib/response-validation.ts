@@ -1,3 +1,4 @@
+import { validMinorAmount } from '@/lib/exact-money';
 /** Validate the fields the UI consumes. Unknown fields remain forward-compatible. */
 export const object = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -55,7 +56,7 @@ export const validCandidate = (v: unknown) =>
   object(v) &&
   str(v.candidate_id) &&
   num(v.risk_score) &&
-  num(v.estimated_exposure_minor) &&
+  validMinorAmount(v.estimated_exposure_minor) &&
   strings(v.member_entity_ids) &&
   strings(v.related_event_ids) &&
   object(v.evidence) &&
@@ -63,7 +64,16 @@ export const validCandidate = (v: unknown) =>
 const fields = (v: unknown, text: string[], numbers: string[] = []) =>
   object(v) &&
   text.every((key) => str(v[key])) &&
-  numbers.every((key) => num(v[key]));
+  numbers.every((key) =>
+    [
+      'amount_minor',
+      'estimated_exposure_minor',
+      'refund_amount_minor',
+      'total_amount_minor',
+    ].includes(key)
+      ? validMinorAmount(v[key])
+      : num(v[key]),
+  );
 const nullable = (v: unknown, check: (v: unknown) => boolean) =>
   v === null || check(v);
 const shared = (v: unknown) =>

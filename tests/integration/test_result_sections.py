@@ -363,7 +363,9 @@ def test_http_candidate_pages_and_section_contracts_preserve_owner_checks(saved,
         page = client.get(page_path, params={"limit": 1})
         assert page.status_code == 200, page.text
         assert page.json()["next_offset"] == 1
-        assert page.json()["items"] == [result["rings"][0]["candidate"]]
+        assert page.json()["items"] == [
+            {**result["rings"][0]["candidate"], "estimated_exposure_minor": "123"}
+        ]
         assert client.get(page_path, params={"limit": 101}).status_code == 422
         path = f"/api/v1/runs/{run_id}/rings/second/sections/evidence"
         manifest = client.get(path + "/manifest")
@@ -382,6 +384,40 @@ def test_http_candidate_pages_and_section_contracts_preserve_owner_checks(saved,
         assert client.get(page_path).status_code == 404
         assert client.get(path + "/manifest").status_code == 404
         assert client.get(path + "/chunks/0").status_code == 404
+
+
+def test_http_exact_large_money_preserves_immutable_bytes(saved, monkeypatch):
+    service, owner, case, old_run_id, result = saved
+    old = service.run(owner, old_run_id)
+    run = service.start(owner, case.id, old.artifact_id, "exact-money-control")
+    assert service.claim() == run.id
+    amount = 9223372036854775807 * 100_000_000
+    result["rings"][0]["candidate"]["estimated_exposure_minor"] = amount
+    service.finish(run.id, result)
+    original = service.run(owner, run.id).result_checksum
+    with TestClient(create_app(settings=service.settings)) as client:
+        monkeypatch.setattr(
+            client.app.state.platform.storage, "read", lambda *_: pytest.fail("Whole result read")
+        )
+        client.headers["X-Development-User"] = owner.user_id
+        prefix = f"/api/v1/runs/{run.id}"
+        for endpoint in ("queue-page", "candidate-page"):
+            response = client.get(f"{prefix}/{endpoint}", params={"limit": 1})
+            assert response.status_code == 200, response.text
+            assert response.json()["items"][0]["estimated_exposure_minor"] == str(amount)
+        assert client.get(f"{prefix}/rings/first").json()["estimated_exposure_minor"] == str(amount)
+        path = f"{prefix}/rings/first/sections/candidate"
+        manifest = client.get(path + "/manifest").json()
+        part = client.get(path + "/chunks/0").json()
+        content = base64.b64decode(part["data"])
+        assert hashlib.sha256(content).hexdigest() == manifest["sha256"]
+        assert json.loads(content)["estimated_exposure_minor"] == amount
+        assert str(amount).encode() in content
+        assert (f'"{amount}"').encode() not in content
+        assert manifest["result_sha256"] == original
+        client.headers["X-Development-User"] = "other-owner"
+        assert client.get(f"{prefix}/queue-page").status_code == 404
+    assert service.run(owner, run.id).result_checksum == original
 
 
 def test_overview_uses_verified_scalar_sections_and_missing_metadata_fails_closed(

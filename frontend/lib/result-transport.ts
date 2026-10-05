@@ -1,3 +1,4 @@
+import { parseExactJson } from '@/lib/exact-money';
 import { apiRequest, ApiError } from '@/lib/client';
 import { object, validResult } from '@/lib/response-validation';
 import type { AnalysisRun, AnalysisResult } from '@/lib/platform-api';
@@ -122,7 +123,9 @@ export async function loadChunkedResult(
   signal?.throwIfAborted();
   let value: unknown;
   try {
-    value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    value = parseExactJson(
+      new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+    );
   } catch {
     return unreadable();
   }

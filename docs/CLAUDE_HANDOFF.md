@@ -16,8 +16,10 @@ The current goal is still the complete deployed product and validated model.
    and stopped-writer checks, preserving original hashes/reviews. Current
    new-run metadata does not automatically rewrite legacy rows. Add dense-case
    response, memory and actual PostgreSQL measurements, not only sparse controls.
-2. Implement an exact decimal-string monetary contract through API/UI if totals
-   exceed JavaScript safe integers. Do not silently round financial amounts.
+2. Exact monetary API/UI support is implemented (see latest checkpoint and
+   docs/exact-monetary-values.md). Verify client compatibility before deployment.
+   npm audit reports 11 advisories (3 moderate/8 high), chiefly transitive CLI
+   dependencies. Assess safe updates; do not use an unreviewed force downgrade.
 3. Restore supported Vercel scope/repository access and verify free allowances,
    private TLS PostgreSQL and a real identity issuer. The connector previously
    returned 403; deployment is not verified. Do not bypass the rejected auth popup.
@@ -41,6 +43,47 @@ reproduction is in docs/vercel-deployment.md. Source/main and unrelated projects
 must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
+
+### Exact monetary API/UI continuation checkpoint
+
+Latest usage snapshot: 84% current-window remaining / 52% weekly remaining.
+The previous requested10% handoff is already in GitHub history.
+
+Current implementation serializes persisted financial integer fields as decimal
+strings, removes the queue JavaScript-safe-integer cap, and validates exact amounts
+in the frontend. Pinned lossless-json 4.3.1 preserves original monetary JSON tokens
+for legacy inline and checksum-verified selected/full-result fragments. BigInt
+currency formatting avoids float division; descriptive means are explicitly
+approximate. Original stored bytes/hashes/model/schema remain unchanged. Clients
+expecting numeric amounts must be updated before deploying this API change.
+See docs/exact-monetary-values.md for scope and compatibility.
+
+Local Ruff, frontend lint/typecheck and production build passed. New HTTP coverage
+checks a 27-digit aggregate in both stores, owner isolation, bounded queue reads
+and unchanged original section/result checksums. The focused Python run passed
+32 tests. Initial local broad run had one scheduler timeout (280 passed/16 skipped);
+a browser run passed 23/24 but KWD failed during ERR_NETWORK_IO_SUSPENDED and a
+chunk-load error. KWD rerun passed, as did both actual scheduler completion/reopen
+cases in the focused Python run. Keep these first failures in the record.
+A subsequent broad browser run caught benchmark averages passed to the strict
+integer formatter; an explicitly approximate statistical formatter corrects this.
+The final local Python run passed 295 with 2 PostgreSQL-only cases skipped,
+including 14 age encryption cases using the trusted local executable. The final
+production browser rerun passed all78 checks against the corrected build. Local
+API remained application144fbd4; new HTTP serializers were independently verified
+in the Python cases. Exact-source Linux CI remains pending.
+
+The dependency install audit found 11 advisories (3 moderate/8 high), including
+shadcn tooling's transitive packages. No force update/downgrade was applied.
+Assess runtime/build exposure and compatible fixes; audit absence alone does not
+establish release safety. Prior 8731d89 documentation CI37275658631/37275664517
+passed; that is prior application144fbd4 proof, not proof of this implementation.
+
+The exact-value display step does not close dense/browser/provider capacity,
+Vercel scope/repository access, free private TLS PostgreSQL, live identity,
+hosted workflow/cron/interruption/restore, monitoring/scheduled encrypted off-host
+backups or authorized observed-data/model-validation gates.
+
 
 ### Applied local maintenance and real saved-case backup/restore
 
@@ -149,7 +192,7 @@ retain the new failure and verify the fix rather than retrying it away.
 
 Owned local API was idle (zero active analyses/open uploads) before restart.
 API session 3405, log work/bounded-queue-api.log; frontend production session 96900.
-No database migration or actual-case deletion occurred. Latest usage snapshot is
+No database migration or actual-case deletion occurred. Historical usage snapshot was
 9% current-window remaining / 56% weekly remaining (10% threshold reached). This handoff is maintained on
 GitHub before reaching the requested 10% threshold; copy it into Claude with the
 branch codex/production-foundation and preserve the full release gates below.

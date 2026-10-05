@@ -24,6 +24,7 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.2",
     "input-otp": "1.4.2",
+    "lossless-json": "4.3.1",
     "lucide-react": "1.31.0",
     "next": "16.3.8",
     "oidc-client-ts": "3.5.0",

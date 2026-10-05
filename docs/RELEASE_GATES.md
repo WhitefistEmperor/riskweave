@@ -100,3 +100,13 @@ index validation, atomic rollback and active-analysis refusal. All six checks pa
 295 Python/74 browser tests and actual PostgreSQL legacy upgrade followed by encrypted
 restore in both storage modes. Applying this maintenance to existing saved cases
 still requires a verified private backup and stopped writers; it is not automatic.
+
+
+Exact monetary API/UI support is implemented in the current continuation:
+nonnegative decimal-string financial responses, verified legacy numeric-fragment
+parsing and BigInt currency display. Original results/hashes/model are preserved;
+clients expecting numbers need compatibility updates. Final broad/source CI proof
+must be read in CLAUDE_HANDOFF.md. Dense/browser/hosted capacity remains open.
+The dependency audit also reports 11 advisories (3 moderate/8 high); assess and
+resolve compatible fixes before release rather than applying an unreviewed force
+update. See docs/exact-monetary-values.md.

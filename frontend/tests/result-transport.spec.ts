@@ -16,6 +16,10 @@ const largeResult = {
   ...candidateResult,
   rings: candidateResult.rings.map((ring) => ({
     ...ring,
+    candidate: {
+      ...ring.candidate,
+      estimated_exposure_minor: '9007199254740993',
+    },
     queries: {
       ...ring.queries,
       calculate_exposure: {
@@ -25,7 +29,12 @@ const largeResult = {
     },
   })),
 };
-const bytes = Buffer.from(JSON.stringify(largeResult));
+const bytes = Buffer.from(
+  JSON.stringify(largeResult).replaceAll(
+    '"9007199254740993"',
+    '9007199254740993',
+  ),
+);
 const digest = sha(bytes);
 const savedRun = {
   ...run,
@@ -95,6 +104,9 @@ for (const mode of ['request', 'local']) {
     ).toBeVisible();
     expect(requested).toEqual(
       Array.from({ length: manifest.chunk_count }, (_, index) => index),
+    );
+    await expect(page.locator('.findings-workspace')).toContainText(
+      '9,007,199,254,740,993 unknown-currency minor units',
     );
     expect(wholeRequests).toBe(mode === 'local' ? 1 : 0);
   });

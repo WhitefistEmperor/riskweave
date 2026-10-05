@@ -1,3 +1,4 @@
+import type { MinorAmount } from '@/lib/exact-money';
 import { apiRequest } from '@/lib/client';
 
 export type Metric = { mean: number; std: number };
@@ -151,20 +152,56 @@ const unscaledCurrencies = new Set([
   'XUA',
   'XXX',
 ]);
-export const money = (minor: number, currency: string | null = 'INR') => {
+export const money = (minor: MinorAmount, currency: string | null = 'INR') => {
+  if (typeof minor === 'number' && !Number.isSafeInteger(minor))
+    throw new RangeError('Money requires an exact integer amount.');
+  if (typeof minor === 'string' && !/^-?(0|[1-9][0-9]*)$/.test(minor))
+    throw new RangeError('Money requires a canonical decimal integer.');
+  const amount = BigInt(minor);
   if (
     !currency ||
     !currencies.has(currency) ||
     unscaledCurrencies.has(currency)
   )
-    return `${minor.toLocaleString('en-GB')} ${currency ?? 'unknown-currency'} minor units`;
+    return `${amount.toLocaleString('en-GB')} ${currency ?? 'unknown-currency'} minor units`;
   const format = new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-GB', {
     style: 'currency',
     currency,
     currencyDisplay: 'code',
   });
   const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
-  return format.format(minor / 10 ** digits);
+  const scale = BigInt(10) ** BigInt(digits);
+  const magnitude = amount < BigInt(0) ? -amount : amount;
+  const whole = magnitude / scale;
+  // -0 preserves the sign for negative amounts smaller than one major unit.
+  const signedWhole =
+    amount < BigInt(0) ? (whole === BigInt(0) ? -0 : -whole) : whole;
+  const fraction = (magnitude % scale).toString().padStart(digits, '0');
+  return format
+    .formatToParts(signedWhole)
+    .map((part) => (part.type === 'fraction' ? fraction : part.value))
+    .join('');
+};
+/** Statistical estimates may be fractional; never use for recorded payments. */
+export const approximateMoney = (
+  minor: number,
+  currency: string | null = 'INR',
+) => {
+  if (!Number.isFinite(minor))
+    throw new RangeError('A finite estimate is required.');
+  if (
+    !currency ||
+    !currencies.has(currency) ||
+    unscaledCurrencies.has(currency)
+  )
+    return `Approx. ${minor.toLocaleString('en-GB')} ${currency ?? 'unknown-currency'} minor units`;
+  const format = new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-GB', {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'code',
+  });
+  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
+  return `Approx. ${format.format(minor / 10 ** digits)}`;
 };
 export const clock = (value: string) =>
   new Date(value).toLocaleTimeString('en-GB', {

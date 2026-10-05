@@ -3,9 +3,20 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    PlainSerializer,
+    field_validator,
+)
 
 from ringsentinel.platform.models import ReviewDisposition, Status
+
+# Serialize financial integers as canonical decimal strings, including nested responses.
+MinorAmount = Annotated[int, Field(ge=0), PlainSerializer(str, return_type=str, when_used="json")]
 
 
 class Contract(BaseModel):
@@ -170,7 +181,7 @@ class CandidateResponse(Contract):
     candidate_id: str
     risk_score: float
     first_suspicious_timestamp: datetime
-    estimated_exposure_minor: int
+    estimated_exposure_minor: MinorAmount
     suspicious_relationships: list[str]
     evidence: dict[str, int | float]
     member_entity_ids: list[str]
@@ -191,7 +202,7 @@ class CandidatePageResponse(Contract):
 class QueueSummaryResponse(Contract):
     candidate_id: Annotated[str, Field(min_length=1, max_length=100)]
     risk_score: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
-    estimated_exposure_minor: Annotated[int, Field(ge=0, le=9007199254740991)]
+    estimated_exposure_minor: MinorAmount
     member_count: Annotated[int, Field(ge=0, le=500_000_000)]
     event_count: Annotated[int, Field(ge=0, le=500_000_000)]
 
@@ -245,7 +256,7 @@ class TimelineEvent(Contract):
     event_type: str
     transaction_id: str
     timestamp: datetime
-    amount_minor: int
+    amount_minor: MinorAmount
     status: str
     customer_id: str
     merchant_id: str
@@ -256,14 +267,14 @@ class Refund(Contract):
     refund_event_id: str
     original_transaction_id: str | None
     timestamp: datetime
-    amount_minor: int
+    amount_minor: MinorAmount
     refund_fraction: float | None
     delay_hours: float | None
 
 
 class RefundPatterns(Contract):
     refund_count: int
-    refund_amount_minor: int
+    refund_amount_minor: MinorAmount
     refunds: list[Refund]
 
 
@@ -280,13 +291,13 @@ class TemporalActivity(Contract):
     event_count: int
     payment_count: int
     refund_count: int
-    amount_minor: int
+    amount_minor: MinorAmount
     unique_customers: int
 
 
 class Exposure(Contract):
     candidate_id: str
-    estimated_exposure_minor: int
+    estimated_exposure_minor: MinorAmount
     definition: str
 
 
@@ -295,7 +306,7 @@ class MemberBehavior(Contract):
     event_count: int
     payment_count: int
     refund_count: int
-    total_amount_minor: int
+    total_amount_minor: MinorAmount
     mean_amount_minor: float
     merchant_count: int
     device_count: int

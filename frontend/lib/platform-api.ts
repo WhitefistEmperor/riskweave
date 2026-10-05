@@ -1,3 +1,4 @@
+import type { MinorAmount } from '@/lib/exact-money';
 import { apiRequest, ApiError } from '@/lib/client';
 import { loadChunkedResult } from '@/lib/result-transport';
 import { loadOverview, scopedRun } from '@/lib/section-transport';
@@ -148,7 +149,7 @@ export type AnalysisRun = {
 export type PersistedCandidate = {
   candidate_id: string;
   risk_score: number;
-  estimated_exposure_minor: number;
+  estimated_exposure_minor: MinorAmount;
   member_entity_ids: string[];
   related_event_ids: string[];
   evidence: Record<string, number>;

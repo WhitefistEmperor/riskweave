@@ -1,3 +1,5 @@
+import { parseExactJson, validMinorAmount } from '@/lib/exact-money';
+import type { MinorAmount } from '@/lib/exact-money';
 import { apiRequest, ApiError } from '@/lib/client';
 import {
   object,
@@ -89,7 +91,7 @@ async function loadLegacyCandidatePage(
 export type QueueSummary = {
   candidate_id: string;
   risk_score: number;
-  estimated_exposure_minor: number;
+  estimated_exposure_minor: MinorAmount;
   member_count: number;
   event_count: number;
 };
@@ -133,8 +135,7 @@ export async function loadCandidatePage(
               Number.isFinite(item.risk_score) &&
               item.risk_score >= 0 &&
               item.risk_score <= 1 &&
-              integer(item.estimated_exposure_minor) &&
-              item.estimated_exposure_minor >= 0 &&
+              validMinorAmount(item.estimated_exposure_minor) &&
               integer(item.member_count) &&
               item.member_count >= 0 &&
               item.member_count <= 500_000_000 &&
@@ -296,7 +297,9 @@ export async function loadSection(
   signal.throwIfAborted();
   let value: unknown;
   try {
-    value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    value = parseExactJson(
+      new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+    );
   } catch {
     return failed();
   }

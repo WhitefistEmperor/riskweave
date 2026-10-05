@@ -49,7 +49,10 @@ async function install(page: Page, mode = 'valid') {
         items: items.map((item) => ({
           candidate_id: item.candidate_id,
           risk_score: item.risk_score,
-          estimated_exposure_minor: item.estimated_exposure_minor,
+          estimated_exposure_minor:
+            mode === 'large-money'
+              ? '9007199254740993'
+              : item.estimated_exposure_minor,
           member_count:
             mode === 'invalid-count' ? -1 : item.member_entity_ids.length,
           event_count: item.related_event_ids.length,
@@ -63,17 +66,28 @@ async function install(page: Page, mode = 'valid') {
       const pieces = new URL(route.request().url()).pathname.split('/');
       const id = pieces[pieces.indexOf('rings') + 1];
       const kind = pieces[pieces.indexOf('sections') + 1];
-      const selected = { ...candidate, candidate_id: id };
+      const selected = {
+        ...candidate,
+        candidate_id: id,
+        estimated_exposure_minor:
+          mode === 'large-money'
+            ? '9007199254740993'
+            : candidate.estimated_exposure_minor,
+      };
       const queries = {
         ...candidateResult.rings[0].queries,
         get_candidate_ring: selected,
         calculate_exposure: {
           ...candidateResult.rings[0].queries.calculate_exposure,
           candidate_id: id,
+          estimated_exposure_minor: selected.estimated_exposure_minor,
         },
       };
       const bytes = Buffer.from(
-        JSON.stringify(kind === 'candidate' ? selected : queries),
+        JSON.stringify(kind === 'candidate' ? selected : queries).replaceAll(
+          '"9007199254740993"',
+          '9007199254740993',
+        ),
       );
       const digest = sha(bytes);
       const scope = {
@@ -204,4 +218,23 @@ test('invalid queue counts fail closed before selected evidence loads', async ({
   await expect(
     page.getByRole('region', { name: 'Selected candidate' }),
   ).toHaveCount(0);
+});
+
+test('queue decimal strings and checksum-verified legacy integer sections display exactly', async ({
+  page,
+}) => {
+  const wholeRequests = await install(page, 'large-money');
+  await page.goto(workspaceUrl);
+  const selected = page.getByRole('region', { name: 'Selected candidate' });
+  await expect(selected).toContainText(
+    '9,007,199,254,740,993 unknown-currency minor units',
+  );
+  await page.getByRole('tab', { name: 'Evidence', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Exposure accounting', exact: true })
+    .click();
+  await expect(page.locator('.grouped-evidence')).toContainText(
+    '9,007,199,254,740,993 unknown-currency minor units',
+  );
+  expect(wholeRequests()).toBe(0);
 });

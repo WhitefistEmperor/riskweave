@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type Benchmark, type Metrics, money } from '@/lib/api';
+import { type Benchmark, type Metrics, approximateMoney } from '@/lib/api';
 
 const labels: Record<string, string> = {
   transaction_hgb: 'Transaction-only ML',
@@ -111,15 +111,19 @@ export function BenchmarkView({ benchmark }: { benchmark: Benchmark }) {
           <h2>Detection is not valuation accuracy</h2>
           <dl className="definition-list">
             <dt>Estimated aggregate</dt>
-            <dd>{money(exposure.aggregate_estimated_exposure_minor)}</dd>
+            <dd>
+              {approximateMoney(exposure.aggregate_estimated_exposure_minor)}
+            </dd>
             <dt>Ground-truth aggregate</dt>
-            <dd>{money(exposure.aggregate_actual_exposure_minor)}</dd>
+            <dd>
+              {approximateMoney(exposure.aggregate_actual_exposure_minor)}
+            </dd>
             <dt>Aggregate underestimation</dt>
             <dd>{(under * 100).toFixed(2)}%</dd>
             <dt>Mean absolute error</dt>
-            <dd>{money(exposure.mae_minor)}</dd>
+            <dd>{approximateMoney(exposure.mae_minor)}</dd>
             <dt>Median absolute error</dt>
-            <dd>{money(exposure.median_absolute_error_minor)}</dd>
+            <dd>{approximateMoney(exposure.median_absolute_error_minor)}</dd>
           </dl>
           <p className="muted text-sm">
             Exposure counts at-risk purchase/refund value once per original

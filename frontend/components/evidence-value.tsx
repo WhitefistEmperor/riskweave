@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { type JsonValue, money, shortId } from '@/lib/api';
+import { validMinorAmount } from '@/lib/exact-money';
 
 export const humanize = (key: string) => key.replaceAll('_', ' ');
 const fullValue = (value: JsonValue) =>
@@ -20,12 +21,12 @@ function scalar(
   currency: string | null = 'INR',
 ): string {
   if (value === null) return 'Not available';
+  if (key === 'mean_amount_minor' && typeof value === 'number')
+    return `Approx. ${value.toLocaleString('en-GB')} ${currency ?? 'unknown-currency'} minor units (mean)`;
+  if (key.endsWith('_minor') && validMinorAmount(value))
+    return money(value, currency);
   if (typeof value === 'number')
-    return key.endsWith('_minor')
-      ? money(value, currency)
-      : Number.isInteger(value)
-        ? value.toLocaleString()
-        : value.toFixed(3);
+    return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(3);
   if (Array.isArray(value))
     return value.map((item) => scalar(item, key, currency)).join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
