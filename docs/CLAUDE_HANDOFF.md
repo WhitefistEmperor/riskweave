@@ -5,6 +5,46 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+### Current bounded-queue implementation checkpoint
+
+This application commit adds /runs/{run_id}/queue-page and changes the console
+queue to five bounded summary fields (ID, score, exposure, member/event counts).
+New result metadata indexes two verified scalar ranges and two derived counts;
+no schema migration beyond 0010, model change, original-byte change or user-case
+rewrite. Full selected candidate/evidence remain fragment-accessible. Derived
+counts trust committed DB metadata; they are not cryptographic array-count proofs.
+Older indexes/API routes preserve fallback, so bounded legacy server memory still
+needs explicit stopped-writer metadata maintenance. Exposure values above the
+JavaScript safe-integer range need an exact decimal-string UI contract.
+
+All 24 focused Python section tests passed, including 100,000 member IDs with
+under-500-byte queue output and only two <100-byte scalar reads, pagination,
+owner denial, missing metadata and real HTTP contracts in both storage modes.
+Frontend lint/typecheck/production build passed. All 14 targeted browser checks passed against the production build, including
+actual upload/analysis/evidence/review/revisit, four keyboard widths, queue
+navigation/reload, cancellation, digest rejection and malformed queue counts.
+Exact-source full GitHub CI is pending; do not report it as passed.
+
+Capacity-source 84eb428 CI 37265235086 and 37265237758 failed their frontend job:
+real browser analysis status matched two elements because the evidence-progress
+output has an implicit status role. This source replaces that wrapper with a div
+live region, retaining progress announcements. Both earlier cc38ca4 CI runs passed;
+retain the new failure and verify the fix rather than retrying it away.
+
+Owned local API was idle (zero active analyses/open uploads) before restart.
+API session 3405, log work/bounded-queue-api.log; frontend production session 96900.
+No database migration or actual-case deletion occurred. Latest usage snapshot is
+11% current-window remaining / 57% weekly remaining. This handoff is maintained on
+GitHub before reaching the requested 10% threshold; copy it into Claude with the
+branch codex/production-foundation and preserve the full release gates below.
+
+Next: finish browser/source CI, record exact commit/results, add explicit queue
+metadata backfill for legacy indexed results and remeasure denser summaries and
+selected sections. Vercel account access, private database/live identity, hosted
+workflow/cron/monitoring/scheduled backups and authorized observed model validation
+remain open. Do not replace the objective with passing synthetic controls.
+
+
 ### Latest capacity evidence, after the frontend changes
 
 A fresh isolated worker baseline on cc38ca45f7ea8aca753ffbe9e27c2139da19ca58

@@ -15,7 +15,7 @@ import { PersistedFindings } from '@/components/persisted-findings';
 import {
   loadCandidatePage,
   loadSection,
-  type CandidatePage,
+  type QueuePage,
 } from '@/lib/section-transport';
 import { ApiError } from '@/lib/client';
 import { money, shortId } from '@/lib/api';
@@ -35,7 +35,7 @@ export function PagedFindings({
 }) {
   const total = result.remote_candidate_count ?? 0;
   const [offset, setOffset] = useState(0);
-  const [page, setPage] = useState<CandidatePage | null>(null);
+  const [page, setPage] = useState<QueuePage | null>(null);
   const [pageError, setPageError] = useState<unknown>(null);
   const [selection, setSelection] = useState('');
   const [detail, setDetail] = useState<{
@@ -237,12 +237,8 @@ export function PagedFindings({
                           </button>
                         </TableCell>
                         <TableCell>{candidate.risk_score.toFixed(3)}</TableCell>
-                        <TableCell>
-                          {candidate.member_entity_ids.length}
-                        </TableCell>
-                        <TableCell>
-                          {candidate.related_event_ids.length}
-                        </TableCell>
+                        <TableCell>{candidate.member_count}</TableCell>
+                        <TableCell>{candidate.event_count}</TableCell>
                         <TableCell>
                           {money(
                             candidate.estimated_exposure_minor,
@@ -294,7 +290,7 @@ export function PagedFindings({
               retry={() => setAttempt((value) => value + 1)}
             />
           ) : selection && !activeDetail ? (
-            <output aria-live="polite">
+            <div aria-live="polite">
               <LoadingState label="Loading selected evidence…" />
               {progress && (
                 <p className="muted">
@@ -303,7 +299,7 @@ export function PagedFindings({
                   appears after the complete integrity check.
                 </p>
               )}
-            </output>
+            </div>
           ) : activeDetail ? (
             <PersistedFindings
               key={`${runId}:${selection}`}

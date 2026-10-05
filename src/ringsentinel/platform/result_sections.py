@@ -14,6 +14,14 @@ def encode(value):
     return json.dumps(value, sort_keys=True, allow_nan=False, separators=(",", ":")).encode()
 
 
+QUEUE_FIELDS = {
+    "risk_score": "score",
+    "estimated_exposure_minor": "exposure",
+    "member_entity_ids": "members",
+    "related_event_ids": "events",
+}
+
+
 OVERVIEW_FIELDS = ("schema_version", "threshold", "event_count", "entity_count", "model_scope")
 
 
@@ -21,6 +29,9 @@ def index_in(session, run, result, content):
     if run.candidate_count is None:
         return
     rows = []
+    queue_present = all(
+        all(key in ring["candidate"] for key in QUEUE_FIELDS) for ring in result.get("rings", [])
+    )
 
     def section(kind, candidate_id, ordinal, offset, value):
         encoded = encode(value)
@@ -60,6 +71,25 @@ def index_in(session, run, result, content):
                             nested,
                             ring[name],
                         )
+                    if name == "candidate" and queue_present:
+                        scalar_offset = nested + 1
+                        for scalar_position, field in enumerate(sorted(ring[name])):
+                            scalar_offset += (1 if scalar_position else 0) + len(encode(field)) + 1
+                            field_value = ring[name][field]
+                            if field in QUEUE_FIELDS:
+                                count = (
+                                    len(field_value)
+                                    if field in ("member_entity_ids", "related_event_ids")
+                                    else ordinal
+                                )
+                                section(
+                                    QUEUE_FIELDS[field],
+                                    candidate_id,
+                                    count,
+                                    scalar_offset,
+                                    field_value,
+                                )
+                            scalar_offset += len(encode(field_value))
                     nested += len(encode(ring[name]))
                 offset = nested + 1
             offset += 1
@@ -73,6 +103,7 @@ def index_in(session, run, result, content):
         "count": run.candidate_count,
         "currency_present": "currency" in result,
         "overview_present": all(key in result for key in OVERVIEW_FIELDS),
+        "queue_present": queue_present,
     }
 
 
@@ -84,12 +115,14 @@ def authorized(service, principal, run_id):
         marker = run.candidate_index
         if (
             not isinstance(marker, dict)
-            or set(marker)
-            not in (
-                {"version", "count", "currency_present"},
-                {"version", "count", "currency_present", "overview_present"},
+            or not {"version", "count", "currency_present"} <= set(marker)
+            or not set(marker)
+            <= {"version", "count", "currency_present", "overview_present", "queue_present"}
+            or any(
+                type(marker[key]) is not bool
+                for key in ("overview_present", "queue_present")
+                if key in marker
             )
-            or ("overview_present" in marker and type(marker["overview_present"]) is not bool)
             or type(marker["version"]) is not int
             or marker["version"] != 1
             or type(marker["count"]) is not int
@@ -368,3 +401,88 @@ def overview(service, principal, run_id):
         "result_sha256": run.result_checksum,
         "candidate_count": total,
     }
+
+
+def queue_page(service, principal, run_id, *, offset=0, limit=50):
+    run = authorized(service, principal, run_id)
+    if (
+        type(offset) is not int
+        or not 0 <= offset <= 500_000_000
+        or type(limit) is not int
+        or not 1 <= limit <= 100
+    ):
+        raise ValueError("Invalid candidate page")
+    if not run.candidate_index or not run.candidate_index.get("queue_present"):
+        result = page(service, principal, run_id, offset=offset, limit=limit)
+        result["items"] = [
+            dict(
+                candidate_id=item["candidate_id"],
+                risk_score=item["risk_score"],
+                estimated_exposure_minor=item["estimated_exposure_minor"],
+                member_count=len(item["member_entity_ids"]),
+                event_count=len(item["related_event_ids"]),
+            )
+            for item in result["items"]
+        ]
+        return result
+    total = run.candidate_count
+    with service.database.session() as session:
+        rows = list(
+            session.scalars(
+                select(ResultSection)
+                .where(
+                    ResultSection.run_id == run.id,
+                    ResultSection.kind == "candidate",
+                    ResultSection.ordinal >= offset,
+                    ResultSection.ordinal < offset + limit,
+                )
+                .order_by(ResultSection.ordinal)
+            )
+        )
+    if len(rows) != min(limit, max(total - offset, 0)) or any(
+        row.ordinal != offset + i for i, row in enumerate(rows)
+    ):
+        raise ProductError("INTERNAL_ERROR")
+    items = []
+    for candidate in rows:
+        fields = {
+            kind: row_for(service, run, kind, candidate.candidate_id)
+            for kind in QUEUE_FIELDS.values()
+        }
+        if any(row is None for row in fields.values()):
+            raise ProductError("INTERNAL_ERROR")
+        if any(
+            row.byte_offset < candidate.byte_offset
+            or row.byte_offset + row.size_bytes > candidate.byte_offset + candidate.size_bytes
+            for row in fields.values()
+        ):
+            raise ProductError("INTERNAL_ERROR")
+        if (
+            fields["score"].ordinal != candidate.ordinal
+            or fields["exposure"].ordinal != candidate.ordinal
+            or fields["score"].size_bytes > 64
+            or fields["exposure"].size_bytes > 32
+        ):
+            raise ProductError("INTERNAL_ERROR")
+        members, events = fields["members"].ordinal, fields["events"].ordinal
+        if type(members) is not int or members < 0 or type(events) is not int or events < 0:
+            raise ProductError("INTERNAL_ERROR")
+        items.append(
+            dict(
+                candidate_id=candidate.candidate_id,
+                member_count=members,
+                event_count=events,
+                risk_score=read(service, run, fields["score"]),
+                estimated_exposure_minor=read(service, run, fields["exposure"]),
+            )
+        )
+    return dict(
+        schema_version="1",
+        run_id=run.id,
+        result_sha256=run.result_checksum,
+        offset=offset,
+        limit=limit,
+        total=total,
+        items=items,
+        next_offset=offset + len(items) if offset + len(items) < total else None,
+    )

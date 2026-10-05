@@ -71,3 +71,40 @@ candidate summary should use its fragment endpoint. Existing complete evidence
 and investigator paths can still assemble a selected large section. Measure
 selected-section, browser and provider memory, response limits and concurrency;
 these APIs alone do not close the deployed capacity gate.
+
+## Bounded analyst queue
+
+GET /api/v1/runs/{run_id}/queue-page?offset=0&limit=50 returns the same run/hash,
+ordinal pagination envelope, with only candidate_id (up to 100 characters), finite
+risk_score (0–1), estimated_exposure_minor, member_count and event_count per item.
+Limit is 1–100; no membership/event arrays, evidence or arbitrary text are returned.
+Exposure is restricted to nonnegative JavaScript-safe integers; supporting larger
+exact monetary totals across the existing UI still requires a decimal-string
+contract rather than rounded JavaScript numbers. Do not claim that gate closed.
+
+New persisted results add score/exposure/members/events section metadata atomically
+inside migration 0009's existing table; schema revision stays 0010. Scalar ranges
+point at original bytes and are checksum verified. Membership/event counts are
+computed metadata stored in those range rows' ordinal field, not payload copies;
+these counts trust committed database metadata rather than re-reading every array
+on each request. Candidate rows retain original ordering ordinals. Range containment,
+scalar ordinal and size checks reject inconsistent metadata. Missing indexed rows
+fail closed. Counts are not independent cryptographic proofs of the arrays.
+
+The console downloads eight bounded queue summaries, then the full selected
+candidate/evidence via verified fragments. Older indexes without queue_present
+retain targeted/full candidate fallback on the server; older APIs returning 404
+retain the original browser page path. Other failures never trigger fallback.
+Legacy queue indexing needs explicit stopped-writer maintenance before claiming
+bounded legacy server memory. Original results, model hashes and old routes stay
+compatible; no schema migration or existing-case rewrite occurs automatically.
+
+Generated tests use a candidate with 100,000 member IDs: the queue response is
+under 500 bytes and uses two scalar reads each below 100 bytes, with whole reads
+forbidden. Both storage modes cover pagination, owner denial and missing count
+metadata. HTTP tests verify summary shape/size/admission and owner denial. Browser
+checks reject invalid counts before selected evidence publication.
+
+The evidence loading live region now uses a div rather than output: output's
+implicit status role competed with the analysis status during a real browser run.
+Progress announcements remain live; transient duplicate status elements are removed.

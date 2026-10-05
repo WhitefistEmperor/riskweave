@@ -188,6 +188,18 @@ class CandidatePageResponse(Contract):
     items: Annotated[list[CandidateResponse], Field(max_length=100)]
 
 
+class QueueSummaryResponse(Contract):
+    candidate_id: Annotated[str, Field(min_length=1, max_length=100)]
+    risk_score: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+    estimated_exposure_minor: Annotated[int, Field(ge=0, le=9007199254740991)]
+    member_count: Annotated[int, Field(ge=0, le=500_000_000)]
+    event_count: Annotated[int, Field(ge=0, le=500_000_000)]
+
+
+class QueuePageResponse(CandidatePageResponse):
+    items: Annotated[list[QueueSummaryResponse], Field(max_length=100)]
+
+
 class SectionManifestResponse(Contract):
     schema_version: Literal["1"]
     run_id: str

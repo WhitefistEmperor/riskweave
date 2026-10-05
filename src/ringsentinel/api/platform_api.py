@@ -23,6 +23,7 @@ from ringsentinel.api.contracts import (
     InvestigationResponse,
     InvestigatorRequest,
     InvestigatorResponse,
+    QueuePageResponse,
     ReadinessResponse,
     ResultChunkResponse,
     ResultManifestResponse,
@@ -388,6 +389,17 @@ def candidate_page(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ):
     return result_sections.page(service, principal, run_id, offset=offset, limit=limit)
+
+
+@router.get("/runs/{run_id}/queue-page", response_model=QueuePageResponse)
+def queue_page(
+    run_id: str,
+    principal: CurrentPrincipal,
+    service: Service,
+    offset: Annotated[int, Query(ge=0, le=500_000_000)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+):
+    return result_sections.queue_page(service, principal, run_id, offset=offset, limit=limit)
 
 
 @router.get(

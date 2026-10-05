@@ -48,7 +48,7 @@ export type CandidatePage = {
   next_offset: number | null;
   items: PersistedCandidate[];
 };
-export async function loadCandidatePage(
+async function loadLegacyCandidatePage(
   run: AnalysisRun,
   offset: number,
   limit: number,
@@ -84,6 +84,90 @@ export async function loadCandidatePage(
       );
     },
   );
+}
+
+export type QueueSummary = {
+  candidate_id: string;
+  risk_score: number;
+  estimated_exposure_minor: number;
+  member_count: number;
+  event_count: number;
+};
+export type QueuePage = Omit<CandidatePage, 'items'> & {
+  items: QueueSummary[];
+};
+export async function loadCandidatePage(
+  run: AnalysisRun,
+  offset: number,
+  limit: number,
+  signal: AbortSignal,
+): Promise<QueuePage> {
+  try {
+    return await apiRequest<QueuePage>(
+      `/v1/runs/${encodeURIComponent(run.id)}/queue-page?offset=${offset}&limit=${limit}`,
+      { signal },
+      (value) => {
+        if (
+          !object(value) ||
+          value.schema_version !== '1' ||
+          value.run_id !== run.id ||
+          !sha(value.result_sha256) ||
+          value.result_sha256 !== run.result_checksum ||
+          value.offset !== offset ||
+          value.limit !== limit ||
+          !integer(value.total) ||
+          value.total < 0 ||
+          !Array.isArray(value.items) ||
+          value.items.length !==
+            Math.min(limit, Math.max(value.total - offset, 0))
+        )
+          return false;
+        if (
+          !value.items.every(
+            (item) =>
+              object(item) &&
+              typeof item.candidate_id === 'string' &&
+              item.candidate_id.length > 0 &&
+              item.candidate_id.length <= 100 &&
+              typeof item.risk_score === 'number' &&
+              Number.isFinite(item.risk_score) &&
+              item.risk_score >= 0 &&
+              item.risk_score <= 1 &&
+              integer(item.estimated_exposure_minor) &&
+              item.estimated_exposure_minor >= 0 &&
+              integer(item.member_count) &&
+              item.member_count >= 0 &&
+              item.member_count <= 500_000_000 &&
+              integer(item.event_count) &&
+              item.event_count >= 0 &&
+              item.event_count <= 500_000_000,
+          )
+        )
+          return false;
+        const ids = value.items.map(
+          (item) => (item as QueueSummary).candidate_id,
+        );
+        return (
+          new Set(ids).size === ids.length &&
+          value.next_offset ===
+            (offset + ids.length < value.total ? offset + ids.length : null)
+        );
+      },
+    );
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    const page = await loadLegacyCandidatePage(run, offset, limit, signal);
+    return {
+      ...page,
+      items: page.items.map((item) => ({
+        candidate_id: item.candidate_id,
+        risk_score: item.risk_score,
+        estimated_exposure_minor: item.estimated_exposure_minor,
+        member_count: item.member_entity_ids.length,
+        event_count: item.related_event_ids.length,
+      })),
+    };
+  }
 }
 
 export async function loadOverview(

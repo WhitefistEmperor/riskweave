@@ -28,7 +28,7 @@ async function install(page: Page, mode = 'valid') {
       },
     }),
   );
-  await page.route(`**/api/v1/runs/${runId}/candidate-page?*`, (route) => {
+  await page.route(`**/api/v1/runs/${runId}/queue-page?*`, (route) => {
     const offset = Number(
       new URL(route.request().url()).searchParams.get('offset'),
     );
@@ -46,7 +46,14 @@ async function install(page: Page, mode = 'valid') {
         limit: 8,
         total: 9,
         next_offset: offset === 0 ? 8 : null,
-        items,
+        items: items.map((item) => ({
+          candidate_id: item.candidate_id,
+          risk_score: item.risk_score,
+          estimated_exposure_minor: item.estimated_exposure_minor,
+          member_count:
+            mode === 'invalid-count' ? -1 : item.member_entity_ids.length,
+          event_count: item.related_event_ids.length,
+        })),
       },
     });
   });
@@ -184,4 +191,17 @@ test('selection change cancels delayed evidence and keeps the new candidate', as
   await expect(
     page.getByRole('region', { name: 'Selected candidate' }),
   ).toContainText('DATE-8');
+});
+
+test('invalid queue counts fail closed before selected evidence loads', async ({
+  page,
+}) => {
+  await install(page, 'invalid-count');
+  await page.goto(workspaceUrl);
+  await expect(
+    page.getByRole('heading', { name: 'Response could not be read' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('region', { name: 'Selected candidate' }),
+  ).toHaveCount(0);
 });

@@ -352,6 +352,13 @@ def test_http_candidate_pages_and_section_contracts_preserve_owner_checks(saved,
         assert overview_response.json()["candidate_count"] == 2
         assert overview_response.json()["event_count"] == result["event_count"]
         assert "rings" not in overview_response.json()
+        queue_path = f"/api/v1/runs/{run_id}/queue-page"
+        queue = client.get(queue_path, params={"limit": 1})
+        assert queue.status_code == 200, queue.text
+        assert queue.json()["items"][0]["member_count"] == 1
+        assert "member_entity_ids" not in queue.json()["items"][0]
+        assert len(queue.content) < 500
+        assert client.get(queue_path, params={"limit": 101}).status_code == 422
         page_path = f"/api/v1/runs/{run_id}/candidate-page"
         page = client.get(page_path, params={"limit": 1})
         assert page.status_code == 200, page.text
@@ -370,6 +377,7 @@ def test_http_candidate_pages_and_section_contracts_preserve_owner_checks(saved,
         assert json.loads(content) == result["rings"][1]["queries"]
         assert client.get(path + "/chunks/2").status_code == 404
         client.headers["X-Development-User"] = "other-owner"
+        assert client.get(queue_path).status_code == 404
         assert client.get(overview_path).status_code == 404
         assert client.get(page_path).status_code == 404
         assert client.get(path + "/manifest").status_code == 404
@@ -395,3 +403,53 @@ def test_overview_uses_verified_scalar_sections_and_missing_metadata_fails_close
     with pytest.raises(ProductError) as broken:
         result_sections.overview(service, owner, run_id)
     assert broken.value.code == "INTERNAL_ERROR"
+
+
+def test_bounded_queue_ignores_large_membership_and_preserves_selected_fragments(
+    saved, monkeypatch
+):
+    service, owner, case, old_run_id, result = saved
+    old = service.run(owner, old_run_id)
+    run = service.start(owner, case.id, old.artifact_id, "dense-queue-control")
+    assert service.claim() == run.id
+    candidate = result["rings"][0]["candidate"]
+    candidate["member_entity_ids"] = [f"generated-member-{i:07d}" for i in range(100_000)]
+    service.finish(run.id, result)
+    ranges = []
+    original_range = service.storage.read_range
+
+    def ranged(key, offset, length):
+        ranges.append(length)
+        assert length < 100, "Queue read a membership, evidence or whole candidate section"
+        return original_range(key, offset, length)
+
+    monkeypatch.setattr(service.storage, "read", lambda *_: pytest.fail("Whole object read"))
+    monkeypatch.setattr(service.storage, "read_range", ranged)
+    response = result_sections.queue_page(service, owner, run.id, limit=1)
+    assert response["items"] == [
+        dict(
+            candidate_id="first",
+            risk_score=0.8,
+            estimated_exposure_minor=123,
+            member_count=100_000,
+            event_count=0,
+        )
+    ]
+    assert len(result_sections.encode(response)) < 500
+    assert len(ranges) == 2
+    second = result_sections.queue_page(service, owner, run.id, offset=1, limit=1)
+    assert second["next_offset"] is None
+    with pytest.raises(ProductError) as denied:
+        result_sections.queue_page(service, Principal("other-owner"), run.id)
+    assert denied.value.code == "NOT_FOUND"
+    with service.database.session.begin() as session:
+        session.execute(
+            delete(ResultSection).where(
+                ResultSection.run_id == run.id,
+                ResultSection.kind == "members",
+                ResultSection.candidate_id == "first",
+            )
+        )
+    with pytest.raises(ProductError) as missing:
+        result_sections.queue_page(service, owner, run.id, limit=1)
+    assert missing.value.code == "INTERNAL_ERROR"
