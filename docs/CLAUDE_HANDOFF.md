@@ -5,6 +5,45 @@ the project is already deployed or validated on real financial data.
 
 ## Instructions for Claude at the usage handoff
 
+### Usage threshold checkpoint: 9% remaining
+
+Current-window usage reached 91% used (9% remaining); weekly 25% remaining.
+All source is pushed through 350e0f5d35e8b69082efcaed4f9aa00454db73bc on the
+existing branch/PR. The core application remains verified83e4bb1 below; the new
+Linux capacity measurement/canonical artifact changes have live CI push37329580404
+and PR37329596214. Both were authoritatively in progress at this checkpoint.
+Do not restart/cancel a live run solely because observation times out.
+
+1. Read these exact CI runs. Require all six jobs,319 Python/80 workspace browser
+   +4 session controls, all7 PostgreSQL module cases executed and the capacity
+   artifact present. Download only the aggregate postgres-worker-capacity artifact
+   into a new ignored directory and inspect its actual source commit/model pin.
+   PR artifacts may use the merge checkout SHA; verify its Git tree matches the
+   requested source before attributing measurements. Keep report metadata/digests.
+2. The initial b4e3c0a runs37328461220/37328471256 passed. Its push report is under
+   ignored work/linux-postgres-capacity-push-20261005 (two byte-identical pytest alias
+   copies). Three results match the original large mixed checksum5cf5c763...7324;
+   worker-main10.927–11.050s, model044eabe5...3280. Its lifetime getrusage peak868–871MB
+   is not current-image memory proof. Revised350e0f5 reports approximate current
+   VmHWM/VmRSS separately from lifetime peak, and writes one canonical JSON.
+3. After actual revised-source success/artifact review, publish only sanitized
+   aggregate measurements in results/capacity and exact CI/source proof in
+   results/operations. Update this handoff/release gates/capacity-baseline.md and
+   ignored work/pr-current-release-body.md; push source/docs and update draft PR1.
+   Preserve generated private fixtures and all user cases. No models/keys/data
+   or raw private logs belong in Git. Copy handoff/release gates to parent outputs.
+4. Full goal remains unachieved: Vercel workspace403, free TLS database/live identity,
+   hosted HTTPS/Workflow/cron/recovery/capacity, monitoring destinations/scheduled
+   encrypted off-host backups and authorized observed exports/matured labels remain
+   unresolved. A real-data location/provider question and earlier Vercel reconnect
+   question are pending. Do not invent credentials, observed accuracy or deployment.
+
+No original user cases/model were changed. Private trusted model remains pinned
+at work/models/network-hgb.joblib with SHA182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74.
+No local production auth test server may be retried after the earlier automatic
+approval rejection; exact-source CI already supplies session proof. Do not bypass
+the rejected auth popup or modify unrelated projects/purchase upgrades.
+
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
 commit is 83e4bb1; documentation may have a newer head. Inspect git status and
