@@ -15,6 +15,16 @@ succeeded. No token or private evidence is added to localStorage. API JWT, scope
 and owner checks remain authoritative; the UI boundary does not authorize access.
 Development mode without OIDC retains its existing behavior.
 
+Explicit sign-out also publishes a literal signed-out signal using a same-origin
+[BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API).
+Other open workspace tabs invalidate their boundary, unmount private data and
+remove their own stored user before provider completion. The channel carries no
+credentials, user/case IDs or evidence, and creates no persistent localStorage
+marker. It closes on unmount. Initial user-check completion cannot reactivate a
+boundary invalidated by expiry, user unload or a sign-out signal. Browser policy
+may disable channels; local cleanup still applies but cross-tab synchronization
+is not claimed when channels are unavailable.
+
 ## Browser controls
 
 `frontend/tests/session-boundary.spec.ts` uses the actual library's user storage
@@ -25,6 +35,8 @@ paused/failed local issuer discovery. It checks that:
 - Idle expiry removes loaded case data without another API request.
 - Sign-out removes private content while provider discovery is still pending,
   clears the local user, and keeps content hidden when discovery fails.
+- Two open same-origin tabs both clear private content and their own user stores
+  before provider discovery completes; provider failure keeps both hidden.
 
 These are session UI controls, not live issuer or JWT signature proof. The usual
 production-browser suite explicitly skips them; CI runs them separately against

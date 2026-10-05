@@ -131,3 +131,45 @@ test('sign-out clears the workspace before provider response and keeps it hidden
     page.getByRole('heading', { name: 'Sign in to RiskWeave' }),
   ).toBeVisible();
 });
+
+test('sign-out clears another open tab and its local user before provider completion', async ({
+  page,
+  context,
+}) => {
+  const other = await context.newPage();
+  await installSession(page, 120);
+  await installSession(other, 120);
+  let metadata: Route | undefined;
+  await page.route(
+    '**/fixture-issuer/.well-known/openid-configuration',
+    (route) => {
+      metadata = route;
+    },
+  );
+  await page.goto('/investigations');
+  await other.goto('/investigations');
+  for (const tab of [page, other]) {
+    await expect(
+      tab.getByRole('link', { name: `Open ${privateName}`, exact: true }),
+    ).toBeVisible();
+  }
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  for (const tab of [page, other]) {
+    await expect(
+      tab.getByRole('heading', { name: 'Signed out of RiskWeave' }),
+    ).toBeVisible();
+    await expect(tab.getByText(privateName)).toHaveCount(0);
+    await expect
+      .poll(() =>
+        tab.evaluate((key) => sessionStorage.getItem(key), storageKey),
+      )
+      .toBeNull();
+  }
+  await expect.poll(() => Boolean(metadata)).toBe(true);
+  await metadata!.abort('failed');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    'Sign-out could not finish',
+  );
+  await expect(other.getByText(privateName)).toHaveCount(0);
+  await other.close();
+});

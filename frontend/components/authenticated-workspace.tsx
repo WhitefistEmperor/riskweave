@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -23,6 +24,7 @@ export function useWorkspaceSignOut() {
 }
 
 export function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
+  const logoutChannel = useRef<BroadcastChannel | null>(null);
   const [access, setAccess] = useState<Access>(
     authenticationEnabled ? 'checking' : 'active',
   );
@@ -30,19 +32,38 @@ export function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
     if (!authenticationEnabled) return;
     let active = true;
     const auth = authManager();
+    let invalidated = false;
     const expired = () => {
+      invalidated = true;
       if (active) setAccess('expired');
     };
     const unloaded = () => {
+      invalidated = true;
       if (active)
         setAccess((value) => (value === 'expired' ? value : 'signed-out'));
     };
     const stopExpired = auth.events.addAccessTokenExpired(expired);
     const stopUnloaded = auth.events.addUserUnloaded(unloaded);
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('riskweave-session-logout');
+      logoutChannel.current = channel;
+      channel.onmessage = (event: MessageEvent<unknown>) => {
+        if (!active || event.data !== 'signed-out') return;
+        invalidated = true;
+        setAccess('signed-out');
+        void auth.removeUser().catch(() => {
+          if (active) setAccess('logout-failed');
+        });
+      };
+    } catch {
+      // Browser policy can disable cross-tab channels; local expiry/logout still apply.
+    }
     void auth
       .getUser()
       .then((user) => {
-        if (active) setAccess(user && !user.expired ? 'active' : 'signed-out');
+        if (active && !invalidated)
+          setAccess(user && !user.expired ? 'active' : 'signed-out');
       })
       .catch(() => {
         if (active) setAccess('signed-out');
@@ -51,11 +72,18 @@ export function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
       active = false;
       stopExpired();
       stopUnloaded();
+      channel?.close();
+      if (logoutChannel.current === channel) logoutChannel.current = null;
     };
   }, []);
 
   function endSession() {
     setAccess('signed-out');
+    try {
+      logoutChannel.current?.postMessage('signed-out');
+    } catch {
+      // Local sign-out must proceed even if another tab cannot be notified.
+    }
     void signOut().catch(() => setAccess('logout-failed'));
   }
 

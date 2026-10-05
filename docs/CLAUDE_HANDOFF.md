@@ -45,6 +45,31 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Cross-tab session privacy: current source work, CI pending
+
+The session boundary now broadcasts only the literal signed-out message through
+a same-origin BroadcastChannel when the analyst explicitly signs out. Other open
+workspace tabs immediately invalidate their boundary, unmount private components
+and remove their own oidc-client-ts stored user before provider completion. No
+token, user/case identifier, evidence or persistent localStorage marker is sent.
+Listeners/channels close on unmount. A late initial getUser result cannot reopen
+a boundary invalidated by expiry/user unload or another tab's sign-out.
+
+A fourth dedicated browser control loads private cases in two real tabs in the
+same browser context, holds provider discovery pending, signs out in one tab and
+requires both private views/user stores to clear before completing discovery.
+Provider failure then must keep both private views hidden. Local lint/typecheck
+pass; final source CI is pending at this note. Do not call the4 controls verified
+until exact-source CI passes. The normal80-test suite skips the4 dedicated tests;
+the separate production OIDC fixture must execute all4.
+
+The previous local production test-server launch was rejected by automatic review;
+it is not retried through a replacement route. Verification uses the repository's
+existing isolated production-build CI controls. Browser policies can disable
+BroadcastChannel; local expiry/logout still applies but synchronization is not
+claimed there. Closed/suspended tabs, issuer revocation and actual HTTPS deployment
+remain hosted gates. This client signal cannot revoke a server access token.
+
 ### Session privacy boundary: verified source 00037c4
 
 Audit found that idle expiry was checked only on the next API request and provider
