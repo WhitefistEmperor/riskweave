@@ -110,3 +110,9 @@ must be read in CLAUDE_HANDOFF.md. Dense/browser/hosted capacity remains open.
 The dependency audit also reports 11 advisories (3 moderate/8 high); assess and
 resolve compatible fixes before release rather than applying an unreviewed force
 update. See docs/exact-monetary-values.md.
+
+The unused frontend CLI dependency chain is now removed with its complete CSS
+body and MIT notice preserved. Shared fast-uri is patched and the full registry
+audit reports zero advisories; CI now gates moderate-or-higher findings. CSS rule
+bundles match the preceding build. Final browser/source verification is tracked
+in CLAUDE_HANDOFF.md; this does not establish a comprehensive security review.

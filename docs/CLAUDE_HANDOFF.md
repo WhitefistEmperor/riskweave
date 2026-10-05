@@ -18,8 +18,9 @@ The current goal is still the complete deployed product and validated model.
    response, memory and actual PostgreSQL measurements, not only sparse controls.
 2. Exact monetary API/UI support is implemented (see latest checkpoint and
    docs/exact-monetary-values.md). Verify client compatibility before deployment.
-   npm audit reports 11 advisories (3 moderate/8 high), chiefly transitive CLI
-   dependencies. Assess safe updates; do not use an unreviewed force downgrade.
+   The unused CLI dependency chain is removed and shared fast-uri patched;
+   the audit now reports zero advisories. Verify final CSS/browser/source-CI
+   proof at the dependency checkpoint below; preserve the distributed MIT notice.
 3. Restore supported Vercel scope/repository access and verify free allowances,
    private TLS PostgreSQL and a real identity issuer. The connector previously
    returned 403; deployment is not verified. Do not bypass the rejected auth popup.
@@ -43,6 +44,38 @@ reproduction is in docs/vercel-deployment.md. Source/main and unrelated projects
 must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
+
+### Frontend dependency security continuation checkpoint
+
+The shadcn CLI was used only for its stylesheet import. The full original 4.18.0
+stylesheet is now local with an unchanged 16,041-byte body and MIT provenance/
+notice. A public copy of the license survives CSS minification and is shipped by
+both standard and standalone hosting. The separate @shadcn/react runtime package
+remains because message-scroller uses it. No component/theme behavior was removed.
+
+CLI removal pruned 286 installed packages and cleared 10 advisories. The remaining
+moderate fast-uri issue was shared with webpack through react-server-dom-webpack;
+a compatible 3.1.7-to-3.1.8 lockfile patch cleared it. The full npm audit reports
+zero advisories including development dependencies. No force downgrade was used.
+The three production CSS rule bundles have identical hashes/byte lengths to the
+prior exact-money build. Frontend lint/typecheck/production build passed. All 78 local production-browser checks passed (3.8m), including responsive
+keyboard widths and real upload/analysis/evidence/revisit. The served MIT notice
+returned200 and matched its source bytes after the owned frontend restart.
+Exact-source CI remains pending. A CI audit step now rejects known moderate
+or higher findings, and the container smoke compares its served MIT notice to
+the source bytes. See docs/frontend-dependencies.md and the aggregate report
+results/operations/frontend-dependency-audit-20261005.json.
+
+The earlier claim that all 11 advisories belonged only to the CLI was too broad:
+fast-uri also occurred in webpack. Both paths are now addressed. A clean registry
+audit does not close authentication/authorization/hosted operational security or
+model-validation gates. Existing backend source remains 7cd46e0; no schema/model/
+original-case rewrite occurred. Local API session32149 and frontend33385 resumed
+after authoritative port checks showed the preceding sessions had stopped.
+The targeted Vercel connector recheck still returned403 for
+team_TB2LpxHcKF1dYrc4LdY7O9Fu, requiring reauthentication to the user scope.
+No alternate authentication path or unrelated project was substituted.
+
 
 ### Exact monetary API/UI continuation checkpoint
 
@@ -89,7 +122,9 @@ upload/background-analysis/evidence/revisit test then passed against the new API
 
 The dependency install audit found 11 advisories (3 moderate/8 high), including
 shadcn tooling's transitive packages. No force update/downgrade was applied.
-npm ls attributes all 11 to shadcn 4.18.0 CLI dependencies; source uses its
+The initial npm ls output showed the CLI paths; later removal also identified
+shared webpack fast-uri (corrected in the newer checkpoint). Most findings were
+in shadcn 4.18.0 CLI dependencies; source uses its
 tailwind.css and separate @shadcn/react, not the CLI JavaScript. Registry reports
 shadcn 4.21.1 but braces 3.0.3/micromatch 4.0.8 still have no newer patch. Assess a
 compatible CLI update or preserve the exact MIT-licensed CSS locally and remove

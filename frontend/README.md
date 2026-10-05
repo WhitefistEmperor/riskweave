@@ -52,3 +52,8 @@ The evidence graph renders query-provided relationships only; it never fills mis
 Scores are uncalibrated and sharing alone is not proof of abuse. See the
 [Phase 5B frontend notes](../docs/phase5b-frontend.md) for implementation history and
 [Phase 5C gates](../docs/phase5c-final.md) for unresolved production risks.
+
+The shared shadcn stylesheet is vendored with its MIT notice; the application does
+not install the shadcn CLI. See [dependency maintenance](../docs/frontend-dependencies.md)
+for provenance, updates and the CI advisory gate. The distributed notice is available
+at `/licenses/shadcn-MIT.txt`.
