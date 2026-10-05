@@ -18,9 +18,9 @@ class ReviewService:
         self.investigations = investigations
 
     def _candidate(self, principal: Principal, run_id: str, candidate_id: str):
-        result = self.investigations.result(principal, run_id)
-        if not any(ring["candidate"]["candidate_id"] == candidate_id for ring in result["rings"]):
-            raise ProductError("NOT_FOUND")
+        from ringsentinel.platform.result_sections import require_candidate
+
+        require_candidate(self.investigations, principal, run_id, candidate_id)
 
     @staticmethod
     def _response(session, run_id: str, candidate_id: str) -> dict:

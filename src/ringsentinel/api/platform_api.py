@@ -37,6 +37,7 @@ from ringsentinel.api.contracts import (
 )
 from ringsentinel.api.security import current_principal
 from ringsentinel.investigation.investigator import InvestigatorService
+from ringsentinel.platform import result_sections
 from ringsentinel.platform.deletion import DeletionService
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import (
@@ -47,6 +48,7 @@ from ringsentinel.platform.models import (
     DispatchSchedule,
     Investigation,
     ResultFragment,
+    ResultSection,
     ReviewAudit,
     Status,
     StorageDeletion,
@@ -85,7 +87,10 @@ def dependencies_ready(service: InvestigationService) -> bool:
             session.execute(select(Investigation.id).limit(1))
             session.execute(select(CandidateReview.candidate_id).limit(1))
             session.execute(select(ResultFragment.run_id).limit(1))
-            session.execute(select(AnalysisRun.candidate_count).limit(1))
+            session.execute(
+                select(AnalysisRun.candidate_count, AnalysisRun.candidate_index).limit(1)
+            )
+            session.execute(select(ResultSection.run_id).limit(1))
             session.execute(select(ReviewAudit.id).limit(1))
             session.execute(select(StorageDeletion.key).limit(1))
             if service.settings.background_dispatch == "vercel_workflow":
@@ -366,7 +371,7 @@ def result_chunk(run_id: str, index: int, principal: CurrentPrincipal, service: 
 
 @router.get("/runs/{run_id}/rings", response_model=list[CandidateResponse])
 def rings(run_id: str, principal: CurrentPrincipal, service: Service):
-    return [ring["candidate"] for ring in service.result(principal, run_id)["rings"]]
+    return result_sections.candidates(service, principal, run_id)
 
 
 def ring_for(result: dict, candidate_id: str) -> dict:
@@ -378,12 +383,12 @@ def ring_for(result: dict, candidate_id: str) -> dict:
 
 @router.get("/runs/{run_id}/rings/{candidate_id}", response_model=CandidateResponse)
 def candidate(run_id: str, candidate_id: str, principal: CurrentPrincipal, service: Service):
-    return ring_for(service.result(principal, run_id), candidate_id)["candidate"]
+    return result_sections.value(service, principal, run_id, candidate_id, "candidate")
 
 
 @router.get("/runs/{run_id}/rings/{candidate_id}/evidence", response_model=EvidenceResponse)
 def evidence(run_id: str, candidate_id: str, principal: CurrentPrincipal, service: Service):
-    return ring_for(service.result(principal, run_id), candidate_id)["queries"]
+    return result_sections.value(service, principal, run_id, candidate_id, "evidence")
 
 
 @router.get("/runs/{run_id}/rings/{candidate_id}/review", response_model=ReviewResponse)
@@ -422,8 +427,17 @@ def investigate(
 ):
     from ringsentinel.platform.analysis import PersistedEvidence
 
-    result = service.result(principal, run_id)
-    ring_for(result, candidate_id)
+    result = {
+        "currency": result_sections.currency(service, principal, run_id),
+        "rings": [
+            {
+                "candidate": {"candidate_id": candidate_id},
+                "queries": result_sections.value(
+                    service, principal, run_id, candidate_id, "evidence"
+                ),
+            }
+        ],
+    }
     return InvestigatorService(
         PersistedEvidence(result), request.app.state.summary_provider
     ).answer(candidate_id, body.question)

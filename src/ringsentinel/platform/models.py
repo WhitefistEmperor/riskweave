@@ -102,6 +102,7 @@ class AnalysisRun(Identity, Base):
     result_checksum: Mapped[str | None] = mapped_column(String(64))
     result_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
     candidate_count: Mapped[int | None] = mapped_column(nullable=True)
+    candidate_index: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     execution_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     dispatch_state: Mapped[str | None] = mapped_column(String(16))
     executor_slot: Mapped[str | None] = mapped_column(String(80), unique=True)
@@ -118,6 +119,22 @@ class ResultFragment(Base):
     )
     part_index: Mapped[int] = mapped_column(primary_key=True)
     size_bytes: Mapped[int]
+    checksum: Mapped[str] = mapped_column(String(64))
+
+
+class ResultSection(Base):
+    __tablename__ = "result_sections"
+    __table_args__ = (
+        CheckConstraint("byte_offset >= 0 AND size_bytes > 0", name="result_section_range"),
+    )
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    kind: Mapped[str] = mapped_column(String(16), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    ordinal: Mapped[int]
+    byte_offset: Mapped[int] = mapped_column(BigInteger)
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
     checksum: Mapped[str] = mapped_column(String(64))
 
 

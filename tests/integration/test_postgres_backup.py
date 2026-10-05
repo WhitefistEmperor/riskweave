@@ -132,6 +132,13 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
             patch.setattr(
                 restored.storage, "read", lambda *_: pytest.fail("Full restored result read")
             )
+            from ringsentinel.platform import result_sections
+            from ringsentinel.platform.reviews import ReviewService
+
+            assert result_sections.value(
+                restored, owner, run.id, "restore-candidate", "candidate"
+            ) == {"candidate_id": "restore-candidate"}
+            assert ReviewService(restored).get(owner, run.id, "restore-candidate")["version"] == 1
             transport = ResultTransport(restored)
             manifest = transport.manifest(owner, run.id)
             assert manifest["chunk_count"] == 2

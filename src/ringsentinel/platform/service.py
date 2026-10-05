@@ -475,6 +475,9 @@ class InvestigationService:
                     from ringsentinel.platform.result_fragments import index_in
 
                     index_in(session, run, content)
+                    from ringsentinel.platform.result_sections import index_in as index_sections
+
+                    index_sections(session, run, result, content)
                 session.execute(
                     update(Investigation)
                     .where(Investigation.id == run.investigation_id)
