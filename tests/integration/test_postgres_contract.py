@@ -3,6 +3,7 @@
 import importlib
 import io
 
+import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_mock_engine
@@ -87,6 +88,10 @@ def test_postgres_backup_commands_keep_password_out_of_arguments(tmp_path, monke
     try:
         pg_command(db, "backup", tmp_path / "database.dump")
         pg_command(db, "restore", tmp_path / "database.dump")
+        pg_command(db, "backup", tmp_path / "database.dump", snapshot="00000003-0000001B-1")
+        for action, snapshot in [("restore", "00000003-0000001B-1"), ("backup", "invalid;command")]:
+            with pytest.raises(ValueError, match="Invalid exported snapshot"):
+                pg_command(db, action, tmp_path / "database.dump", snapshot=snapshot)
     finally:
         db.engine.dispose()
     for args, kwargs in calls:
@@ -96,3 +101,4 @@ def test_postgres_backup_commands_keep_password_out_of_arguments(tmp_path, monke
         assert kwargs["timeout"] == 300
         assert kwargs.get("shell", False) is False
     assert "--single-transaction" in calls[1][0]
+    assert len(calls) == 3 and "--snapshot=00000003-0000001B-1" in calls[2][0]

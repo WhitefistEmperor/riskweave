@@ -7,6 +7,11 @@ plus4 dedicated OIDC session browser controls), the actual
 403 scope response and measured sparse/dense workers and cancellable browser grid
 controls. Consult the handoff for exact evidence and remaining capacity work.
 
+Opt-in online PostgreSQL/database-object backups now share one exported snapshot
+for reference verification and pg_dump. Source CI for the concurrent erasure/write
+and fresh-target restore control is pending; local unsupported-mode controls pass.
+Scheduling, encryption/off-host delivery and hosted recovery objectives remain open.
+
 New driver sourceb97cde2 generates valid long-identifier inputs and real saved
 two-fragment results (2.571/3.200MB); complete native and selected-evidence hashes
 verify with whole reads forbidden and individual reads at most2000000 bytes.

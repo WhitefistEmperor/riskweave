@@ -45,6 +45,23 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Online PostgreSQL backup: source checks pending
+
+Added opt-in `backup --online-database` for PostgreSQL/database object storage.
+Reference checks and pg_dump share one exported read-only REPEATABLE READ snapshot;
+ordinary writers continue. Filesystem/SQLite keep the offline requirement and all
+restore targets remain offline/new/empty. See docs/backup-restore.md for operational
+limits, in-flight recovery and reconciling later erasures before cutover.
+
+New real PostgreSQL regression commits case/object erasure and a new case/upload
+between export and dump, then checks the restored pre-export case, bytes, checksum
+and owner isolation. This Windows host lacks PostgreSQL clients: local focused
+checks passed8 with19 environment skips (including5 PostgreSQL and14 age controls).
+Repository Ruff passes. Exact-source full CI is pending; do not claim live online
+backup proof until its backend job executes this new test successfully.
+Latest usage:53% current-window remaining /32% weekly remaining.
+Previous docs35b6ea8 push/PR CI37319701430/37319709524 completed successfully.
+
 ### Cross-tab session privacy: verified source f36eb31
 
 The session boundary now broadcasts only the literal signed-out message through

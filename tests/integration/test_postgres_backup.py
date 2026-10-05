@@ -14,7 +14,11 @@ from sqlalchemy import delete
 from sqlalchemy.engine import make_url
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
-from ringsentinel.platform.backup import create_snapshot, restore_snapshot
+from ringsentinel.platform.backup import (
+    create_online_database_snapshot,
+    create_snapshot,
+    restore_snapshot,
+)
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.database_storage import storage_for
 from ringsentinel.platform.errors import ProductError
@@ -162,6 +166,78 @@ def test_generated_multifragment_evidence_on_real_postgres(
         assert reads and max(reads) <= 2_000_000
     finally:
         db.engine.dispose()
+
+
+def test_online_snapshot_restores_pre_export_bytes_despite_committed_erasure(
+    databases, tmp_path, monkeypatch
+):
+    from ringsentinel.platform import backup
+    from ringsentinel.platform.deletion import DeletionService
+
+    source = Settings(
+        environment="test",
+        database_url=databases[0],
+        storage_root=tmp_path / "source",
+        storage_backend="database",
+        jobs_enabled=False,
+    )
+    target = source.model_copy(
+        update={
+            "database_url": Settings(database_url=databases[1]).database_url,
+            "storage_root": tmp_path / "target",
+        }
+    )
+    source_db, target_db = Database(databases[0]), Database(databases[1])
+    try:
+        source_db.migrate()
+        service = InvestigationService(source_db, storage_for(source_db, source), source)
+        owner = Principal("online-backup-owner")
+        case = service.create(owner, "Before exported snapshot")
+        payload = (
+            SyntheticPaymentGenerator(GenerationConfig(transactions=100))
+            .generate()
+            .model_dump_json()
+            .encode()
+        )
+        artifact = service.attach(owner, case.id, payload, "input.json", "application/json")
+        run = service.start(owner, case.id, artifact.id, "online-drill")
+        assert service.claim() == run.id
+        result = {"rings": [], "verification": "generated-lifecycle-fixture"}
+        service.finish(run.id, result)
+        checksum = service.run(owner, run.id).result_checksum
+        command = backup.pg_command
+        late_cases = []
+
+        def write_then_dump(database, action, path, *, snapshot=None):
+            assert action == "backup" and snapshot
+            # Commits through another connection while the exporting transaction stays open.
+            # Includes atomic removal of referenced database object bytes, not just metadata.
+            DeletionService(service).remove(owner, case.id, case.name)
+            assert not service.storage.exists(artifact.storage_key)
+            late = service.create(owner, "After exported snapshot")
+            service.attach(owner, late.id, payload, "late.json", "application/json")
+            late_cases.append(late.id)
+            command(database, action, path, snapshot=snapshot)
+
+        destination = tmp_path / "snapshot"
+        with monkeypatch.context() as patch:
+            patch.setattr(backup, "pg_command", write_then_dump)
+            manifest = create_online_database_snapshot(source, destination)
+        assert manifest["consistency"] == "postgres-exported-snapshot"
+        assert list(manifest["files"]) == ["database.dump"]
+        assert [item.id for item in service.list(owner)] == late_cases
+        assert restore_snapshot(target, destination, writers_stopped=True)["status"] == "restored"
+        target_db.migrate()
+        restored = InvestigationService(target_db, storage_for(target_db, target), target)
+        assert [item.id for item in restored.list(owner)] == [case.id]
+        assert restored.get(owner, case.id).name == case.name
+        assert restored.storage.read(artifact.storage_key) == payload
+        assert restored.result(owner, run.id) == result
+        assert restored.run(owner, run.id).result_checksum == checksum
+        assert restored.list(Principal("another-owner")) == []
+    finally:
+        source_db.engine.dispose()
+        target_db.engine.dispose()
 
 
 @pytest.mark.parametrize("backend", ["local", "database"])

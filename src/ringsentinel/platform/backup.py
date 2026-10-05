@@ -1,7 +1,8 @@
-"""Offline, checksummed snapshots. Never overwrites a database, storage root or snapshot.
+"""Checksummed snapshots. Never overwrites a database, storage root or snapshot.
 
 Stop every application writer before use. An explicit operator acknowledgement is required;
 executor/child locks also reject an accidentally running supported executor.
+Opt-in online backups require PostgreSQL with database object storage; restore is offline.
 """
 
 import argparse
@@ -15,10 +16,11 @@ import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, text
+from sqlalchemy.orm import Session
 
 from ringsentinel.platform.database import Database
-from ringsentinel.platform.database_storage import storage_for
+from ringsentinel.platform.database_storage import DatabaseStorageBackend, storage_for
 from ringsentinel.platform.locking import ExecutorLease, FileLock
 from ringsentinel.platform.models import (
     AnalysisRun,
@@ -36,9 +38,15 @@ def digest(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def pg_command(database: Database, action: str, path: Path):
+def pg_command(database: Database, action: str, path: Path, *, snapshot: str | None = None):
     """Use standard PostgreSQL tools, no shell and no passwords in argv or output."""
     url = database.engine.url
+    if action not in {"backup", "restore"}:
+        raise ValueError("Unsupported PostgreSQL operation")
+    if snapshot is not None and (
+        action != "backup" or not re.fullmatch(r"[0-9A-Fa-f]+-[0-9A-Fa-f]+-[0-9]+", snapshot)
+    ):
+        raise ValueError("Invalid exported snapshot")
     environment = dict(os.environ)
     environment.update(
         PGHOST=url.host or "localhost",
@@ -66,6 +74,8 @@ def pg_command(database: Database, action: str, path: Path):
             str(path),
         ]
     )
+    if snapshot is not None:
+        args.append("--snapshot=" + snapshot)
     try:
         subprocess.run(
             args,
@@ -82,24 +92,65 @@ def pg_command(database: Database, action: str, path: Path):
         ) from None
 
 
+def verify_references_in(session, read):
+    for obj in session.scalars(select(Artifact)):
+        content = read(obj.storage_key)
+        if len(content) != obj.size_bytes or hashlib.sha256(content).hexdigest() != obj.checksum:
+            raise ValueError("Artifact integrity check failed")
+    for run in session.scalars(select(AnalysisRun).where(AnalysisRun.status == Status.COMPLETED)):
+        if (
+            not run.result_reference
+            or hashlib.sha256(read(run.result_reference)).hexdigest() != run.result_checksum
+        ):
+            raise ValueError("Result integrity check failed")
+
+
 def verify_references(database: Database, storage: StorageBackend):
     with database.session() as session:
-        for obj in session.scalars(select(Artifact)):
-            content = storage.read(obj.storage_key)
-            if (
-                len(content) != obj.size_bytes
-                or hashlib.sha256(content).hexdigest() != obj.checksum
-            ):
-                raise ValueError("Artifact integrity check failed")
-        for run in session.scalars(
-            select(AnalysisRun).where(AnalysisRun.status == Status.COMPLETED)
+        verify_references_in(session, storage.read)
+
+
+def create_online_database_snapshot(settings: Settings, destination: Path):
+    """Opt-in PostgreSQL/database-object backup using one exported read-only snapshot."""
+    destination = destination.resolve()
+    root = settings.storage_root.resolve()
+    if destination == root or destination.is_relative_to(root) or root.is_relative_to(destination):
+        raise ValueError("Snapshot and live storage must be separate")
+    database = Database(settings.database_url.get_secret_value())
+    try:
+        if settings.storage_backend != "database" or database.engine.dialect.name != "postgresql":
+            raise ValueError("Online backup requires PostgreSQL with database object storage")
+        with (
+            database.engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn,
+            conn.begin(),
         ):
-            if (
-                not run.result_reference
-                or hashlib.sha256(storage.read(run.result_reference)).hexdigest()
-                != run.result_checksum
-            ):
-                raise ValueError("Result integrity check failed")
+            conn.exec_driver_sql("SET TRANSACTION READ ONLY")
+            with Session(bind=conn) as session:
+                if (
+                    session.scalar(text("SELECT version_num FROM alembic_version"))
+                    != database.revision
+                ):
+                    raise ValueError("Current migration required")
+                verify_references_in(
+                    session, lambda key: DatabaseStorageBackend.read_in(session, key)
+                )
+                snapshot = session.scalar(text("SELECT pg_export_snapshot()"))
+                destination.mkdir(parents=True, exist_ok=False)
+                (destination / "objects").mkdir()
+                dump = destination / "database.dump"
+                pg_command(database, "backup", dump, snapshot=snapshot)
+        manifest = {
+            "schema": 1,
+            "database": "postgresql",
+            "storage_backend": "database",
+            "consistency": "postgres-exported-snapshot",
+            "created_at": datetime.now(UTC).isoformat(),
+            "files": {"database.dump": {"sha256": digest(dump), "size_bytes": dump.stat().st_size}},
+        }
+        (destination / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2))
+        return manifest
+    finally:
+        database.engine.dispose()
 
 
 def create_snapshot(settings: Settings, destination: Path, *, writers_stopped: bool = False):
@@ -309,11 +360,14 @@ def main():
     )
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--writers-stopped", action="store_true")
+    parser.add_argument("--online-database", action="store_true")
     parser.add_argument("--confirm-delete-expired", action="store_true")
     parser.add_argument("--limit", type=int, default=100)
     args = parser.parse_args()
     try:
         settings = Settings()
+        if args.online_database and (args.action != "backup" or args.writers_stopped):
+            parser.error("--online-database is only for backup without --writers-stopped")
         if args.action == "retention-report":
             result = retention_report(settings)
         elif args.action == "retention-delete":
@@ -323,8 +377,11 @@ def main():
         else:
             if not args.directory:
                 parser.error("--directory is required")
-            action = create_snapshot if args.action == "backup" else restore_snapshot
-            result = action(settings, args.directory, writers_stopped=args.writers_stopped)
+            if args.online_database:
+                result = create_online_database_snapshot(settings, args.directory)
+            else:
+                action = create_snapshot if args.action == "backup" else restore_snapshot
+                result = action(settings, args.directory, writers_stopped=args.writers_stopped)
         print(json.dumps(result, sort_keys=True))
     except Exception:
         # No driver errors, credentials, paths or stack traces on the console.
