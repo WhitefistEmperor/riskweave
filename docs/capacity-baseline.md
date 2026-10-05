@@ -188,48 +188,47 @@ these small local controls.
 The same isolated real API/SQLite/object fixtures were opened in Chromium against
 the production frontend through a Playwright HTTP relay injecting the fixed
 synthetic development owner. Timings include relay overhead. This is not hosted
-authentication/CORS/gateway proof. Before the frontend fix,513/1106 entities with
-323/711 links took5.069/21.372s to display and Fit; their largest main-thread tasks
-were4237/20190ms. The1021-event case timed out waiting60000ms for the canvas;
-its final graph time/heap was not measured. See dense-browser-before-20261005.json.
+authentication/CORS/gateway proof. Original513/1106-entity networks with323/711
+links took5.069/21.372s to display and Fit, with4237/20190ms largest tasks.
+The1021-event case timed out waiting60000ms for its canvas; its final graph
+time/heap was not measured. See dense-browser-before-20261005.json. A first circle
+revisiona974aa6 passed79 local browser checks but visual inspection found a
+cropped/faint overview. Final grid proof supersedes those intermediate timings.
 
-The first corrected applicationa974aa6 used circular layout above250 nodes or500 links.
-No entities, explicit links, original evidence or result hashes are removed.
-Smaller networks retain the existing force layout. Entity/link selectors and
-Focus selected remain available; a1201-node/1200-link browser check verifies all
-selector entries, last-member inspection, its link and switching back to evidence.
-First fixed measurements display+Fit513/1106/2121 entities in0.827/1.127/1.670s.
-The corresponding largest tasks261/447/825ms still warrant further browser work.
-These are single local samples, not capacity approval or percentiles.
+Applicationbdac888 uses deterministic grid layout above250 nodes or500 links,
+excludes labels from layout dimensions and permits lower zoom so Fit can show
+the complete grid. Tiny graph labels hide below8 rendered pixels. Full IDs remain
+in selectors/inspector. Smaller networks retain their force layout/style; every
+graph entity/link and saved evidence/result hash remains unchanged. Private visual
+inspection confirms all2121 nodes fit the viewport with visible entity marks.
+The1201-node/1200-link regression verifies every selector entry, last-member
+selection, its explicit relationship, focus and returning to evidence.
 
-To reproduce, serve only the complete shared-device fixture database/objects in a
+| Events | Graph entities/links | Evidence ready s | Network+Fit s | Network JS heap MB | Largest task ms |
+|---:|---:|---:|---:|---:|---:|
+| 257 | 513 /323 | 1.484 | 1.222 | 19.8 | 287 |
+| 512 | 1106 /711 | 1.059 | 1.236 | 25.8 | 467 |
+| 1021 | 2121 /1471 | 1.131 | 2.916 | 53.8 | 1229 |
+
+Network+Fit includes two animation frames. No browser/HTTP errors, selection and
+return-to-evidence passed and no horizontal overflow. See
+results/capacity/dense-browser-grid-20261005.json for actual source/driver/graph
+hashes and all aggregates. These are single samples, not percentiles. The1229ms
+task and53.8MB heap warrant further larger-case work. Final lint/typecheck/build,
+7 focused browser checks and both exact-source CI runs37289226934/37289232195
+passed (all six checks,301 Python/79 browser and actual PostgreSQL/SDK/restores).
+
+To reproduce, serve only a complete shared-device fixture database/objects in a
 separate loopback API with test development authentication and jobs disabled,
-plus a production frontend. The driver requires exactly three completed fixture
-runs owned by synthetic-capacity-only and matching report/result checksums. It
-opens SQLite readonly and does not write API cases/reviews or saved objects.
-Output must be a new path; only aggregates/hashes are published. Frontend graph
-source and driver bytes are hashed. Do not point it at original user cases.
+plus a production frontend built from the recorded source. The driver requires
+exactly three completed runs owned by synthetic-capacity-only and matching saved
+report/result checksums. SQLite opens readonly. No cases/reviews/saved objects are
+written. Output must be a new path; only aggregate hashes/metrics are published.
+Do not point this fixture-only driver at original user cases or hosted services.
 
 ```powershell
 node scripts/measure_dense_browser.mjs work/new-shared-device-control work/new-dense-browser-report.json http://127.0.0.1:8001 http://127.0.0.1:5173
 ```
 
-Mixed graph shapes, browser response amplification/heap at accepted maxima,
-concurrency, actual PostgreSQL/provider behavior and hosted capacity remain open.
-
-
-Visual inspection of applicationa974aa6 after its79 local browser checks found
-the previous0.15 minimum zoom still cropped the large circle even after Fit. The
-correction lowers only large-network minimum zoom to0.0001, preserving the small
-network behavior. Earlier Fit timings measure action completion rather than a
-verified fully visible graph. Final visual/focused/source checks remain pending.
-
-
-Final visual follow-up:lowering minimum zoom fit all2121 circular nodes, but the
-large circle was too faint to inspect. Current correction uses deterministic grid
-layout for large networks, excluding labels from node layout dimensions, with a
-lower minimum zoom and tiny graph labels hidden below8 rendered pixels. Full IDs
-remain accessible through entity selectors/inspector. The private final-grid
-inspection showed all2121 nodes within the viewport and visible entity marks.
-All7 focused large/responsive checks passed on the first grid revision; final
-label-visibility build/source proof and pinned grid timing are pending.
+Mixed graph shapes, accepted maxima, response amplification/heap, concurrency,
+actual PostgreSQL/provider behavior and hosted capacity remain open.

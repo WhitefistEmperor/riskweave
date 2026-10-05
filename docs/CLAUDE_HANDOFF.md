@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is a974aa6; documentation may have a newer head. Inspect git status and
+commit is bdac888; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -22,8 +22,8 @@ The current goal is still the complete deployed product and validated model.
    the audit now reports zero advisories. Verify final CSS/browser/source-CI
    proof at the dependency checkpoint below; preserve the distributed MIT notice.
 3. Restore supported Vercel scope/repository access and verify free allowances,
-   private TLS PostgreSQL and a real identity issuer. The connector previously
-   returned 403; deployment is not verified. Do not bypass the rejected auth popup.
+   private TLS PostgreSQL and a real identity issuer. The connector recheck on5 October2026 still
+   returned403; deployment is not verified. Do not bypass the rejected auth popup.
 4. Apply migration 0010 explicitly with writers stopped; configure hosted workflow,
    cron and secrets. Verify full HTTPS login/expiry/logout, owner isolation, upload,
    browser-close analysis, review/conflict/erasure and interruption/restore on the
@@ -89,33 +89,39 @@ managed-workflow limits still require measured fixes. A real browser density
 measurement found513/1106-entity layouts caused4237/20190ms long tasks and the
 1021-event fixture timed out waiting60000ms for its canvas. These failed/pre-fix
 measurements remain in results/capacity/dense-browser-before-20261005.json.
-The first correction in applicationa974aa6 used circular layout above250 nodes
-or500 links, preserving every graph element and the exact evidence projection.
-Its1201-entity/1200-link regression verifies all selector options, last-member
-selection, explicit relationship, focus and evidence navigation. All79 local
-browser checks passed (4.6min); both source CI37288093792/37288099371 passed all
-six checks with301 Python/79 browser tests and actual PostgreSQL/SDK/restore proof.
+Final applicationbdac888d0b9947e4e7120aca054a662052b01493 uses deterministic grid
+layout above250 nodes or500 links, excluding labels from layout dimensions,
+allowing0.0001 minimum zoom and hiding graph labels below8 rendered pixels.
+Full identifiers remain in selectors/inspector; every entity/link is preserved.
+Smaller networks retain their original force layout/style. Private visual
+inspection confirms all2121 nodes fit inside the viewport with visible entity
+marks. Earlier circular revisiona974aa6 passed79 local browser tests, but visual
+inspection found a cropped/faint overview; final grid proof supersedes its timings.
 
-Visual inspection then found the old0.15 minimum zoom cropped the large circle.
-Allowing lower zoom put all2121 nodes inside the viewport but made that enormous
-circle too faint to inspect. The final continuation uses deterministic grid layout
-for large networks, ignores labels in layout dimensions, allows0.0001 minimum zoom
-and hides tiny graph labels below8 rendered pixels (full identifiers remain in
-selectors/inspector). Smaller networks retain their original force layout/style.
-Private visual inspection confirms all2121 nodes fit the final grid viewport and
-the entities are visible. First grid revision passed the7 focused large/responsive
-browser checks; final label-visibility build/source proof is pending.
+Final lint/typecheck/production build and7 focused large/responsive checks passed.
+Both source push37289226934 and PR37289232195 passed all six checks:301 Python/
+79 production-browser tests, dependency advisory gates, actual PostgreSQL/SDK
+delivery, containers and encrypted PostgreSQL restores in both storage modes.
+See results/operations/dense-graph-source-verification-20261005.json for exact
+source identities, per-run production inventory and links. Inventory stays below
+450MB; actual hosted bundle remains unverified.
 
-The earlier circular samples completed513/1106/2121 entities with323/711/1471
-links, in0.827/1.127/1.670s display+Fit with max tasks261/447/825ms. They measure
-action completion, not final-grid or verified viewport performance. Final committed
-grid measurement must supersede them. Single samples do not prove percentiles,
-maximal accepted capacity, concurrency or hosted billing limits. Driver:
-scripts/measure_dense_browser.mjs uses isolated synthetic readonly SQLite/objects,
-fixed synthetic owner and loopback HTTP relay (overhead included); output contains
-only aggregates/hashes. Original user cases are untouched. API8000 is source343;
-frontend5173 is the current corrected build; isolated API8001 has jobs disabled.
-No actual hosted identity/CORS/gateway proof is implied.
+Pinned final grid driver completed all three real generated saved fixtures:
+513/1106/2121 entities and323/711/1471 links. Display+Fit (including two animation
+frames) took1.222/1.236/2.916s; evidence readiness1.484/1.059/1.131s. Browser
+heap at network stage19.8/25.8/53.8MB; largest tasks287/467/1229ms. All original
+result hashes are preserved. No browser/HTTP errors, selection/return-to-evidence
+passed, no horizontal overflow. Read results/capacity/dense-browser-grid-20261005.json.
+The1229ms task and53.8MB heap remain meaningful larger-case concerns, not proof
+that browser capacity is finished. Mixed neighborhoods, accepted maxima,
+concurrency and hosted/private-PG/provider percentiles and costs remain open.
+
+Driver:scripts/measure_dense_browser.mjs requires the three completed synthetic
+shared-device runs, verifies saved hashes/owner using readonly SQLite, relays real
+loopback API responses and publishes only aggregates/hashes. Relay overhead is
+included. No hosted identity/CORS/gateway proof is implied. Original user cases
+remain untouched. API8000 is source343; frontend5173 is finalbdac grid build;
+isolated fixture API8001 has jobs disabled. Local servers are not deployment.
 Deployment still needs the correct Vercel/GitHub scope connection; a human
 reconnect request is pending. Do not bypass the rejected authentication popup.
 
@@ -161,7 +167,8 @@ No alternate authentication path or unrelated project was substituted.
 
 ### Exact monetary API/UI continuation checkpoint
 
-Latest usage snapshot: 84% current-window remaining / 52% weekly remaining.
+Latest usage snapshot:47% current-window remaining /46% weekly remaining. The
+previous10% threshold handoff was already pushed; keep this file current.
 The previous requested10% handoff is already in GitHub history.
 
 Pushed application 7cd46e0c7e0a90a0bbdac3f42990af1ee6edd108 serializes persisted financial integer fields as decimal
