@@ -15,5 +15,12 @@
     "User profile/default-scope reads do not establish target workspace/repository/deployment permission.",
     "No RiskWeave live deployment, free private TLS PostgreSQL or live identity issuer is verified.",
     "No alternate rejected auth route, paid upgrade or unrelated project modification was attempted."
-  ]
+  ],
+  "monitoring_checkpoint_recheck": {
+    "source_commit": "32af28f7a364940d9397e7dfafa5ebcc75cd1e32",
+    "target_scope_projects_status": 403,
+    "accessible_team_count": 0,
+    "account_profile_rechecked": false,
+    "deployment_attempted": false
+  }
 }

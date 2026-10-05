@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is a8d316d; documentation may have a newer head. Inspect git status and
+commit is 32af28f; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -45,21 +45,37 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Queue and erasure monitoring: source checks pending
+### Queue and erasure monitoring: verified source 32af28f
 
 Private operator reporting now detects queued jobs older than a configurable wait
 threshold even with a future or missing execution deadline. It also reports total
-pending storage deletions, oldest ages and overdue cleanup. Defaults30 minutes;
-CLI flags --queue-wait-minutes/--cleanup-wait-minutes independently accept1..1440.
+pending storage deletions, oldest ages and overdue cleanup. Defaults: 30 minutes;
+CLI flags --queue-wait-minutes/--cleanup-wait-minutes independently accept 1..1440.
 Only aggregate counts/ages/alert codes are returned. No case/key/owner identifiers,
 notifications, automatic retries/cleanup or lifecycle changes. See operator-monitoring.md.
 
-Local Ruff and8 operator tests pass: exact boundary/override, legacy deadline-free
-queue, alert clearing after actual start/finish and real failed-delete/cleanup
-lifecycle, retained records and sanitized aggregates. Six real PostgreSQL module
-cases skip locally because clients/database are absent. New PostgreSQL regression
-uses a real request-mode start with a future deadline and a generated pending
-deletion; full source CI is pending. Do not claim deployed monitoring or hosted SLA.
+Exact source 32af28f7a364940d9397e7dfafa5ebcc75cd1e32 push 37322985899 / PR 37322993352
+passed all six jobs: 316 Python / 80 workspace browser plus 4 separate OIDC
+production browser controls, zero audit vulnerabilities, containers and actual SDK
+delivery. All 8 operator and 6 PostgreSQL backup/monitor module cases executed
+without skips. PostgreSQL monitoring uses a real request-mode queued job with a
+future deadline and a generated pending-deletion row; existing backup/encrypted
+restore and concurrent-erasure online restore controls still pass.
+
+Local Ruff and 8 operator tests pass; 6 PostgreSQL module cases skip because local
+clients/database are absent. Separate real CLI control exits 1 for queue attention,
+0 when the explicit threshold tolerates that wait, and 2 for invalid configuration.
+Records remain unchanged; private identifiers/paths are absent. Aggregate proof:
+results/operations/operator-monitoring-source-verification-20261005.json.
+CI inventory: 440900053 bytes below 450000000; actual hosted bundle unverified.
+Latest observed usage: 48% current-window / 31% weekly remaining.
+
+Vercel workspace projects recheck still returns 403; accessible team list remains
+empty. Prior account profile access did not grant workspace/repository permission.
+No deployment or external monitoring/notification schedule is established. Next:
+restore supported workspace access, verify free private TLS database/live identity,
+hosted delivery/recovery/capacity, encrypted scheduled off-host backups and alert
+ownership. Authorized observed exports/matured labels remain needed for model approval.
 
 ### Online PostgreSQL backup: verified source a8d316d
 
