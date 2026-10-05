@@ -3,11 +3,47 @@
 Updated 5 October 2026. This document is a continuation brief, not a claim that
 the project is already deployed or validated on real financial data.
 
+## Instructions for Claude at the usage handoff
+
+Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
+draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
+commit is a917dd4; documentation may have a newer head. Inspect git status and
+remote CI before editing; preserve local/private fixtures and all user cases.
+The current goal is still the complete deployed product and validated model.
+
+1. Implement explicit stopped-writer queue metadata backfill for already-indexed
+   legacy results, verifying original result bytes/hash and atomic rollback. Current
+   new-run metadata does not automatically rewrite legacy rows. Add dense-case
+   response, memory and actual PostgreSQL measurements, not only sparse controls.
+2. Implement an exact decimal-string monetary contract through API/UI if totals
+   exceed JavaScript safe integers. Do not silently round financial amounts.
+3. Restore supported Vercel scope/repository access and verify free allowances,
+   private TLS PostgreSQL and a real identity issuer. The connector previously
+   returned 403; deployment is not verified. Do not bypass the rejected auth popup.
+4. Apply migration 0010 explicitly with writers stopped; configure hosted workflow,
+   cron and secrets. Verify full HTTPS login/expiry/logout, owner isolation, upload,
+   browser-close analysis, review/conflict/erasure and interruption/restore on the
+   exact source. Do not merge the draft or purchase upgrades without authorization.
+5. Establish off-host encrypted scheduled backups, alert destinations, external
+   monitoring, rollback and recovery/retention ownership. Manual drills do not
+   establish hosted RPO/RTO or scheduled operations.
+6. Obtain authorized observed exports and independently resolved/matured labels.
+   Use documented temporal evaluation, calibration and error/subgroup/shift gates.
+   Analyst dispositions and synthetic controls are not observed fraud truth.
+7. Read the original Instinct source only if supported access is restored; its
+   requirements remain unknown. Keep this GitHub handoff current with exact commits,
+   test results, failed checks and blockers, including incomplete work.
+
+No trained artifact, private case data, credentials or encryption keys belong in
+Git. Local trusted generated model exists under ignored work/models; build/release
+reproduction is in docs/vercel-deployment.md. Source/main and unrelated projects
+must not be substituted for the tested branch. Latest usage snapshot is below.
+
 ## Latest source and verification
 
 ### Current bounded-queue implementation checkpoint
 
-This application commit adds /runs/{run_id}/queue-page and changes the console
+Pushed source `a917dd492c3e850f12eaf59fdeb42db6a8be0779` adds /runs/{run_id}/queue-page and changes the console
 queue to five bounded summary fields (ID, score, exposure, member/event counts).
 New result metadata indexes two verified scalar ranges and two derived counts;
 no schema migration beyond 0010, model change, original-byte change or user-case
@@ -23,7 +59,12 @@ owner denial, missing metadata and real HTTP contracts in both storage modes.
 Frontend lint/typecheck/production build passed. All 14 targeted browser checks passed against the production build, including
 actual upload/analysis/evidence/review/revisit, four keyboard widths, queue
 navigation/reload, cancellation, digest rejection and malformed queue counts.
-Exact-source full GitHub CI is pending; do not report it as passed.
+[Source CI 37266028723](https://github.com/WhitefistEmperor/riskweave/actions/runs/37266028723)
+and [source CI 37266033354](https://github.com/WhitefistEmperor/riskweave/actions/runs/37266033354)
+passed all six checks: 291 Python tests, 74 production-browser tests, containers,
+actual PostgreSQL inference/SDK background delivery and encrypted restore in both
+storage modes. Neither frontend needed a retry. Production dependency/model
+inventory is 440,748,536 bytes against 450 MB; hosted bundle size is unverified.
 
 Capacity-source 84eb428 CI 37265235086 and 37265237758 failed their frontend job:
 real browser analysis status matched two elements because the evidence-progress
@@ -34,11 +75,11 @@ retain the new failure and verify the fix rather than retrying it away.
 Owned local API was idle (zero active analyses/open uploads) before restart.
 API session 3405, log work/bounded-queue-api.log; frontend production session 96900.
 No database migration or actual-case deletion occurred. Latest usage snapshot is
-11% current-window remaining / 57% weekly remaining. This handoff is maintained on
+9% current-window remaining / 56% weekly remaining (10% threshold reached). This handoff is maintained on
 GitHub before reaching the requested 10% threshold; copy it into Claude with the
 branch codex/production-foundation and preserve the full release gates below.
 
-Next: finish browser/source CI, record exact commit/results, add explicit queue
+Next: preserve the verified source, inspect newer checks, add explicit queue
 metadata backfill for legacy indexed results and remeasure denser summaries and
 selected sections. Vercel account access, private database/live identity, hosted
 workflow/cron/monitoring/scheduled backups and authorized observed model validation

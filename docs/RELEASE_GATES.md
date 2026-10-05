@@ -2,12 +2,12 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source 134c67c (all six push/PR checks green without retry), the actual account-access response and
+uses source a917dd4 (all six push/PR checks green without retry), the actual account-access response and
 the measured local worker baseline; consult the handoff for newer exact commits.
 
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|
-| Private investigation workflow | 289 Python/73 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
+| Private investigation workflow | 291 Python/74 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
 | Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Re-authentication: target workspace still returns 403; verify free account allowances, actual projects/deployment, TLS/database/identity |
@@ -86,3 +86,11 @@ containers and encrypted PostgreSQL restore. Exact evidence is in CLAUDE_HANDOFF
 gap once verified, but does not establish worst-case browser/provider capacity.
 Older scalar metadata can still use whole-result overview fallback; large summaries
 and investigator responses remain subject to capacity review.
+
+Source a917dd4 adds bounded queue summaries and the progress live-region fix.
+All six checks passed: 291 Python/74 browser tests, containers and actual encrypted
+PostgreSQL restores. A 100,000-member fixture produces under 500 bytes with two
+small scalar reads in both stores. Legacy queue metadata backfill, dense/browser/
+hosted capacity and exact decimal monetary values above JavaScript safe integers
+remain open. Existing local capacity reports predate queue-count metadata; preserve
+their source identity rather than treating them as measurements of this change.
