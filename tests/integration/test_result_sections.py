@@ -60,6 +60,11 @@ def saved(tmp_path, request):
 
     result = {
         "currency": "INR",
+        "schema_version": "1",
+        "event_count": 100,
+        "entity_count": 100,
+        "threshold": 0.7,
+        "model_scope": "Generated transport fixture",
         "earlier": {"rings": ["nested decoy"]},
         "padding": "x" * 3_000_001,
         "rings": [
@@ -341,6 +346,12 @@ def test_http_candidate_pages_and_section_contracts_preserve_owner_checks(saved,
             client.app.state.platform.storage, "read", lambda *_: pytest.fail("Whole result read")
         )
         client.headers["X-Development-User"] = owner.user_id
+        overview_path = f"/api/v1/runs/{run_id}/overview"
+        overview_response = client.get(overview_path)
+        assert overview_response.status_code == 200, overview_response.text
+        assert overview_response.json()["candidate_count"] == 2
+        assert overview_response.json()["event_count"] == result["event_count"]
+        assert "rings" not in overview_response.json()
         page_path = f"/api/v1/runs/{run_id}/candidate-page"
         page = client.get(page_path, params={"limit": 1})
         assert page.status_code == 200, page.text
@@ -359,6 +370,28 @@ def test_http_candidate_pages_and_section_contracts_preserve_owner_checks(saved,
         assert json.loads(content) == result["rings"][1]["queries"]
         assert client.get(path + "/chunks/2").status_code == 404
         client.headers["X-Development-User"] = "other-owner"
+        assert client.get(overview_path).status_code == 404
         assert client.get(page_path).status_code == 404
         assert client.get(path + "/manifest").status_code == 404
         assert client.get(path + "/chunks/0").status_code == 404
+
+
+def test_overview_uses_verified_scalar_sections_and_missing_metadata_fails_closed(
+    saved, monkeypatch
+):
+    service, owner, _, run_id, result = saved
+    monkeypatch.setattr(service.storage, "read", lambda *_: pytest.fail("Whole result read"))
+    value = result_sections.overview(service, owner, run_id)
+    assert value["candidate_count"] == 2
+    for key in result_sections.OVERVIEW_FIELDS:
+        assert value[key] == result[key]
+    assert value["result_sha256"] == service.run(owner, run_id).result_checksum
+    with service.database.session.begin() as session:
+        session.execute(
+            delete(ResultSection).where(
+                ResultSection.run_id == run_id, ResultSection.kind == "threshold"
+            )
+        )
+    with pytest.raises(ProductError) as broken:
+        result_sections.overview(service, owner, run_id)
+    assert broken.value.code == "INTERNAL_ERROR"

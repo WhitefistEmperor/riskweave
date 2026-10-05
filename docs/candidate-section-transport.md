@@ -9,6 +9,7 @@ retain verified whole-result fallback until explicit stopped-writer indexing.
 Owner-authenticated endpoints:
 
 ```text
+GET /api/v1/runs/{run_id}/overview
 GET /api/v1/runs/{run_id}/candidate-page?offset=0&limit=50
 GET /api/v1/runs/{run_id}/rings/{candidate_id}/sections/candidate/manifest
 GET /api/v1/runs/{run_id}/rings/{candidate_id}/sections/candidate/chunks/{index}
@@ -53,8 +54,18 @@ legacy fallback. Whole-object and whole-section reads are disabled during the
 indexed fragment test. Actual PostgreSQL encrypted restore drills also exercise
 candidate pages and section fragments after restoring audit history.
 
-Remaining release work: the console still uses complete result assembly and must
-adopt these APIs with cancellation/progress/final integrity gates for large cases.
+The console requests an owner-scoped overview, then candidate pages of eight items
+and only the selected candidate/evidence sections. New results index the overview
+scalars in their original immutable bytes. Older indexed results without scalar
+metadata use the verified whole-result server fallback for overview; an unavailable
+API overview route (404) falls back to the older console transport. Integrity and
+other HTTP errors do not trigger fallback. Changing selection/run or unmounting
+aborts requests; incomplete/stale evidence is never published. Byte progress reports
+verified evidence chunks; graph and review appear only after final section checks.
+Graph loading remains lazy. Existing review, evidence, timeline and investigator
+components remain available for the verified selection.
+
+Remaining release work:
 Pages limit count rather than total response bytes: a single unusually large
 candidate summary should use its fragment endpoint. Existing complete evidence
 and investigator paths can still assemble a selected large section. Measure

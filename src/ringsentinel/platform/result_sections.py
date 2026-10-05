@@ -14,6 +14,9 @@ def encode(value):
     return json.dumps(value, sort_keys=True, allow_nan=False, separators=(",", ":")).encode()
 
 
+OVERVIEW_FIELDS = ("schema_version", "threshold", "event_count", "entity_count", "model_scope")
+
+
 def index_in(session, run, result, content):
     if run.candidate_count is None:
         return
@@ -39,8 +42,8 @@ def index_in(session, run, result, content):
     for position, key in enumerate(sorted(result)):
         offset += (1 if position else 0) + len(encode(key)) + 1
         value = result[key]
-        if key == "currency":
-            section("currency", "", 0, offset, value)
+        if key in (*OVERVIEW_FIELDS, "currency"):
+            section(key, "", 0, offset, value)
         if key == "rings":
             offset += 1
             for ordinal, ring in enumerate(value):
@@ -69,6 +72,7 @@ def index_in(session, run, result, content):
         "version": 1,
         "count": run.candidate_count,
         "currency_present": "currency" in result,
+        "overview_present": all(key in result for key in OVERVIEW_FIELDS),
     }
 
 
@@ -80,7 +84,12 @@ def authorized(service, principal, run_id):
         marker = run.candidate_index
         if (
             not isinstance(marker, dict)
-            or set(marker) != {"version", "count", "currency_present"}
+            or set(marker)
+            not in (
+                {"version", "count", "currency_present"},
+                {"version", "count", "currency_present", "overview_present"},
+            )
+            or ("overview_present" in marker and type(marker["overview_present"]) is not bool)
             or type(marker["version"]) is not int
             or marker["version"] != 1
             or type(marker["count"]) is not int
@@ -334,4 +343,28 @@ def page(service, principal, run_id, *, offset=0, limit=50):
         "total": total,
         "items": items,
         "next_offset": offset + len(items) if offset + len(items) < total else None,
+    }
+
+
+def overview(service, principal, run_id):
+    run = authorized(service, principal, run_id)
+    if run.candidate_index and run.candidate_index.get("overview_present"):
+        values = {}
+        for key in OVERVIEW_FIELDS:
+            row = row_for(service, run, key, "")
+            if row is None:
+                raise ProductError("INTERNAL_ERROR")
+            values[key] = read(service, run, row)
+        values["currency"] = currency(service, principal, run_id)
+        total = run.candidate_count
+    else:
+        result = service.result(principal, run_id)
+        values = {key: result[key] for key in OVERVIEW_FIELDS}
+        values["currency"] = result.get("currency")
+        total = len(result["rings"])
+    return {
+        **values,
+        "run_id": run.id,
+        "result_sha256": run.result_checksum,
+        "candidate_count": total,
     }

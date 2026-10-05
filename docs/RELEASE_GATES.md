@@ -77,3 +77,12 @@ All six checks passed: 287 Python/69 browser tests and actual PostgreSQL restore
 One push browser keyboard test needed a retry; preserve its timing signal. Browser adoption, cancellation/final
 integrity handling and real provider measurements remain required; existing direct
 selected-section paths and large individual summaries still need capacity review.
+
+Current console implementation adopts owner-scoped overview, eight-item candidate
+pages and selected candidate/evidence fragments. It cancels stale requests and
+verifies scope, strict encoding, every chunk and final section before publication.
+Targeted browser checks passed locally; full-suite and exact-source CI evidence
+will be recorded in CLAUDE_HANDOFF.md. This closes the implementation adoption
+gap once verified, but does not establish worst-case browser/provider capacity.
+Older scalar metadata can still use whole-result overview fallback; large summaries
+and investigator responses remain subject to capacity review.

@@ -408,3 +408,15 @@ class InvestigatorResponse(Contract):
     sources: list[EvidenceSource]
     limitations: list[str]
     warning: str | None
+
+
+class ResultOverviewResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    threshold: float
+    event_count: Annotated[int, Field(ge=0)]
+    entity_count: Annotated[int, Field(ge=0)]
+    model_scope: str
+    currency: str | None
+    candidate_count: Annotated[int, Field(ge=0)]

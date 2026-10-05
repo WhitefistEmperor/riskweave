@@ -114,6 +114,12 @@ export async function installWorkspace(page: Page, currentRun = run) {
         },
       });
     }
+    // Legacy API fixtures deliberately lack the new overview route.
+    if (path.endsWith('/overview'))
+      return route.fulfill({
+        status: 404,
+        json: { error: { code: 'NOT_FOUND', message: 'Route unavailable' } },
+      });
     if (path.endsWith('/uploads')) return route.fulfill({ json: [] });
     const data = path.endsWith('/review')
       ? {

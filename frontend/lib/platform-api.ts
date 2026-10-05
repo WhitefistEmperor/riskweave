@@ -1,5 +1,6 @@
 import { apiRequest, ApiError } from '@/lib/client';
 import { loadChunkedResult } from '@/lib/result-transport';
+import { loadOverview, scopedRun } from '@/lib/section-transport';
 import {
   uploadInChunks,
   validUploadProgress,
@@ -155,6 +156,7 @@ export type PersistedCandidate = {
   suspicious_relationships: string[];
 };
 export type AnalysisResult = {
+  remote_candidate_count?: number;
   schema_version: '1';
   threshold: number;
   event_count: number;
@@ -362,6 +364,14 @@ export const platformApi = {
     signal?: AbortSignal,
     savedRun?: AnalysisRun,
   ) => {
+    if (savedRun && scopedRun(savedRun)) {
+      try {
+        return await loadOverview(savedRun, signal);
+      } catch (error) {
+        // Explicit older-route compatibility only; corrupt or denied responses fail closed.
+        if (!(error instanceof ApiError) || error.status !== 404) throw error;
+      }
+    }
     if (savedRun?.configuration_snapshot.execution_mode === 'request')
       return loadChunkedResult(savedRun, signal);
     try {

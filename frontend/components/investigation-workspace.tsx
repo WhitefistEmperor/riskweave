@@ -10,6 +10,7 @@ import {
   StatusBadge,
 } from '@/components/workspace-states';
 import { PersistedFindings } from '@/components/persisted-findings';
+import { PagedFindings } from '@/components/paged-findings';
 import { DeleteInvestigation } from '@/components/delete-investigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -146,9 +147,17 @@ export function InvestigationDetail({
           {run?.status === 'completed' && !result && !error && (
             <LoadingState label="Loading completed findings…" />
           )}
-          {result && run && (
-            <PersistedFindings key={run.id} result={result} runId={run.id} />
-          )}
+          {result &&
+            run &&
+            (result.remote_candidate_count !== undefined ? (
+              <PagedFindings
+                key={`${run.id}:${run.result_checksum}`}
+                result={result}
+                run={run}
+              />
+            ) : (
+              <PersistedFindings key={run.id} result={result} runId={run.id} />
+            ))}
           <details
             key={result ? 'review' : activeRun ? 'active' : 'setup'}
             open={!result && !activeRun}

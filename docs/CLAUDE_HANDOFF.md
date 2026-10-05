@@ -21,22 +21,39 @@ of a failed live deployment:
 - 19d6917, push 37255956899: adversarial encrypted archive fixture omitted
   persisted object files. Fixed in 36bcc25; later encrypted restore checks passed.
 
-Latest pushed application remains 799e75b; documentation head before this
-checkpoint was b2dffc3. Both b2dffc3 push/PR runs 37262024146/37262028670 passed.
-Current local implementation adds a verified lightweight overview endpoint,
-8-item candidate pages in the console, and checksum-verified selected candidate
-and evidence chunks with cancellation and stale-selection protection. Existing
-whole-result transport is retained for older API compatibility. No new migration
-is required beyond 0010. Local lint/typecheck and 22 targeted Python section tests
-passed. Production frontend build and new browser checks are in progress.
-Do not describe these uncommitted changes as pushed or browser-verified yet.
+The application commit containing this checkpoint adds a verified lightweight
+owner-scoped overview endpoint, eight-item candidate pages in the console and
+checksum-verified selected candidate/evidence chunks with cancellation and stale
+selection protection. It preserves full analyst review, evidence, timeline and
+investigator flows. Original bytes/model hashes are unchanged. No new migration
+is required beyond 0010. Older indexed scalar metadata has a server whole-result
+fallback; an older API's overview 404 enables legacy browser transport. Other
+errors fail closed. Graph loading remains lazy.
 
-Next: finish production build; run new section-workspace tests and responsive
-keyboard tests, correct failures, then full required CI. Push source and refresh
-this checkpoint with exact commit/results. Keep this file on GitHub current.
-Deployment still needs Vercel account/project access; real-data model validation
-still needs authorized data and labels. Full release gates below remain open.
+Verified locally: lint, typecheck, production build; 22 section tests across both
+stores including overview HTTP/owner denial; all 10 focused browser checks at four
+widths plus new page/reload/corruption/cancellation cases. The full browser run
+also passed actual upload/analysis/evidence/review/revisit against the new API
+(test 28), so this is not only mocked transport coverage. First full run exposed
+a legacy fixture returning unrelated 200 data at the new overview URL; corrected
+to an explicit legacy 404 and restarted. Full 73-browser and Python suites are
+still running at this checkpoint; exact-source GitHub CI has not completed.
+Do not report those pending checks as passed. Native encrypted tests may skip
+without an installed age executable; CI exercises those plus actual PostgreSQL.
 
+Loopback API now session 34961 / PID 54368, frontend session 20073, production
+Next build. The API was idle with zero active analyses/open uploads before restart;
+no migration or case erasure occurred. Generated 1,021-event smoke passed in
+17.29s, preserving historical result SHA bb3977...; reviews and malformed422/
+other-owner404 passed; only its own generated fixture was deleted.
+
+Next: inspect pending local suites and source push/PR CI, fix failures, then record
+exact commit/results here. Measure selected-section and hosted capacity; provision
+live authentication, private PostgreSQL, workflow/cron, monitoring and off-host
+backups after Vercel access is restored. Real-data model validation still requires
+authorized exports and resolved labels. Full release gates below remain open.
+Usage snapshot: 24% current-window remaining, 59% weekly remaining. This file is
+already on GitHub; refresh it before remaining usage falls to 10%.
 
 - New application source `799e75b6def2be3f190ca87d3f40cfde1b9bd5a9`, pushed.
   Adds owner-scoped candidate pages (1–100 items, stable ordinal ranges) and
@@ -436,9 +453,8 @@ the embedded queue. Do not deploy the test harness as a durable worker.
 
 ## Next work, in order
 
-Next independent code work: adopt candidate pages/section fragment APIs in the
-console with request cancellation, owner/run scoping, progress and complete-section
-integrity gates before showing evidence. Preserve small-case behavior and full
+Next independent code work: finish exact-source CI verification of the new paged
+console and measure selected-section, summary and investigator capacity. Preserve small-case behavior and full
 analyst functionality. Then remeasure browser/selected-section/indexing overhead and
 verify actual hosted limits. Deployment/data blockers remain separate.
 
@@ -470,8 +486,8 @@ verify actual hosted limits. Deployment/data blockers remain separate.
    isolation and case erasure. Exercise process interruption, queue publish loss,
    duplicate delivery, deadline fencing, rollback and restore against hosted PG.
 7. Benchmark actual deployment memory/latency/input bounds. Indexed fragment endpoints use bounded reads; legacy results still use
-   whole-object verification until explicit indexing. The browser assembles
-   complete objects. Large legacy evidence, candidate and investigator replies still need
+   whole-object verification until explicit indexing. The browser now assembles only selected sections when overview is available;
+   legacy API fallback still assembles complete objects. Large legacy evidence, candidate and investigator replies still need
    bounds/capacity review. Verify subprocess support/termination in Python Functions.
 8. Add external readiness/queue/error monitoring and alerts, scheduled encrypted
    backups, restore drills, rollback and operator runbooks. Define retention/holds

@@ -26,6 +26,7 @@ from ringsentinel.api.contracts import (
     ReadinessResponse,
     ResultChunkResponse,
     ResultManifestResponse,
+    ResultOverviewResponse,
     ResultsResponse,
     ReviewRequest,
     ReviewResponse,
@@ -371,6 +372,11 @@ def result_manifest(run_id: str, principal: CurrentPrincipal, service: Service):
 @router.get("/runs/{run_id}/results/chunks/{index}", response_model=ResultChunkResponse)
 def result_chunk(run_id: str, index: int, principal: CurrentPrincipal, service: Service):
     return ResultTransport(service).chunk(principal, run_id, index)
+
+
+@router.get("/runs/{run_id}/overview", response_model=ResultOverviewResponse)
+def result_overview(run_id: str, principal: CurrentPrincipal, service: Service):
+    return result_sections.overview(service, principal, run_id)
 
 
 @router.get("/runs/{run_id}/candidate-page", response_model=CandidatePageResponse)
