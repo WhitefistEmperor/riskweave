@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is bbfa9a9; documentation may have a newer head. Inspect git status and
+commit is 00037c4; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -45,11 +45,11 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Session privacy boundary: current work, final CI pending
+### Session privacy boundary: verified source 00037c4
 
 Audit found that idle expiry was checked only on the next API request and provider
 logout failure could leave the already-loaded workspace visible. New investigation
-layout/AuthWorkspace gates the whole private client subtree before initial session
+layout/AuthenticatedWorkspace gates the whole private client subtree before initial session
 checking completes and unmounts it on actual oidc-client-ts access-token-expired or
 user-unloaded events. Sign-out unmounts it before awaiting provider discovery; a
 failed provider response leaves an inactive sign-in screen. Parent case effects,
@@ -66,7 +66,18 @@ failure with the local user storage cleared. All3 pass against the development
 build (24.0s). Isolated production build passes. Local production server launch
 was rejected by automatic approval review with only "blocked by policy" supplied;
 no reason detail was returned and the action was not retried through an alternate
-route. Production-browser repeat and final source CI remain pending here.
+route. Actual source CI37316980603(push)/37316989971(PR) independently verifies the
+production-build browser repeat:306 Python tests,80 workspace browser tests and
+3 dedicated session controls pass on each run. The ordinary suite skips those3
+controls explicitly, then the OIDC-configured production build executes all3.
+All six jobs pass, zero audit vulnerabilities, actual PostgreSQL/SDK delivery
+and encrypted restores in both stores. Aggregate proof:
+results/operations/session-privacy-source-verification-20261005.json.
+Production inventory440873685 bytes remains under450MB; hosted bundles unverified.
+Latest usage snapshot:71% current-window remaining /35% weekly remaining.
+Main local frontend5173 still serves the preceding no-OIDC build; it is not proof
+of this source. Isolated development server5174 was stopped. Preserve all private
+fixtures and main/isolated API databases. Rebuild latest source before local UI QA.
 
 The initial test selectors ambiguously matched two case links and Next's route
 announcer; corrected to the exact open-case link and main alert. An initial

@@ -123,6 +123,12 @@ URL alone does not establish a working model deployment.
 The model is still synthetic-trained and uncalibrated; real-data evaluation and
 operating thresholds are separate release gates.
 
+Verify [session privacy](session-privacy.md) on the exact hosted source: idle expiry
+must unmount already-loaded private data, and sign-out must clear the workspace
+before provider completion, including provider failure. The dedicated OIDC-client
+browser controls use synthetic stored tokens and fixture API responses; passing
+them does not replace actual HTTPS issuer/JWT/logout/revocation verification.
+
 References: [Hobby limits](https://vercel.com/docs/plans/hobby),
 [Function limits](https://vercel.com/docs/functions/limitations),
 [Next.js standalone output](https://nextjs.org/docs/app/api-reference/config/next-config-js/output).
