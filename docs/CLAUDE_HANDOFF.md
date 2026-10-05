@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is a917dd4; documentation may have a newer head. Inspect git status and
+commit is 144fbd4; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -43,7 +43,7 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ### Queue backfill continuation checkpoint
 
-This source adds explicit --upgrade-queue to the stopped-writer section index CLI.
+Pushed application source `144fbd4432205f80a68c26efcdf3fc9429889a82` adds explicit --upgrade-queue to the stopped-writer section index CLI.
 It selects completed runs whose queue marker is absent/false, verifies original
 hash/size/canonical bytes and every existing index row, then atomically replaces
 metadata and sets the current marker. Corrupt/missing declared index rows and
@@ -55,10 +55,17 @@ All 28 section tests passed locally before a strengthened rollback assertion;
 its four upgrade checks subsequently passed after testing rollback following
 actual metadata deletion/replacement. The final focused rerun passed all four upgrade checks in both stores. PostgreSQL SQL compilation passed; the real encrypted PostgreSQL
 backup/restore drill now also upgrades older queue metadata and reopens bounded
-summaries. That runtime proof awaits exact-source CI. Do not claim it observed yet.
+summaries. [Source CI 37267639816](https://github.com/WhitefistEmperor/riskweave/actions/runs/37267639816)
+and [source CI 37267642951](https://github.com/WhitefistEmperor/riskweave/actions/runs/37267642951)
+passed all six checks: 295 Python tests, 74 production-browser tests, containers,
+actual PostgreSQL inference/SDK background delivery and encrypted restore in both
+storage modes. PostgreSQL now executes the legacy queue upgrade before backup,
+then verifies restored bounded summaries with whole-object reads disabled.
+No frontend retry was required. Production inventory is 440,766,010 bytes against
+450 MB; actual hosted bundle remains unverified.
 
 Application UI remains a917dd4's verified production build (291 Python/74 browser
-checks). Next inspect new source CI, fix failures and record the exact commit.
+checks). New source CI is verified; inspect later commits before continuing maintenance.
 Before applying backfill to existing actual cases, stop all writers, verify a private
 backup and preservation fingerprints, run bounded maintenance, confirm hashes and
 reviews, then restart the tested source. Current loopback API remains session3405
