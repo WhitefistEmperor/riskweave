@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 144fbd4; documentation may have a newer head. Inspect git status and
+commit is 7cd46e0; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -49,7 +49,7 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 Latest usage snapshot: 84% current-window remaining / 52% weekly remaining.
 The previous requested10% handoff is already in GitHub history.
 
-Current implementation serializes persisted financial integer fields as decimal
+Pushed application 7cd46e0c7e0a90a0bbdac3f42990af1ee6edd108 serializes persisted financial integer fields as decimal
 strings, removes the queue JavaScript-safe-integer cap, and validates exact amounts
 in the frontend. Pinned lossless-json 4.3.1 preserves original monetary JSON tokens
 for legacy inline and checksum-verified selected/full-result fragments. BigInt
@@ -69,14 +69,33 @@ A subsequent broad browser run caught benchmark averages passed to the strict
 integer formatter; an explicitly approximate statistical formatter corrects this.
 The final local Python run passed 295 with 2 PostgreSQL-only cases skipped,
 including 14 age encryption cases using the trusted local executable. The final
-production browser rerun passed all78 checks against the corrected build. Local
+production browser rerun passed all 78 checks against the corrected build. Local
 API remained application144fbd4; new HTTP serializers were independently verified
-in the Python cases. Exact-source Linux CI remains pending.
+in the Python cases. Both exact-source Linux CI runs passed all six checks:297 Python tests,78
+production-browser tests, containers, real PostgreSQL inference/SDK background
+delivery and encrypted PostgreSQL restore in both stores.
+[Push CI37281336649](https://github.com/WhitefistEmperor/riskweave/actions/runs/37281336649)
+and [PR CI37281343437](https://github.com/WhitefistEmperor/riskweave/actions/runs/37281343437)
+required no retry. Production inventory440,768,324 bytes against450 MB is not an
+actual hosted bundle measurement.
+
+The idle owned loopback API was restarted on source 7cd46e0 (session10021);
+frontend production session12290 uses the same application code. Health/readiness
+returned 200. A saved owner-scoped queue returned 7 candidates in 1,225 bytes, all
+financial amounts as exact strings with its original result checksum preserved.
+Another owner received 404. No migration or original-case rewrite was applied. A real production-browser
+upload/background-analysis/evidence/revisit test then passed against the new API
+(22.9s). This is generated local verification, not hosted deployment.
 
 The dependency install audit found 11 advisories (3 moderate/8 high), including
 shadcn tooling's transitive packages. No force update/downgrade was applied.
-Assess runtime/build exposure and compatible fixes; audit absence alone does not
-establish release safety. Prior 8731d89 documentation CI37275658631/37275664517
+npm ls attributes all 11 to shadcn 4.18.0 CLI dependencies; source uses its
+tailwind.css and separate @shadcn/react, not the CLI JavaScript. Registry reports
+shadcn 4.21.1 but braces 3.0.3/micromatch 4.0.8 still have no newer patch. Assess a
+compatible CLI update or preserve the exact MIT-licensed CSS locally and remove
+the CLI dependency, retaining license/attribution and @shadcn/react. Verify the
+production CSS/responsive/keyboard tests; do not drop the stylesheet to silence
+audit. Audit absence alone does not establish release safety. Prior 8731d89 documentation CI37275658631/37275664517
 passed; that is prior application144fbd4 proof, not proof of this implementation.
 
 The exact-value display step does not close dense/browser/provider capacity,
@@ -110,8 +129,8 @@ sets retention; never push them to GitHub or erase user cases for a fresh start.
 API restarted on tested source: session79521 / PID24556, log
 work/queue-maintained-api.log, build_commit4616e80, unchanged trusted model/local
 jobs. Frontend remains production session96900. /api/v1/health and /api/v1/ready
-returned200. An actual owner-scoped queue returned seven candidates in1,211 bytes;
-another owner received404. No schema migration or original-case deletion occurred.
+returned 200. An actual owner-scoped queue returned seven candidates in1,211 bytes;
+another owner received 404. No schema migration or original-case deletion occurred.
 See results/operations/local-queue-maintenance-20261005.json for aggregate proof.
 Both 4616e80 source CI runs 37268084760/37268088840 passed before maintenance;
 latest application proof remains295 Python/74 browser tests and both encrypted PG
