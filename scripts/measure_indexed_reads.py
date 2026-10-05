@@ -14,6 +14,7 @@ from sqlalchemy import select
 from ringsentinel.platform import result_sections
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.models import AnalysisRun, ResultSection
+from ringsentinel.platform.result_fragments import metadata, read_part
 from ringsentinel.platform.section_transport import SectionTransport
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
@@ -112,6 +113,18 @@ def main():
             selected = max(
                 (row for row in rows if row.kind == "evidence"), key=lambda row: row.size_bytes
             )
+            fragments = metadata(service, run)
+            full_digest = hashlib.sha256()
+            reconstructed_bytes = 0
+            for fragment in fragments:
+                content = read_part(service, run, fragment)
+                full_digest.update(content)
+                reconstructed_bytes += len(content)
+            if (
+                reconstructed_bytes != original["result_bytes"]
+                or full_digest.hexdigest() != original["result_sha256"]
+            ):
+                raise ValueError("Native fragment reconstruction mismatch")
 
             def verify_section(run=run, selected=selected):
                 manifest = transport.manifest(owner, run.id, selected.candidate_id, "evidence")
@@ -133,6 +146,9 @@ def main():
                     input_bytes=original["input_bytes"],
                     result_bytes=original["result_bytes"],
                     result_sha256=original["result_sha256"],
+                    native_fragment_count=len(fragments),
+                    native_fragment_sizes=[fragment.size_bytes for fragment in fragments],
+                    native_full_reconstruction_verified=True,
                     index_rows=len(rows),
                     candidates=run.candidate_count,
                     queue_indexed=bool(

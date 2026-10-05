@@ -60,6 +60,12 @@ def main():
     parser.add_argument("--model", type=Path)
     parser.add_argument("--model-sha256")
     parser.add_argument("--payments", type=int, nargs=3, default=(1000, 5000, 10000))
+    parser.add_argument(
+        "--customer-id-padding",
+        type=int,
+        default=0,
+        help="Append 0-256 characters consistently to synthetic customer identifiers",
+    )
     density = parser.add_mutually_exclusive_group()
     density.add_argument(
         "--shared-device",
@@ -81,6 +87,8 @@ def main():
         parser.error("directory, trusted model and SHA are required")
     if any(not 100 <= value <= 10000 for value in args.payments):
         parser.error("Each control requires 100 to 10000 requested payments")
+    if not 0 <= args.customer_id_padding <= 256:
+        parser.error("Customer identifier padding must be 0 to 256")
     # Check the trust pin without deserializing; operator must trust the model source.
     model = args.model.resolve()
     if hashlib.sha256(model.read_bytes()).hexdigest() != args.model_sha256:
@@ -134,6 +142,7 @@ def main():
         logical_cpus=os.cpu_count(),
         model_sha256=args.model_sha256,
         data_origin="synthetic-control",
+        customer_id_padding=args.customer_id_padding,
         density_control="mixed-dense-infrastructure"
         if args.mixed_infrastructure
         else "all-events-share-one-device"
@@ -185,9 +194,23 @@ def main():
                     )
                     for event in events
                 )
+            entities = bundle.entities
+            if args.customer_id_padding:
+                suffix = "x" * args.customer_id_padding
+                customers = {event.customer_id for event in events}
+                entities = tuple(
+                    entity.model_copy(update={"entity_id": entity.entity_id + suffix})
+                    if entity.entity_id in customers
+                    else entity
+                    for entity in entities
+                )
+                events = tuple(
+                    event.model_copy(update={"customer_id": event.customer_id + suffix})
+                    for event in events
+                )
             payments = PaymentDataset(
                 schema_version="payments-v1",
-                entities=bundle.entities,
+                entities=entities,
                 events=events,
             )
             content = payments.model_dump_json().encode()
