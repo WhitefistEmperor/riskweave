@@ -45,6 +45,39 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Session privacy boundary: current work, final CI pending
+
+Audit found that idle expiry was checked only on the next API request and provider
+logout failure could leave the already-loaded workspace visible. New investigation
+layout/AuthWorkspace gates the whole private client subtree before initial session
+checking completes and unmounts it on actual oidc-client-ts access-token-expired or
+user-unloaded events. Sign-out unmounts it before awaiting provider discovery; a
+failed provider response leaves an inactive sign-in screen. Parent case effects,
+polling and graph data are inside the boundary, not only hidden by CSS. No auth
+token or private evidence is added to localStorage. Development/no-OIDC behavior
+is retained. Server JWT/owner authorization remains authoritative.
+
+Three dedicated browser controls use actual oidc-client-ts storage/timers on a
+separate OIDC-configured frontend, mocked private API bodies and a paused/failed
+issuer-discovery request. They prove: already-expired sessions mount/request no
+private workspace, idle expiry removes loaded data without another API request,
+and sign-out hides private data before discovery responds and stays hidden on
+failure with the local user storage cleared. All3 pass against the development
+build (24.0s). Isolated production build passes. Local production server launch
+was rejected by automatic approval review with only "blocked by policy" supplied;
+no reason detail was returned and the action was not retried through an alternate
+route. Production-browser repeat and final source CI remain pending here.
+
+The initial test selectors ambiguously matched two case links and Next's route
+announcer; corrected to the exact open-case link and main alert. An initial
+isolated production build failed because a dependency junction pointed outside
+Turbopack's root. prepare_auth_browser_fixture.py now creates a new ignored copy
+with internal hard-linked immutable package bytes, separate caches/outputs and no
+.env files. CI repeats the3 checks against a separate production build on5174,
+after the usual80-test production suite (which explicitly skips these3 controls).
+This closes a client privacy implementation gap, not hosted login/JWT/issuer,
+HTTPS/session revocation, cross-tab logout or real deployment approval.
+
 ### Generated PostgreSQL multi-fragment regression: verified source bbfa9a9
 
 Pushed bbfa9a933e25ab04fea298388184cb072defc923 adds a real PostgreSQL regression in test_postgres_backup.py for

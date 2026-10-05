@@ -13,12 +13,13 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { platformApi, type Session } from '@/lib/platform-api';
-import { authenticationEnabled, signOut } from '@/lib/auth';
+import { authenticationEnabled } from '@/lib/auth';
+import { useWorkspaceSignOut } from '@/components/authenticated-workspace';
 
 export function ProductShell({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [sessionFailed, setSessionFailed] = useState(false);
-  const [signOutFailed, setSignOutFailed] = useState(false);
+  const endSession = useWorkspaceSignOut();
   useEffect(() => {
     let active = true;
     platformApi
@@ -92,23 +93,12 @@ export function ProductShell({ children }: { children: ReactNode }) {
                 : 'Checking session…'}
           </span>
           {authenticationEnabled && (
-            <button
-              type="button"
-              onClick={() => {
-                void signOut().catch(() => setSignOutFailed(true));
-              }}
-            >
+            <button type="button" onClick={() => endSession?.()}>
               Sign out
             </button>
           )}
         </header>
         <main id="workspace-content" tabIndex={-1} className="product-content">
-          {signOutFailed && (
-            <p role="alert">
-              Local credentials were cleared, but identity-provider sign-out
-              failed. Close this tab and end your provider session.
-            </p>
-          )}
           {children}
         </main>
       </SidebarInset>

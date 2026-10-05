@@ -118,6 +118,24 @@ jobs:
           exit 1
       - run: npm test
         working-directory: frontend
+      - name: Verify idle expiry and failed logout on isolated OIDC-configured production UI
+        env:
+          NEXT_PUBLIC_RISKWEAVE_OIDC_AUTHORITY: http://127.0.0.1:5174/fixture-issuer
+          NEXT_PUBLIC_RISKWEAVE_OIDC_CLIENT_ID: riskweave-session-browser-control
+          RISKWEAVE_OIDC_BROWSER_TEST: "1"
+          RINGSENTINEL_UI_URL: http://127.0.0.1:5174
+        run: |
+          uv run --no-sync python scripts/prepare_auth_browser_fixture.py work/auth-session-ui
+          (cd work/auth-session-ui && npm run build)
+          (cd work/auth-session-ui && node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 5174) > work/auth-session-ui.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5174/sign-in > /dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:5174/sign-in > /dev/null
+          (cd frontend && npx playwright test tests/session-boundary.spec.ts)
       - name: Retain failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
