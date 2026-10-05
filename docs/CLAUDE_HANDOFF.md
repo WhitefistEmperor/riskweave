@@ -45,6 +45,22 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Queue and erasure monitoring: source checks pending
+
+Private operator reporting now detects queued jobs older than a configurable wait
+threshold even with a future or missing execution deadline. It also reports total
+pending storage deletions, oldest ages and overdue cleanup. Defaults30 minutes;
+CLI flags --queue-wait-minutes/--cleanup-wait-minutes independently accept1..1440.
+Only aggregate counts/ages/alert codes are returned. No case/key/owner identifiers,
+notifications, automatic retries/cleanup or lifecycle changes. See operator-monitoring.md.
+
+Local Ruff and8 operator tests pass: exact boundary/override, legacy deadline-free
+queue, alert clearing after actual start/finish and real failed-delete/cleanup
+lifecycle, retained records and sanitized aggregates. Six real PostgreSQL module
+cases skip locally because clients/database are absent. New PostgreSQL regression
+uses a real request-mode start with a future deadline and a generated pending
+deletion; full source CI is pending. Do not claim deployed monitoring or hosted SLA.
+
 ### Online PostgreSQL backup: verified source a8d316d
 
 Added opt-in `backup --online-database` for PostgreSQL/database object storage.

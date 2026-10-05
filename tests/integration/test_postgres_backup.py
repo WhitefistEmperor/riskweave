@@ -4,6 +4,7 @@ import base64
 import hashlib
 import os
 import subprocess
+from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -238,6 +239,60 @@ def test_online_snapshot_restores_pre_export_bytes_despite_committed_erasure(
     finally:
         source_db.engine.dispose()
         target_db.engine.dispose()
+
+
+def test_postgres_monitor_detects_waiting_work_and_retains_records(databases, tmp_path):
+    from sqlalchemy import select
+
+    from ringsentinel.platform.models import AnalysisRun, Status, StorageDeletion, utcnow
+
+    settings = Settings(
+        environment="test",
+        database_url=databases[0],
+        storage_backend="database",
+        storage_root=tmp_path / "objects",
+        jobs_enabled=False,
+        execution_mode="request",
+        analysis_timeout_seconds=240,
+    )
+    database = Database(databases[0])
+    try:
+        database.migrate()
+        service = InvestigationService(database, storage_for(database, settings), settings)
+        owner = Principal("private-monitor-owner")
+        case = service.create(owner, "Private monitor fixture")
+        payload = (
+            SyntheticPaymentGenerator(GenerationConfig(transactions=100))
+            .generate()
+            .model_dump_json()
+            .encode()
+        )
+        artifact = service.attach(owner, case.id, payload, "private-input.json", "application/json")
+        run = service.start(owner, case.id, artifact.id, "private-monitor-key")
+        key = "a" * 32 + ".json"
+        with database.session.begin() as session:
+            saved = session.get(AnalysisRun, run.id)
+            saved.created_at = utcnow() - timedelta(minutes=31)
+            # The real request-mode start has a future deadline, so deadline checks miss this wait.
+            assert saved.execution_deadline > utcnow()
+            session.add(StorageDeletion(key=key, created_at=utcnow() - timedelta(minutes=31)))
+        result = report(database)
+        assert result["alerts"] == ["QUEUE_WAIT_EXCEEDED", "STORAGE_CLEANUP_OVERDUE"]
+        assert result["queued_wait_exceeded"] == result["storage_cleanup_overdue"] == 1
+        assert result["overdue_runs"] == 0
+        assert result["oldest_queued_seconds"] >= 1860
+        assert result["oldest_pending_deletion_seconds"] >= 1860
+        assert report(database, queue_wait_minutes=32, cleanup_wait_minutes=32)["status"] == "ok"
+        assert all(
+            secret not in str(result)
+            for secret in (case.id, run.id, owner.user_id, case.name, artifact.original_name, key)
+        )
+        with database.session() as session:
+            assert session.get(AnalysisRun, run.id).status == Status.QUEUED
+            assert session.get(StorageDeletion, key).attempts == 0
+            assert session.scalar(select(StorageDeletion.key)) == key
+    finally:
+        database.engine.dispose()
 
 
 @pytest.mark.parametrize("backend", ["local", "database"])

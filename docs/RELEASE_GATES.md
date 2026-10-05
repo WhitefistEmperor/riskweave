@@ -13,6 +13,11 @@ CI passed the concurrent erasure/write and fresh-target restore control on actua
 PostgreSQL17 (all5 backup-module cases executed). Local unsupported-mode controls pass.
 Scheduling, encryption/off-host delivery and hosted recovery objectives remain open.
 
+Operator monitoring adds configurable queue-wait and pending-erasure age alerts,
+including jobs with missing/future execution deadlines. Local lifecycle/privacy
+controls pass; exact-source PostgreSQL monitoring CI is pending. This supplies
+read-only signals, not an installed external monitor, notifications or hosted SLA.
+
 New driver sourceb97cde2 generates valid long-identifier inputs and real saved
 two-fragment results (2.571/3.200MB); complete native and selected-evidence hashes
 verify with whole reads forbidden and individual reads at most2000000 bytes.
