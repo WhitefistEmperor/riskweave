@@ -48,3 +48,5 @@ Start with [Phase 5C final verification and remaining gates](phase5c-final.md).
 - [Continuation handoff](CLAUDE_HANDOFF.md): verified source and remaining work.
 
 - [Worklist review progress](worklist-review-progress.md): latest completed run, current dispositions and explicit legacy unknown totals.
+
+- [Measured Windows capacity baseline](capacity-baseline.md) and [release acceptance gates](RELEASE_GATES.md).

@@ -215,3 +215,23 @@ diagnostics for 55 validation/49 test events with unchanged metrics and threshol
 Full CI results are recorded in the current continuation handoff.
 
 Exact-source CI 37227298824 and PR CI 37227303053 passed all six checks: 249 Python/69 browser tests, both containers and actual PostgreSQL inference/restore. Inventory: 440,566,612 bytes; actual hosted packaging remains unverified.
+
+
+## Measured local capacity and release audit, 5 October 2026
+
+Three real isolated Windows worker processes completed/persisted seed-105 controls
+with 1,021/5,104/10,207 events. The corrected measurement helper pins both parent
+run provenance and child model/build configuration and verifies result checksums.
+All input/result hashes reproduced the first pass, including historical bb3977...
+for the smallest control. The largest 8,232,845-byte input produced a 141,669-byte
+result with 277,712,896-byte peak worker working set and 246,018,048-byte peak commit;
+worker main 2.82 seconds, process/parent-verification 11.37 seconds. These are local
+single-process/single-distribution observations, not hosted whole-system limits,
+percentiles, throughput or model-accuracy evidence. See capacity-baseline.md.
+
+RELEASE_GATES.md separates verified source/local behavior from missing hosting,
+authorized observed-data evaluation, live identity, free allowances, encrypted
+scheduled backups/monitoring and deployed capacity/recovery. Latest scoped Vercel
+access remains 403. The original Instinct source remains unread/inaccessible.
+
+Corrected source a7a1506 passed CI 37254283251 and PR CI 37254286075: all six checks, 249 Python/69 browser tests, both containers and PostgreSQL inference/restore. Inventory 440,569,347 bytes; no hosted measurement claimed.

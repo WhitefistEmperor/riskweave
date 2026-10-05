@@ -5,7 +5,27 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
-- Current application source: `d5b9e18a45e6abf31a4e75aa7582e56c47338042`, pushed.
+- Current measured-capacity source: `a7a1506141f7e20745f146b2e6ee69af40590aea`, pushed.
+  [Linux CI 37254283251](https://github.com/WhitefistEmperor/riskweave/actions/runs/37254283251)
+  and PR CI 37254286075 passed all six checks: 249 Python tests, 69 browser tests,
+  both containers and actual PostgreSQL inference/restore in both storage modes.
+  Production dependency/model inventory is 440,569,347 bytes against 450 MB;
+  actual hosted function size remains unverified. Application code is unchanged
+  from d5b9e18; this increment adds measured capacity tooling/evidence.
+- Three isolated real workers completed/persisted seed-105 controls (1,021/5,104/
+  10,207 actual events), using the unchanged trusted model. Checksums verified,
+  including historical bb3977... for the smallest control. Largest input 8,232,845
+  bytes had worker peak working set 277,712,896 bytes and peak commit 246,018,048;
+  worker main 2.82 s, outer process/verification 11.37 s. These are one local Windows
+  sample per size, not hosted/whole-system/worst-case/percentile bounds or model accuracy.
+  The final rerun corrects a benchmark-only parent provenance mismatch, verifies
+  saved model/build metadata against actual worker settings, and reproduces all
+  first-run input/result hashes. Private fixture is work/capacity-windows-20261005-v2/.
+  See `docs/capacity-baseline.md` and `results/capacity/windows-worker-20261005.json`.
+- Release audit `docs/RELEASE_GATES.md` retains the full goal and concrete missing
+  evidence. Latest Vercel scoped request still returned 403 requiring re-authentication;
+  the Instinct source fetch was inaccessible. No live release or observed data exists.
+- Previous diagnostic application source: `d5b9e18a45e6abf31a4e75aa7582e56c47338042`, pushed.
   [Linux CI 37227298824](https://github.com/WhitefistEmperor/riskweave/actions/runs/37227298824)
   and PR CI 37227303053 passed all six checks: 249 Python tests, 69 browser tests,
   both containers and actual PostgreSQL inference/restore in both storage modes.
