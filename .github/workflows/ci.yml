@@ -57,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: postgres-worker-capacity-${{ github.sha }}-${{ github.run_id }}
-          path: work/ci-pytest/**/postgres-worker-capacity.json
+          path: work/ci-pytest/postgres-worker-capacity.json
           if-no-files-found: error
           retention-days: 7
       - name: Migrate a fresh database, then verify an idempotent second upgrade

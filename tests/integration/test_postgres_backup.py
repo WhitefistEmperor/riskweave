@@ -553,6 +553,9 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
             )
             measured = json.loads(child.stdout)
             assert measured["worker_main_seconds"] > 0 and measured["peak_worker_rss_bytes"] > 0
+            assert measured["peak_rss_method"] == "proc-self-status-VmHWM"
+            assert measured["worker_rss_after_bytes"] > 0
+            assert measured["process_lifetime_peak_rss_bytes"] > 0
             saved = service.run(owner, run.id)
             assert saved.status == Status.COMPLETED
             assert saved.version_metadata["model_artifact_sha256"] == model["sha256"]
@@ -601,7 +604,9 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
                 "not reliable percentiles, concurrency or hosted admission.",
                 "Worker-main excludes module import; child wall includes startup "
                 "but excludes generation/upload and parent checksum checks.",
-                "Peak RSS covers the worker child, not PostgreSQL/API/parent/browser. "
+                "VmHWM/VmRSS are approximate kernel counters for the current worker image; "
+                "lifetime getrusage peak can retain pre-exec accounting. "
+                "These do not measure PostgreSQL/API/parent/browser RAM. "
                 "Database size is cumulative allocated disk, not RAM or storage quota usage.",
                 "Local execution with PostgreSQL object storage; "
                 "not hosted HTTPS/Workflow delivery or observed model accuracy.",
@@ -612,6 +617,8 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
             private not in serialized
             for private in (owner.user_id, databases[0], run.id, case.id, artifact.storage_key)
         )
-        (tmp_path / "postgres-worker-capacity.json").write_text(serialized + "\n", encoding="utf-8")
+        # Canonical root avoids pytest's 'current' directory alias duplicating artifacts.
+        with (tmp_path.parent / "postgres-worker-capacity.json").open("x", encoding="utf-8") as out:
+            out.write(serialized + "\n")
     finally:
         database.engine.dispose()

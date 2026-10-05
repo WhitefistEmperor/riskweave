@@ -5,6 +5,7 @@ import json
 import re
 import sys
 import time
+from pathlib import Path
 
 from sqlalchemy.engine import make_url
 
@@ -30,9 +31,17 @@ def measure(run_id):
     worker()
     elapsed = time.perf_counter() - start
     usage = resource.getrusage(resource.RUSAGE_SELF)
+    status = Path("/proc/self/status").read_text()
+    peak = re.search(r"^VmHWM:\s+(\d+)\s+kB$", status, re.MULTILINE)
+    current = re.search(r"^VmRSS:\s+(\d+)\s+kB$", status, re.MULTILINE)
+    if peak is None or current is None:
+        raise ValueError("Current process memory counters unavailable")
     return {
         "worker_main_seconds": elapsed,
-        "peak_worker_rss_bytes": usage.ru_maxrss * 1024,
+        "peak_worker_rss_bytes": int(peak[1]) * 1024,
+        "worker_rss_after_bytes": int(current[1]) * 1024,
+        "process_lifetime_peak_rss_bytes": usage.ru_maxrss * 1024,
+        "peak_rss_method": "proc-self-status-VmHWM",
         "worker_user_cpu_seconds": usage.ru_utime,
         "worker_system_cpu_seconds": usage.ru_stime,
     }

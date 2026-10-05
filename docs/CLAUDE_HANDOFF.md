@@ -57,9 +57,15 @@ cumulative allocated database disk size; no identifiers, paths or database URL.
 CI retains only the aggregate postgres-worker-capacity.json as an artifact.
 
 Local Ruff and the sanitized non-Linux refusal pass. All 7 PostgreSQL module cases
-skip locally because its isolated database/clients are absent. Full source CI,
-actual Linux measurements and artifact inspection are pending. No numbers/hosted
-capacity approval are claimed yet. Parent/API/browser/PostgreSQL RAM, concurrency,
+skip locally because its isolated database/clients are absent. Initial source
+b4e3c0a push 37328461220 / PR 37328471256 passed all six jobs (319 Python); its
+three PostgreSQL results match the original saved-result hash. Worker times on
+the push runner were10.927–11.050s. Artifact inspection found two identical copies
+through pytest's directory alias, and lifetime-only peak RSS868–871MB may include
+pre-exec accounting. That counter is not current worker-image memory approval.
+Added separate approximate VmHWM/VmRSS counters plus lifetime peak and one canonical
+artifact path. Updated-method full CI/artifact inspection are pending; no hosted
+capacity approval is claimed. Parent/API/browser/PostgreSQL RAM, concurrency,
 percentiles, managed Workflow execution and observed model validity remain open.
 
 ### Profile-guided feature optimization: verified source 83e4bb1

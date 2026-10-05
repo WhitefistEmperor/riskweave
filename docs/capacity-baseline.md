@@ -442,10 +442,16 @@ Functional checks cover completed result bytes/checksum, source/model pin, owner
 isolation and repeated-result equality. CI publishes only the aggregate JSON.
 Consult the exact-source CI/artifact before claiming execution or quoting numbers.
 
-The child uses Linux `getrusage(RUSAGE_SELF).ru_maxrss` converted from KiB to bytes,
-per the [Linux manual](https://man7.org/linux/man-pages/man2/getrusage.2.html).
-This is the child lifetime peak, including wrapper/import/startup effects, not a
-combined parent/API/PostgreSQL/browser peak or a physical-memory admission bound.
+The child reports current-image `VmHWM`/`VmRSS` and lifetime
+`getrusage(RUSAGE_SELF).ru_maxrss`, all converted from KiB to bytes. The
+[Linux status manual](https://man7.org/linux/man-pages/man5/proc_pid_status.5.html)
+describes VmHWM/VmRSS as approximate kernel counters. The separate lifetime
+counter can retain pre-exec accounting, per the
+[getrusage manual](https://man7.org/linux/man-pages/man2/getrusage.2.html).
+Neither measures combined parent/API/PostgreSQL/browser peaks or physical-memory
+admission. The initial b4e3c0a CI passed319 tests and delivered identical results,
+but its lifetime-only RSS868–871MB is not quoted as current worker-image memory.
+The canonical report avoids duplicate copies through pytest's current-directory alias.
 Worker-main timing begins after worker imports; child wall includes startup but
 excludes input generation/upload and parent checksum validation. Database size
 uses `pg_database_size(current_database())` and grows across retained control cases;
