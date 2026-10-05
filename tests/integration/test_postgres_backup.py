@@ -1,5 +1,7 @@
 """Isolated real pg_dump/pg_restore drill. Never accepts a non-CI database target."""
 
+import base64
+import hashlib
 import os
 import subprocess
 from pathlib import Path
@@ -48,6 +50,118 @@ def databases():
         finally:
             for name in created:
                 admin.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+
+
+@pytest.mark.parametrize("backend", ["local", "database"])
+def test_generated_multifragment_evidence_on_real_postgres(
+    databases, backend, tmp_path, monkeypatch
+):
+    from sqlalchemy import select
+
+    from ringsentinel.data.ingestion import PaymentDataset, parse_input
+    from ringsentinel.platform.analysis import Phase3AnalysisEngine
+    from ringsentinel.platform.models import ResultSection
+    from ringsentinel.platform.result_fragments import metadata, read_part
+    from ringsentinel.platform.section_transport import SectionTransport
+    from ringsentinel.platform.vercel_build import build
+    from ringsentinel.platform.vercel_entry import MODEL_DIRECTORY
+
+    model = build(tmp_path)
+    monkeypatch.setenv(
+        "RINGSENTINEL_MODEL_ARTIFACT_PATH",
+        str(tmp_path / MODEL_DIRECTORY / "network-hgb.joblib"),
+    )
+    monkeypatch.setenv("RINGSENTINEL_MODEL_ARTIFACT_SHA256", model["sha256"])
+    settings = Settings(
+        environment="test",
+        database_url=databases[0],
+        storage_root=tmp_path / "objects",
+        storage_backend=backend,
+        jobs_enabled=False,
+    )
+    db = Database(databases[0])
+    try:
+        db.migrate()
+        service = InvestigationService(db, storage_for(db, settings), settings)
+        owner = Principal("generated-capacity-owner")
+        bundle = SyntheticPaymentGenerator(GenerationConfig(seed=105, transactions=2500)).generate()
+        customers = {event.customer_id for event in bundle.events}
+        device = min(bundle.events, key=lambda event: (event.timestamp, event.event_id)).device_id
+        suffix = "x" * 128
+        dataset = PaymentDataset(
+            schema_version="payments-v1",
+            entities=tuple(
+                entity.model_copy(update={"entity_id": entity.entity_id + suffix})
+                if entity.entity_id in customers
+                else entity
+                for entity in bundle.entities
+            ),
+            events=tuple(
+                event.model_copy(
+                    update={
+                        "customer_id": event.customer_id + suffix,
+                        "device_id": device,
+                    }
+                )
+                for event in bundle.events
+            ),
+        )
+        content = dataset.model_dump_json().encode()
+        case = service.create(owner, "Generated multi-fragment PostgreSQL control")
+        artifact = service.attach(owner, case.id, content, "control.json", "application/json")
+        run = service.start(owner, case.id, artifact.id, "generated-capacity")
+        assert service.claim() == run.id
+        service.finish(run.id, Phase3AnalysisEngine().analyze(parse_input(content)))
+        saved = service.run(owner, run.id)
+        fragments = metadata(service, saved)
+        assert len(fragments) >= 2
+        with db.session() as session:
+            rows = list(
+                session.scalars(
+                    select(ResultSection).where(
+                        ResultSection.run_id == run.id,
+                        ResultSection.kind == "evidence",
+                    )
+                )
+            )
+        selected = max(rows, key=lambda row: row.size_bytes)
+        assert selected.size_bytes > 2_000_000
+        reads = []
+        original = service.storage.read_range
+
+        def bounded(key, offset, length):
+            assert 0 < length <= 2_000_000
+            value = original(key, offset, length)
+            reads.append(len(value))
+            return value
+
+        monkeypatch.setattr(service.storage, "read", lambda *_: pytest.fail("Whole result read"))
+        monkeypatch.setattr(service.storage, "read_range", bounded)
+        digest = hashlib.sha256()
+        for fragment in fragments:
+            digest.update(read_part(service, saved, fragment))
+        assert digest.hexdigest() == saved.result_checksum
+        transport = SectionTransport(service)
+        reads.clear()
+        with pytest.raises(ProductError):
+            transport.manifest(
+                Principal("another-owner"), run.id, selected.candidate_id, "evidence"
+            )
+        assert reads == []
+        manifest = transport.manifest(owner, run.id, selected.candidate_id, "evidence")
+        assert manifest["chunk_count"] >= 2
+        digest = hashlib.sha256()
+        size = 0
+        for index in range(manifest["chunk_count"]):
+            chunk = transport.chunk(owner, run.id, selected.candidate_id, "evidence", index)
+            part = base64.b64decode(chunk["data"], validate=True)
+            assert hashlib.sha256(part).hexdigest() == chunk["sha256"]
+            size += len(part)
+            digest.update(part)
+        assert size == selected.size_bytes and digest.hexdigest() == selected.checksum
+        assert reads and max(reads) <= 2_000_000
+    finally:
+        db.engine.dispose()
 
 
 @pytest.mark.parametrize("backend", ["local", "database"])

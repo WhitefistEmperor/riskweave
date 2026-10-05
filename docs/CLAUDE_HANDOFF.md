@@ -45,6 +45,21 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Generated PostgreSQL multi-fragment regression: pending CI
+
+The next source adds a real PostgreSQL regression in test_postgres_backup.py for
+both local-object and database-object storage. It uses the normal cached release
+model builder and actual Phase3 engine on strict-ingested2500-payment shared-device
+controls with consistently extended customer identifiers. Normal service persistence
+must generate at least two native result fragments and a selected evidence section
+over2000000 bytes. It verifies full native/section/chunk hashes, bounds every read,
+forbids whole reads and denies another owner before any storage access.
+
+Local Ruff passes; both tests SKIP because no PostgreSQL runtime is installed here.
+Linux source CI's isolated PostgreSQL17 service is the required proof. This is a
+functional integrity/admission regression, not a PostgreSQL timing/memory or hosted
+capacity benchmark. Read exact source CI before claiming these cases passed.
+
 ### Native generated multi-fragment capacity: source b97cde2
 
 Pushed b97cde2427ca37dba13ce626f2882767d29b38f8 changes measurement drivers
