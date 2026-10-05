@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is b97cde2; documentation may have a newer head. Inspect git status and
+commit is bbfa9a9; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -45,9 +45,9 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Generated PostgreSQL multi-fragment regression: pending CI
+### Generated PostgreSQL multi-fragment regression: verified source bbfa9a9
 
-The next source adds a real PostgreSQL regression in test_postgres_backup.py for
+Pushed bbfa9a933e25ab04fea298388184cb072defc923 adds a real PostgreSQL regression in test_postgres_backup.py for
 both local-object and database-object storage. It uses the normal cached release
 model builder and actual Phase3 engine on strict-ingested2500-payment shared-device
 controls with consistently extended customer identifiers. Normal service persistence
@@ -56,9 +56,17 @@ over2000000 bytes. It verifies full native/section/chunk hashes, bounds every re
 forbids whole reads and denies another owner before any storage access.
 
 Local Ruff passes; both tests SKIP because no PostgreSQL runtime is installed here.
-Linux source CI's isolated PostgreSQL17 service is the required proof. This is a
-functional integrity/admission regression, not a PostgreSQL timing/memory or hosted
-capacity benchmark. Read exact source CI before claiming these cases passed.
+Actual Linux source CI37299858449(push)/37299863805(PR) passed all six checks:
+306 Python/80 browser tests, zero audit vulnerabilities, containers, actual SDK
+background delivery and encrypted PostgreSQL restores in both storage modes.
+Both generated multi-fragment PostgreSQL cases PASS; all four tests in the
+PostgreSQL backup module execute rather than skip. Proof:
+results/operations/postgres-native-fragment-source-verification-20261005.json.
+This is functional integrity/admission proof, not PostgreSQL timing/peak memory,
+concurrency or hosted admission. Production package inventory440871968 bytes is
+below the450MB repository gate; actual hosted bundle remains unverified.
+Latest account window reset:100% current-window remaining /39% weekly remaining.
+The requested10% handoff was already published; continue keeping it current.
 
 ### Native generated multi-fragment capacity: source b97cde2
 

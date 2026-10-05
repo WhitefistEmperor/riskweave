@@ -2,7 +2,7 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses sourceae8e940 (all six push/PR checks green:304 Python/80 browser), the actual
+uses sourcebbfa9a9 (all six push/PR checks green:306 Python/80 browser), the actual
 403 scope response and measured sparse/dense workers and cancellable browser grid
 controls. Consult the handoff for exact evidence and remaining capacity work.
 
@@ -14,11 +14,15 @@ absence of generated multi-fragment proof at two fragments; higher extremes,
 worker repetitions, actual PostgreSQL/hosted capacity and release limits remain
 open. Source CI37298832782/37298839105 passes all six checks:304 Python/80 browser,
 zero advisories, containers, actual PostgreSQL/SDK delivery and encrypted restores.
-Application tree is unchanged fromae8e940.
+Application tree is unchanged fromae8e940. New sourcebbfa9a9 adds generated
+two-fragment integrity on actual PostgreSQL17 in both storage modes, whole reads
+forbidden and another owner denied before storage access. Both source CI runs
+37299858449/37299863805 pass306 Python/80 browser tests. Functional proof does
+not establish database timing/peak memory/concurrency or hosted capacity.
 
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|
-| Private investigation workflow | 304 Python/80 browser checks, exact-source push/PR green, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
+| Private investigation workflow | 306 Python/80 browser checks, exact-source push/PR green, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
 | Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Re-authentication: target workspace still returns 403; verify free account allowances, actual projects/deployment, TLS/database/identity |
