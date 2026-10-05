@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import cytoscape, { type Core } from 'cytoscape';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import cytoscape, { type Core, type ElementDefinition } from 'cytoscape';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -44,6 +45,83 @@ export default function EvidenceNetwork({
   const [selection, setSelection] = useState('');
   const [height, setHeight] = useState(460);
   const largeNetwork = graph.nodes.length > 250 || graph.edges.length > 500;
+  const total = graph.nodes.length + graph.edges.length;
+  const [progress, setProgress] = useState<{
+    graph: EvidenceGraph;
+    loaded: number;
+  } | null>(null);
+  const loaded = progress?.graph === graph ? progress.loaded : 0;
+  const ready = progress?.graph === graph && loaded === total;
+  const [entitySearch, setEntitySearch] = useState('');
+  const [entityPage, setEntityPage] = useState(0);
+  const [relationshipSearch, setRelationshipSearch] = useState('');
+  const [relationshipPage, setRelationshipPage] = useState(0);
+  const filteredEntities = useMemo(() => {
+    const query = entitySearch.trim().toLowerCase();
+    return query
+      ? graph.nodes.filter((item) =>
+          `${item.id} ${typeLabel(item.type)}`.toLowerCase().includes(query),
+        )
+      : graph.nodes;
+  }, [graph, entitySearch]);
+  const filteredRelationships = useMemo(() => {
+    const query = relationshipSearch.trim().toLowerCase();
+    return query
+      ? graph.edges.filter((item) =>
+          `${item.source} ${item.target} ${item.relationship}`
+            .toLowerCase()
+            .includes(query),
+        )
+      : graph.edges;
+  }, [graph, relationshipSearch]);
+  const entityPages = Math.max(1, Math.ceil(filteredEntities.length / 64));
+  const relationshipPages = Math.max(
+    1,
+    Math.ceil(filteredRelationships.length / 64),
+  );
+  const currentEntityPage = Math.min(entityPage, entityPages - 1);
+  const currentRelationshipPage = Math.min(
+    relationshipPage,
+    relationshipPages - 1,
+  );
+  const entityChoices = useMemo(
+    () =>
+      largeNetwork
+        ? filteredEntities.slice(
+            currentEntityPage * 64,
+            (currentEntityPage + 1) * 64,
+          )
+        : graph.nodes,
+    [graph, largeNetwork, filteredEntities, currentEntityPage],
+  );
+  const relationshipChoices = useMemo(
+    () =>
+      largeNetwork
+        ? filteredRelationships.slice(
+            currentRelationshipPage * 64,
+            (currentRelationshipPage + 1) * 64,
+          )
+        : graph.edges,
+    [graph, largeNetwork, filteredRelationships, currentRelationshipPage],
+  );
+  const entityOptions = useMemo(
+    () =>
+      entityChoices.map((item) => (
+        <SelectItem key={item.id} value={item.id}>
+          {typeLabel(item.type)} · {shortId(item.id)}
+        </SelectItem>
+      )),
+    [entityChoices],
+  );
+  const relationshipOptions = useMemo(
+    () =>
+      relationshipChoices.map((item) => (
+        <SelectItem key={item.id} value={item.id}>
+          {shortId(item.source)} → {shortId(item.target)} · {item.relationship}
+        </SelectItem>
+      )),
+    [relationshipChoices],
+  );
   const node = graph.nodes.find((item) => item.id === selection);
   const edge = graph.edges.find((item) => item.id === selection);
   const related = node
@@ -53,23 +131,35 @@ export default function EvidenceNetwork({
     : [];
   useEffect(() => {
     if (!container.current) return;
+    const columns = Math.max(
+      1,
+      Math.ceil(
+        Math.sqrt(
+          (graph.nodes.length * container.current.clientWidth) /
+            Math.max(1, container.current.clientHeight),
+        ),
+      ),
+    );
+    const elements: ElementDefinition[] = [
+      ...graph.nodes.map((item, index) => ({
+        data: {
+          ...item,
+          label: shortId(item.id),
+          color: palette[item.type] ?? '#a4b2c3',
+          shared: Number(item.shared_infrastructure),
+        },
+        position: largeNetwork
+          ? { x: (index % columns) * 56, y: Math.floor(index / columns) * 56 }
+          : {
+              x: Math.cos((index * Math.PI * 2) / graph.nodes.length) * 240,
+              y: Math.sin((index * Math.PI * 2) / graph.nodes.length) * 240,
+            },
+      })),
+      ...graph.edges.map((item) => ({ data: item })),
+    ];
     const cy = cytoscape({
       container: container.current,
-      elements: [
-        ...graph.nodes.map((item, index) => ({
-          data: {
-            ...item,
-            label: shortId(item.id),
-            color: palette[item.type] ?? '#a4b2c3',
-            shared: Number(item.shared_infrastructure),
-          },
-          position: {
-            x: Math.cos((index * Math.PI * 2) / graph.nodes.length) * 240,
-            y: Math.sin((index * Math.PI * 2) / graph.nodes.length) * 240,
-          },
-        })),
-        ...graph.edges.map((item) => ({ data: item })),
-      ],
+      elements: largeNetwork ? [] : elements,
       style: [
         {
           selector: 'node',
@@ -144,12 +234,8 @@ export default function EvidenceNetwork({
       ],
       layout: largeNetwork
         ? {
-            name: 'grid',
-            animate: false,
-            padding: 42,
-            avoidOverlap: true,
-            nodeDimensionsIncludeLabels: false,
-            condense: true,
+            name: 'preset',
+            fit: false,
           }
         : {
             name: 'cose',
@@ -167,21 +253,47 @@ export default function EvidenceNetwork({
       wheelSensitivity: 0.2,
     });
     network.current = cy;
-    cy.on('tap', 'node, edge', (event) => setSelection(event.target.id()));
+    let cancelled = false;
+    let complete = !largeNetwork;
+    let frame = 0;
+    let cursor = 0;
+    const loadNext = () => {
+      if (cancelled) return;
+      const end = Math.min(cursor + 100, elements.length);
+      cy.batch(() => cy.add(elements.slice(cursor, end)));
+      cursor = end;
+      if (cursor < elements.length) {
+        frame = requestAnimationFrame(loadNext);
+      } else {
+        complete = true;
+        cy.fit(undefined, 42);
+      }
+      setProgress({ graph, loaded: cursor });
+    };
+    if (largeNetwork) frame = requestAnimationFrame(loadNext);
+    else
+      frame = requestAnimationFrame(() =>
+        setProgress({ graph, loaded: total }),
+      );
+    cy.on('tap', 'node, edge', (event) => {
+      if (complete) setSelection(event.target.id());
+    });
     cy.on('tap', (event) => {
       if (event.target === cy) setSelection('');
     });
     const resize = new ResizeObserver(() => cy.resize());
     resize.observe(container.current);
     return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
       resize.disconnect();
       cy.destroy();
-      network.current = null;
+      if (network.current === cy) network.current = null;
     };
-  }, [graph, largeNetwork]);
+  }, [graph, largeNetwork, total]);
   useEffect(() => {
     const cy = network.current;
-    if (!cy) return;
+    if (!cy || !ready) return;
     cy.elements().unselect().removeClass('dimmed');
     if (selection) {
       const selected = cy.getElementById(selection);
@@ -192,7 +304,7 @@ export default function EvidenceNetwork({
         : selected.closedNeighborhood();
       cy.elements().difference(neighborhood).addClass('dimmed');
     }
-  }, [selection, graph]);
+  }, [selection, graph, ready]);
   const zoom = (factor: number) => {
     const cy = network.current;
     if (cy)
@@ -208,6 +320,7 @@ export default function EvidenceNetwork({
           <Button
             variant="outline"
             size="sm"
+            disabled={!ready}
             onClick={() => network.current?.fit(undefined, 42)}
           >
             Fit graph
@@ -216,6 +329,7 @@ export default function EvidenceNetwork({
             variant="outline"
             size="sm"
             onClick={() => zoom(1.25)}
+            disabled={!ready}
             aria-label="Zoom in"
           >
             +
@@ -224,6 +338,7 @@ export default function EvidenceNetwork({
             variant="outline"
             size="sm"
             onClick={() => zoom(0.8)}
+            disabled={!ready}
             aria-label="Zoom out"
           >
             −
@@ -231,6 +346,7 @@ export default function EvidenceNetwork({
           <Button
             variant="outline"
             size="sm"
+            disabled={!ready}
             onClick={() => {
               setSelection('');
               network.current?.fit(undefined, 42);
@@ -241,7 +357,7 @@ export default function EvidenceNetwork({
           <Button
             variant="ghost"
             size="sm"
-            disabled={!selection}
+            disabled={!selection || !ready}
             onClick={() => {
               const cy = network.current;
               if (cy)
@@ -258,6 +374,19 @@ export default function EvidenceNetwork({
             {height === 460 ? 'Expand graph' : 'Compact graph'}
           </Button>
         </div>
+        {!ready && (
+          <div className="network-loading" aria-live="polite">
+            <p>
+              Preparing network: {loaded.toLocaleString()} of{' '}
+              {total.toLocaleString()} entities and links.
+            </p>
+            <progress
+              aria-label="Network loading progress"
+              value={loaded}
+              max={Math.max(1, total)}
+            />
+          </div>
+        )}
         <div
           ref={container}
           className="evidence-canvas"
@@ -292,7 +421,51 @@ export default function EvidenceNetwork({
         <label id="entity-picker-label" htmlFor="entity-picker">
           Entity
         </label>
+        {largeNetwork && (
+          <>
+            <label htmlFor="entity-search">Find entity</label>
+            <Input
+              id="entity-search"
+              type="search"
+              value={entitySearch}
+              maxLength={200}
+              placeholder="Full ID or entity type"
+              onChange={(event) => {
+                setEntitySearch(event.target.value);
+                setEntityPage(0);
+              }}
+            />
+            <p className="muted text-xs">
+              {filteredEntities.length.toLocaleString()} matching entities ·
+              page {currentEntityPage + 1} of {entityPages}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label="Previous entity page"
+                disabled={currentEntityPage === 0}
+                onClick={() => setEntityPage(currentEntityPage - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label="Next entity page"
+                disabled={currentEntityPage + 1 >= entityPages}
+                onClick={() => setEntityPage(currentEntityPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+            {!filteredEntities.length && (
+              <p className="muted text-xs">No matching entities.</p>
+            )}
+          </>
+        )}
         <Select
+          disabled={!ready}
           value={node?.id ?? ''}
           onValueChange={(value) => setSelection(String(value ?? ''))}
         >
@@ -306,18 +479,57 @@ export default function EvidenceNetwork({
                 : 'Select an entity'}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
-            {graph.nodes.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
-                {typeLabel(item.type)} · {shortId(item.id)}
-              </SelectItem>
-            ))}
-          </SelectContent>
+          <SelectContent>{entityOptions}</SelectContent>
         </Select>
         <label id="edge-picker-label" htmlFor="edge-picker">
           Relationship
         </label>
+        {largeNetwork && (
+          <>
+            <label htmlFor="relationship-search">Find relationship</label>
+            <Input
+              id="relationship-search"
+              type="search"
+              value={relationshipSearch}
+              maxLength={200}
+              placeholder="Full endpoint ID or relationship"
+              onChange={(event) => {
+                setRelationshipSearch(event.target.value);
+                setRelationshipPage(0);
+              }}
+            />
+            <p className="muted text-xs">
+              {filteredRelationships.length.toLocaleString()} matching
+              relationships · page {currentRelationshipPage + 1} of{' '}
+              {relationshipPages}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label="Previous relationship page"
+                disabled={currentRelationshipPage === 0}
+                onClick={() => setRelationshipPage(currentRelationshipPage - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label="Next relationship page"
+                disabled={currentRelationshipPage + 1 >= relationshipPages}
+                onClick={() => setRelationshipPage(currentRelationshipPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+            {!filteredRelationships.length && (
+              <p className="muted text-xs">No matching relationships.</p>
+            )}
+          </>
+        )}
         <Select
+          disabled={!ready}
           value={edge?.id ?? ''}
           onValueChange={(value) => setSelection(String(value ?? ''))}
         >
@@ -326,14 +538,7 @@ export default function EvidenceNetwork({
               {edge ? edge.relationship : 'Select a relationship'}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
-            {graph.edges.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
-                {shortId(item.source)} → {shortId(item.target)} ·{' '}
-                {item.relationship}
-              </SelectItem>
-            ))}
-          </SelectContent>
+          <SelectContent>{relationshipOptions}</SelectContent>
         </Select>
         {node && (
           <div className="selection-details">

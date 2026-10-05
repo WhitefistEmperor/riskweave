@@ -45,6 +45,47 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Cancellable networks and bounded selectors: current checkpoint
+
+The current frontend change inserts large Cytoscape graphs in cancellable
+100-element animation-frame batches with visible progress and disabled controls
+until complete. Leaving the tab cancels pending work; revisiting creates a fresh
+complete graph. Large entity and relationship selectors expose 64 choices per
+page plus full-identifier search. Paging/search affects choices, never graph data.
+Every entity and explicit link remains inspectable. Small graph layout is retained.
+
+Eight focused browser checks pass (48.4s), including 1201 entities/1200 links,
+last-page/search/relationship/evidence navigation, and cancellation/revisit with
+8001 entities/8000 links. Production build, lint and typecheck pass. Full 80-test
+frontend suite is running; exact-source remote CI and pinned measurement are
+pending at this checkpoint. Do not describe these pending checks as passed.
+
+Correction to the older capacity interpretation below: the overall longest task
+included graph preparation AND selector opening/selection. Phase instrumentation
+on intermediate incremental code found graph tasks613/803/780ms but selector
+tasks1837/2102/2207ms. Bounded-selector samples now report overall631/841/770ms,
+graph574/826/697ms and selector625/841/770ms. Display+Fit takes4.645/6.357/6.291s
+for4108/5394/5168 entities, with2542/3068/3069 links retained. All three report
+zero browser/HTTP errors, successful inspection/evidence return and no overflow.
+These are single local synthetic samples, not percentiles or hosted admission;
+600-800ms pauses remain. No uniform graph-stage speedup is established.
+
+Private measurements: work/incremental-browser-phases-before-picker-20261005.json
+and work/incremental-picker-phases-after-20261005.json. Their HEAD metadata is
+b5e46de although source bytes were uncommitted; do not call them exact-source b5
+proof. Pin final source, repeat measurement, publish aggregate evidence, check
+both source CI runs, then update this checkpoint and release gates/PR.
+
+Backend remains198d2db; local main API8000, isolated synthetic API8001 and
+production frontend5173 are running. Preserve their ignored databases/storage,
+original cases and pinned model. No retraining, threshold/migration or saved-result
+rewrite occurred. Deployment still needs supported Vercel access (last403), free
+private TLS database/live identity and hosted workflow/recovery verification.
+Observed export/label validation and native multi-fragment capacity remain open.
+
+Usage snapshot at this checkpoint:13% current-window remaining,41% weekly
+remaining. Keep this GitHub file current before the requested10% handoff threshold.
+
 
 ### Compact projected feature graph: verified source198d2db
 

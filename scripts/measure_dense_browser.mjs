@@ -84,7 +84,9 @@ try {
     await page.addInitScript(() => {
       window.__longTasks = [];
       new PerformanceObserver((list) =>
-        window.__longTasks.push(...list.getEntries().map((e) => e.duration)),
+        window.__longTasks.push(
+          ...list.getEntries().map((e) => ({ start: e.startTime, duration: e.duration })),
+        ),
       ).observe({ type: "longtask", buffered: true });
     });
     await page.route("**/api/v1/**", async (route) => {
@@ -113,6 +115,7 @@ try {
     const evidenceMs = performance.now() - start;
     const evidenceHeap = await heap();
     const networkStart = performance.now();
+    const graphStageStart = await page.evaluate(() => performance.now());
     await page.getByRole("tab", { name: "Network", exact: true }).click();
     await page.locator(".evidence-canvas canvas").first().waitFor({ timeout: 60000 });
     await page.getByRole("button", { name: "Fit graph", exact: true }).click({ timeout: 60000 });
@@ -120,18 +123,36 @@ try {
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );
     const networkMs = performance.now() - networkStart;
+    const graphStageEnd = await page.evaluate(() => performance.now());
     const scope = await page.locator(".network-scope").textContent();
     const counts = scope.match(/([\d,]+) entities · ([\d,]+) explicit links/);
     const networkHeap = await heap();
+    const pickerStageStart = await page.evaluate(() => performance.now());
     await page.getByRole("combobox", { name: "Entity", exact: true }).click();
     await page.getByRole("listbox").getByRole("option").first().click();
     await page.locator(".selection-details").waitFor();
+    const pickerStageEnd = await page.evaluate(() => performance.now());
     await page.getByRole("tab", { name: "Evidence", exact: true }).click();
-    const metrics = await page.evaluate(() => ({
-      max_long_task_ms: Math.max(0, ...window.__longTasks),
-      long_tasks: window.__longTasks.length,
-      no_horizontal_overflow: document.documentElement.scrollWidth <= window.innerWidth,
-    }));
+    const metrics = await page.evaluate(
+      ({ graphStageStart, graphStageEnd, pickerStageStart, pickerStageEnd }) => ({
+        max_long_task_ms: Math.max(0, ...window.__longTasks.map((e) => e.duration)),
+        graph_stage_max_long_task_ms: Math.max(
+          0,
+          ...window.__longTasks
+            .filter((e) => e.start >= graphStageStart && e.start < graphStageEnd)
+            .map((e) => e.duration),
+        ),
+        entity_picker_max_long_task_ms: Math.max(
+          0,
+          ...window.__longTasks
+            .filter((e) => e.start >= pickerStageStart && e.start < pickerStageEnd)
+            .map((e) => e.duration),
+        ),
+        long_tasks: window.__longTasks.length,
+        no_horizontal_overflow: document.documentElement.scrollWidth <= window.innerWidth,
+      }),
+      { graphStageStart, graphStageEnd, pickerStageStart, pickerStageEnd },
+    );
     report.samples.push({
       events: workers.samples[index].events,
       result_sha256: workers.samples[index].result_sha256,
