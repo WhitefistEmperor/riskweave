@@ -2,12 +2,12 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source 36bcc25 (all six push/PR checks green after one PR container retry), the actual account-access response and
+uses source e2926f4 (all six push/PR checks green without retries), the actual account-access response and
 the measured local worker baseline; consult the handoff for newer exact commits.
 
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|
-| Private investigation workflow | 264 Python/69 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
+| Private investigation workflow | 267 Python/69 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
 | Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Re-authentication: target workspace still returns 403; verify free account allowances, actual projects/deployment, TLS/database/identity |

@@ -5,6 +5,24 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+- Current readiness fix `e2926f46588166323e40075bb90db9249031dd16`, pushed. Ruff and all 31 focused lifecycle,
+  operational-limit and deletion checks passed locally. Local storage readiness
+  now owns one write lock through its quota check, probe write/read and final
+  unlink; a competing writer returns not-ready instead of raising an uncaught
+  RuntimeError. The owned probe is removed even if its read fails. Existing data
+  and the storage byte ceiling are preserved. Three new checks exercise real lock
+  contention, an injected read failure while lock ownership is asserted, and a
+  full store. [Push CI 37256671976](https://github.com/WhitefistEmperor/riskweave/actions/runs/37256671976)
+  and PR CI 37256675191 passed all six checks without retries: 267 Python tests,
+  69 browser tests, containers, encrypted PostgreSQL restore and actual SDK delivery.
+  Production dependency/model inventory is 440,599,238 bytes, below 450 MB;
+  this remains a packaging inventory rather than the hosted function size.
+  Fresh scoped Vercel API recheck still returned 403, explicitly requiring
+  reauthentication to sahilsinghkushwah10thb-9948s-projects. No release was created.
+  This removes a concrete readiness lock-reacquisition race; it does not prove
+  the original container deletion's exact cause or guarantee synchronous erasure.
+  Durable pending deletion tasks still require the operator cleanup workflow.
+
 - New encryption source `36bcc25413a7f71dfeed5056629288bc800b1c67`, pushed.
   Ruff and 15 actual native age 1.3.2 tests passed locally, using generated persisted
   payload/results with both SQLite storage modes. Wrong keys, ciphertext tampering,
