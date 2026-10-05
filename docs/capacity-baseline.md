@@ -462,3 +462,37 @@ reliable percentiles, concurrency, hosted cold/warm latency or provider limits.
 This uses local worker execution, not hosted HTTPS/managed Workflow dispatch;
 generated controls do not establish observed model accuracy. All production
 admission/deployment gates remain until measured against the actual service.
+
+
+### Inspected PostgreSQL/Linux artifacts (350e0f5)
+
+Both exact-source CI runs37329580404(push)/37329596214(PR) passed all six jobs:
+319 Python/80 workspace browser +4 session controls, zero advisories, actual
+PostgreSQL/SDK delivery/encrypted restores. Each retained exactly one aggregate
+measurement JSON. The PR merge checkout's Git tree equals the branch source tree;
+reports retain both SHAs and artifact/report digests rather than substituting them.
+All six saved-result hashes match the Windows mixed control, with one1573841-byte
+result on PostgreSQL17.11, four logical CPUs and Python3.13.14 per runner.
+
+| Observation | Push runner | PR runner |
+|---|---:|---:|
+| Worker main seconds, median |6.801|11.223|
+| Worker main seconds, sample range |6.692–6.855|11.221–11.546|
+| Child wall seconds, median |8.046|13.318|
+| Approximate VmHWM maximum MB (decimal) |320.094|319.930|
+| Database allocated disk after three cases MB |16.999|17.143|
+
+The initial database allocated8.296MB before cases. VmHWM is approximate current
+image accounting; lifetime getrusage849–868MB is separate and must not replace it.
+CPU/wall observations vary materially across runners; these are not paired Windows
+speedups, reliable percentiles or provider admission. No total database/API/parent/
+browser RAM or concurrent/hosted HTTPS/managed Workflow workload was measured.
+CI build-owned model044eabe5...3280 differs in digest from the separate pinned
+Windows model; each child's actual pin is checked and saved outputs match exactly.
+Both remain generated controls, not observed accuracy/calibration approval.
+
+Reports: linux-postgres-mixed-worker-push-20261005.json and
+linux-postgres-mixed-worker-pr-20261005.json under results/capacity, with source proof
+in results/operations/linux-postgres-capacity-source-verification-20261005.json.
+Next: actual deployed cold/warm/concurrent measurements and full process/database
+memory, then accepted limits and recovery objectives. Access/data gates remain.

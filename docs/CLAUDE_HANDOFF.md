@@ -7,6 +7,11 @@ the project is already deployed or validated on real financial data.
 
 ### Usage threshold checkpoint: 9% remaining
 
+Follow-up: source350e0f5 CI completed successfully and both canonical artifacts
+were inspected/published. Steps1–3 below are completed for that source; use the
+verified Linux/PostgreSQL section and tracked reports instead of repeating them.
+Step4 and the full release/deployment/model gates remain unresolved.
+
 Current-window usage reached 91% used (9% remaining); weekly 25% remaining.
 All source is pushed through 350e0f5d35e8b69082efcaed4f9aa00454db73bc on the
 existing branch/PR. The core application remains verified83e4bb1 below; the new
@@ -46,7 +51,7 @@ the rejected auth popup or modify unrelated projects/purchase upgrades.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 83e4bb1; documentation may have a newer head. Inspect git status and
+commit is 350e0f5; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -84,28 +89,41 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Linux/PostgreSQL worker capacity: source checks pending
+### Linux/PostgreSQL worker capacity: verified source 350e0f5
 
-Added a guarded Linux child measurement wrapper and actual PostgreSQL repeated
-worker control. Only the dedicated loopback CI role and fresh UUID drill database
-names are admitted. Three fresh workers consume the same 10207-event mixed input,
-with a build-owned pinned model and database object storage. The control checks
-completed results/checksums, owner isolation, source/model provenance and repeated
-output equality. It records worker-main/child-wall times, child peak RSS/CPU and
-cumulative allocated database disk size; no identifiers, paths or database URL.
-CI retains only the aggregate postgres-worker-capacity.json as an artifact.
+Exact source 350e0f5d35e8b69082efcaed4f9aa00454db73bc push37329580404 / PR37329596214
+passes all six jobs:319 Python /80 workspace browser +4 session browser controls,
+zero audit vulnerabilities, containers, actual PostgreSQL/SDK delivery and encrypted
+restores. All7 PostgreSQL module cases execute. Both canonical capacity artifacts
+contain one aggregate JSON; source/PR merge checkout Git trees match exactly.
+PR measured checkout3f2401bf9527f57f5591eb920b2060fa4dff100d is recorded separately.
 
-Local Ruff and the sanitized non-Linux refusal pass. All 7 PostgreSQL module cases
-skip locally because its isolated database/clients are absent. Initial source
-b4e3c0a push 37328461220 / PR 37328471256 passed all six jobs (319 Python); its
-three PostgreSQL results match the original saved-result hash. Worker times on
-the push runner were10.927–11.050s. Artifact inspection found two identical copies
-through pytest's directory alias, and lifetime-only peak RSS868–871MB may include
-pre-exec accounting. That counter is not current worker-image memory approval.
-Added separate approximate VmHWM/VmRSS counters plus lifetime peak and one canonical
-artifact path. Updated-method full CI/artifact inspection are pending; no hosted
-capacity approval is claimed. Parent/API/browser/PostgreSQL RAM, concurrency,
-percentiles, managed Workflow execution and observed model validity remain open.
+Each of two Linux/PostgreSQL17.11 runners completed three fresh workers on the
+same10207-event mixed input with3120 customers/15401 entities and database objects.
+All6 input/result hashes match the original Windows control; result1573841 bytes,
+one candidate. CI build-owned synthetic model pin044eabe5b79e0335dd099d73a2d5d6ee82f7a524ce87a864b2c9c303f2db3280
+is verified in every worker; this differs from the separate trusted Windows artifact.
+Push worker median6.801s (range6.692–6.855), PR median11.223s (11.221–11.546).
+Child-wall medians8.046/13.318s. Approximate current-image VmHWM maxima320.094/
+319.930MB; lifetime counters849–868MB are kept separately, not worker-image peaks.
+Allocated database disk grows8.296MB to16.999/17.143MB over the three retained cases;
+it is not database RAM, raw object quota, WAL/backup cost or provider billing.
+
+Tracked capacity reports: results/capacity/linux-postgres-mixed-worker-push-20261005.json
+and linux-postgres-mixed-worker-pr-20261005.json. Source/CI proof and limitations:
+results/operations/linux-postgres-capacity-source-verification-20261005.json.
+Reports retain actual checkout source, model hash, artifact ID/archive digest and
+report checksum. Private downloaded artifacts remain in ignored work/linux-postgres-v2-
+push-20261005 and work/linux-postgres-v2-pr-20261005; no data/keys/models are published.
+
+Local Ruff and sanitized non-Linux refusal pass; all7 PostgreSQL cases skip locally.
+Initial b4e3c0a artifacts used lifetime-only counters and duplicate pytest aliases;
+the revised method fixes those measurement/publication issues. VmHWM/VmRSS remain
+approximate kernel counters. Three sequential samples per runner are not reliable
+percentiles/concurrency/hosted admission; observed runner variation is material.
+Parent/API/browser/PostgreSQL RAM, actual hosted HTTPS/Workflow/cold-warm capacity,
+free Vercel/TLS/identity access, scheduled encrypted off-host backups/monitoring
+destinations and authorized observed exports/matured labels remain release gates.
 
 ### Profile-guided feature optimization: verified source 83e4bb1
 

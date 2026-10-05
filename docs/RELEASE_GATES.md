@@ -2,7 +2,7 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source 83e4bb1 (all six push/PR checks green:318 Python/80 workspace browser
+uses source 350e0f5 (all six push/PR checks green:319 Python/80 workspace browser
 plus4 dedicated OIDC session browser controls), the actual
 403 scope response and measured sparse/dense workers and cancellable browser grid
 controls. Consult the handoff for exact evidence and remaining capacity work.
@@ -37,7 +37,7 @@ Source00037c4 separately adds the client session privacy boundary; see
 
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|
-| Private investigation workflow | 318 Python/80 browser checks, exact-source push/PR green, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
+| Private investigation workflow | 319 Python/80 browser checks, exact-source push/PR green, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
 | Client session privacy | Configured investigation layout gates initial user, unmounts loaded state on idle expiry/unload and before provider logout;4 production-build controls pass with actual client timers/storage and two-tab BroadcastChannel, fixture API bodies | Exact HTTPS issuer callback/expiry/revocation/logout, stale/closed/suspended tabs, blocked channels and back navigation |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
@@ -54,6 +54,17 @@ absence of large mixed-topology repetitions at this one seed, not percentiles,
 PostgreSQL/concurrency/hosted bounds or observed model accuracy. Source CI
 37323791168/37323799792 passes all six jobs; application/check tree unchanged
 from32af28f. See capacity-baseline.md and the pinned aggregate report.
+
+Actual PostgreSQL17.11/Linux capacity source350e0f5 now completes three fresh
+mixed10207-event workers on each of two CI runners. All6 saved results match the
+original Windows control. Per-runner worker medians6.801/11.223s and approximate
+VmHWM maxima320.094/319.930MB; separate lifetime accounting is not worker-image
+memory. Push37329580404/PR37329596214 pass all six checks (319 Python/80 browser
++4 session controls). Canonical artifacts and PR/source Git trees are verified.
+This closes the absence of measured sequential PostgreSQL worker controls for
+this one shape, not database/API/parent/browser RAM, concurrency, percentiles,
+hosted HTTPS/Workflow budgets or observed model accuracy. Tracked aggregate reports
+are linked from the handoff; deployment/admission remain unapproved.
 
 ## Next actions
 
