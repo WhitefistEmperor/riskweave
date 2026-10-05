@@ -5,6 +5,29 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+- New encryption source `36bcc25413a7f71dfeed5056629288bc800b1c67`, pushed.
+  Ruff and 15 actual native age 1.3.2 tests passed locally, using generated persisted
+  payload/results with both SQLite storage modes. Wrong keys, ciphertext tampering,
+  unsafe members and existing outputs are rejected. Root manifest is published last
+  after complete authentication and validation; failed extraction stays private/incomplete.
+  Linux CI installs only SHA-256-pinned official age executables and additionally wraps
+  the existing PostgreSQL 17 two-storage-mode restore drills in encrypted round trips.
+  [Push CI 37256000817](https://github.com/WhitefistEmperor/riskweave/actions/runs/37256000817)
+  passed all three jobs: 264 Python tests, 69 browser tests and both containers,
+  including encrypted actual PostgreSQL 17 restores in both storage modes.
+  Production inventory is 440,596,478 bytes, below the 450 MB budget (not a hosted bundle).
+  [PR CI 37256004159](https://github.com/WhitefistEmperor/riskweave/actions/runs/37256004159)
+  also passed all three jobs after a single container retry. Its first attempt returned
+  deletion storage_cleanup=pending with storage_cleanup_retry_pending, while the
+  exact-source push container passed. The one failed-job retry passed.
+  Preserve this initial failure: local storage uses a nonblocking write lock;
+  contention can leave durable cleanup tasks requiring the operator cleanup CLI.
+  Do not infer all deletion requests synchronously erase bytes or hide pending cleanup.
+  See `docs/snapshot-encryption.md`. Keys, ciphertext, plaintext fixtures and binaries
+  remain ignored/local; no live cases, model scores or deployment were changed.
+  This completes a manual standard-encryption envelope, not scheduled off-host backup,
+  key custody/rotation, provider configuration, secure erasure or hosted recovery.
+
 - Current measured-capacity source: `a7a1506141f7e20745f146b2e6ee69af40590aea`, pushed.
   [Linux CI 37254283251](https://github.com/WhitefistEmperor/riskweave/actions/runs/37254283251)
   and PR CI 37254286075 passed all six checks: 249 Python tests, 69 browser tests,
