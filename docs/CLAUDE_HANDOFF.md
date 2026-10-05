@@ -11,8 +11,9 @@ commit is 144fbd4; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
-1. Verify and apply the implemented explicit stopped-writer --upgrade-queue
-   backfill for already-indexed legacy results, preserving original hashes/reviews. Current
+1. Local queue backfill is now applied and verified (see latest proof below).
+   Apply --upgrade-queue to other supported deployments only after private backup
+   and stopped-writer checks, preserving original hashes/reviews. Current
    new-run metadata does not automatically rewrite legacy rows. Add dense-case
    response, memory and actual PostgreSQL measurements, not only sparse controls.
 2. Implement an exact decimal-string monetary contract through API/UI if totals
@@ -40,6 +41,46 @@ reproduction is in docs/vercel-deployment.md. Source/main and unrelated projects
 must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
+
+### Applied local maintenance and real saved-case backup/restore
+
+Source 4616e80 (tested application 144fbd4) was idle: zero active analyses/open
+uploads/pending deletion tasks. Its owned API was stopped. A standard manifest-format
+private snapshot was created under work/browser-queue-maintenance-20261005/snapshot/;
+this is separate from the earlier raw 0008-to-0010 safeguard. Original fingerprints
+are privately saved beside it; no case content or identifiers are committed.
+
+Explicit --upgrade-queue upgraded all 18 older indexes across 19 completed saved
+runs; a second pass returned zero. It added 839 section metadata rows. Every other
+table count, original result reference/checksum/provenance fingerprint and review/
+audit fingerprint matched before maintenance. SQLite integrity passed. All snapshot
+manifest and live object hashes were verified. Every saved queue was read with
+whole-object reads forbidden; the largest scalar range read was 18 bytes.
+
+The actual pre-maintenance snapshot was restored into a different new private
+SQLite/object directory (39 files). All original table counts and run/review/audit
+fingerprints matched; integrity passed. The live database was never overwritten.
+This local plaintext backup/restore is not encrypted/off-host/scheduled recovery
+or a hosted RPO/RTO claim. Preserve these private directories until an operator
+sets retention; never push them to GitHub or erase user cases for a fresh start.
+
+API restarted on tested source: session79521 / PID24556, log
+work/queue-maintained-api.log, build_commit4616e80, unchanged trusted model/local
+jobs. Frontend remains production session96900. /api/v1/health and /api/v1/ready
+returned200. An actual owner-scoped queue returned seven candidates in1,211 bytes;
+another owner received404. No schema migration or original-case deletion occurred.
+See results/operations/local-queue-maintenance-20261005.json for aggregate proof.
+Both 4616e80 source CI runs 37268084760/37268088840 passed before maintenance;
+latest application proof remains295 Python/74 browser tests and both encrypted PG
+restore modes. New documentation CI after this push must be inspected separately.
+
+Usage window reset: the previously requested10% handoff was already pushed. Keep
+this file on GitHub current. Next implementation gap is exact decimal-string
+monetary values through the persisted API and frontend; large legitimate totals
+must not be silently rounded or rejected just to make tests pass. Dense/browser/
+hosted capacity and Vercel/private DB/live identity/operational/observed model gates
+remain open. This maintenance only closes the existing local queue backfill step.
+
 
 ### Queue backfill continuation checkpoint
 

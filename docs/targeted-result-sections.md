@@ -81,3 +81,11 @@ The PostgreSQL encrypted restore drill now executes the upgrade before backup an
 checks restored bounded summaries; its exact-source CI result must be inspected.
 The console now uses bounded queue summaries and selected sections. Hosted and
 large selected-evidence/investigator memory remain separate release gates.
+
+The existing local preview was maintained on 5 October 2026 after a verified
+standard snapshot and stopped API: 18 legacy indexes upgraded, repeat pass0,
+19 completed saved runs verified with whole reads disabled. Original result/
+review/audit fingerprints and all other table counts survived. The actual snapshot
+also restored into a separate new target with all original fingerprints matching.
+See the handoff and aggregate operations report. This does not apply maintenance
+to any hosted database or establish encrypted/off-host/scheduled recovery.
