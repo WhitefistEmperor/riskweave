@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 32af28f; documentation may have a newer head. Inspect git status and
+commit is 83e4bb1; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -45,7 +45,7 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Profile-guided feature optimization: source checks pending
+### Profile-guided feature optimization: verified source 83e4bb1
 
 The large mixed input's diagnostic cProfile found local-density calculations and
 repeated 15-minute cutoff arithmetic as substantial costs. Profiling overhead is
@@ -54,12 +54,34 @@ whenever any new projected edge is inserted (including neighbor-to-neighbor edge
 Extra resource sharing changes multiplicity but not density. Time cutoffs now compute
 once per event; exact comparisons, float operation order and model remain unchanged.
 
-Local Ruff /11 feature tests pass, including neighbor-triangle invalidation and
-exact/just-older rolling boundaries. All5 prior feature captures match, and all
-336831 feature values for10207 mixed events match the pre-change reference exactly.
-Full source CI and post-change repeated worker/hash/memory measurements are pending.
+Local Ruff / 11 feature tests pass, including neighbor-triangle invalidation and
+exact/just-older rolling boundaries. All 5 prior feature captures match, and all
+336831 feature values for 10207 mixed events match the pre-change reference exactly.
+All 9 prior worker input/result hashes remain identical. Three large mixed runs
+also preserve their original saved result, with worker time 34.867–36.790s
+(median 35.757 versus prior 43.044), process wall 43.231–45.328s (median 44.183),
+and peak worker working set 283.525–285.053 MB. Nine smaller controls have at most
+1.647 MB observed additional working set. Ambient local samples are not reliable
+percentiles, concurrent/hosted capacity or statistical speedup proof.
+
+Exact source 83e4bb190679173d1d33031f6b803b72ec25b307 push 37325896012 / PR 37325905806
+passes all six jobs: 318 Python / 80 workspace browser + 4 session browser controls,
+zero audit vulnerabilities, containers, actual PostgreSQL/SDK delivery and encrypted
+restores. CI inventory 440911166 bytes remains below 450000000; hosted bundle unknown.
+Aggregate proof: results/operations/cached-features-source-verification-20261005.json.
+Capacity reports: cached-feature-equivalence-20261005.json,
+cached-worker-equivalence-20261005.json and
+windows-worker-cached-mixed-dense-repeated-20261005.json under results/capacity.
+
+Latest observed usage: 31% current-window / 28% weekly remaining. Keep this handoff
+current at 10% remaining, including exact source/checks and unfinished work.
 Private profile/reference: work/mixed-density-profile-20261005. No user cases,
 trained model, production admission limits or observed accuracy approval changed.
+Next: actual PostgreSQL/hosted timing, parent/database/browser peak memory,
+concurrency and percentiles before choosing limits. Quadratic adjacency bits and
+conservative cache invalidation remain. Vercel scope access, free TLS database/live
+identity, hosted operations/recovery and authorized observed exports/matured labels
+remain open; the real-data location/provider question is still pending.
 
 ### Repeated mixed dense capacity: measured source 3e0487b
 

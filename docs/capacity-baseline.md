@@ -391,3 +391,42 @@ application/check tree is identical to verified32af28f (316 backend /80 workspac
 browser +4 separate session controls). Next: profile mixed structural-density
 work, preserve exact causal features/results, then repeat PostgreSQL/hosted and
 concurrent measurements before selecting admission limits.
+
+### Profile-guided exact feature reuse (83e4bb1)
+
+Diagnostic profiling of the same mixed input found density traversal and repeated
+15-minute cutoff arithmetic as substantial costs (profiled extraction 67.033s;
+profiling overhead is not a capacity baseline). The implementation now caches one
+density per customer until any projected edge changes, invalidating for edges
+between neighbors as well as the focal customer's own edges. Additional resource
+multiplicity leaves density unchanged. Hour/quarter-hour cutoffs compute once per
+event. Graph storage remains quadratic in bits; invalidation is conservative.
+
+The five previous feature-vector captures and all 336831 causal values for the
+10207-event mixed dataset are exactly identical. All nine original saved worker
+input/result hashes remain unchanged across sparse/shared-device/mixed controls,
+and all three large repeated results match the prior 1573841-byte result.
+Eleven feature tests include the neighbor-triangle change and exact time cutoffs.
+
+| Observation | Prior sample median | New sample median | New sample range |
+|---|---:|---:|---:|
+| Worker main seconds |43.044|35.757|34.867–36.790|
+| Process wall seconds |51.565|44.183|43.231–45.328|
+| Worker peak working set MB (decimal) |286.183|285.020|283.525–285.053|
+| Worker peak commit MB (decimal) |254.439|253.141|251.720–253.231|
+
+Nine smaller worker controls show at most 1.647 MB observed extra working set.
+One sparse child startup took 28.239s despite 0.413s worker main; ambient startup
+variation remains. Timings are sequential fresh Windows workers, SQLite/local
+objects, same pinned generated model and OMP_NUM_THREADS=1. Three repeats at one
+seed are not reliable percentiles or statistical speedup proof. Parent/API/database
+and browser peak memory, concurrent/hosted admission and observed accuracy remain
+unproven. No production limit, trusted artifact or original user case changed.
+
+Reports: cached-feature-equivalence-20261005.json,
+cached-worker-equivalence-20261005.json and
+windows-worker-cached-mixed-dense-repeated-20261005.json under results/capacity.
+Exact source push 37325896012 / PR 37325905806 passes all six checks: 318 Python /
+80 workspace browser plus 4 session controls, zero advisories, containers and actual
+PostgreSQL/SDK delivery/encrypted restores. Aggregate source/profile evidence is in
+results/operations/cached-features-source-verification-20261005.json.

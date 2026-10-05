@@ -1,0 +1,351 @@
+{
+  "source_commit": "83e4bb190679173d1d33031f6b803b72ec25b307",
+  "production_ready": false,
+  "data_origin": "synthetic-control",
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "cohorts": [
+    {
+      "name": "sparse",
+      "baseline_source": "198d2dbd43b70935206897032d4440bc4b1d8a94",
+      "source_commit": "83e4bb190679173d1d33031f6b803b72ec25b307",
+      "all_input_and_saved_result_hashes_identical": true,
+      "comparisons": [
+        {
+          "before": {
+            "requested_payments": 1000,
+            "events": 1021,
+            "entities": 2824,
+            "input_bytes": 1011944,
+            "result_bytes": 45516,
+            "input_sha256": "cda130dbde94f575ca77e35b75b50077631542d6453918c0b5f29d635740f17c",
+            "result_sha256": "bb3977a6d8dfaa71cb5190b83724d3c6fa11137bf700745336fb10278585f37c",
+            "candidates": 7,
+            "distinct_customers": 595,
+            "distinct_devices": 482,
+            "process_wall_seconds": 9.852220899891108,
+            "worker_main_seconds": 0.4071104999165982,
+            "peak_working_set_bytes": 203300864,
+            "peak_commit_bytes": 170692608
+          },
+          "after": {
+            "requested_payments": 1000,
+            "events": 1021,
+            "entities": 2824,
+            "input_bytes": 1011944,
+            "result_bytes": 45516,
+            "input_sha256": "cda130dbde94f575ca77e35b75b50077631542d6453918c0b5f29d635740f17c",
+            "result_sha256": "bb3977a6d8dfaa71cb5190b83724d3c6fa11137bf700745336fb10278585f37c",
+            "candidates": 7,
+            "distinct_customers": 595,
+            "distinct_devices": 482,
+            "process_wall_seconds": 28.23931260011159,
+            "worker_main_seconds": 0.4125793999992311,
+            "peak_working_set_bytes": 203993088,
+            "peak_commit_bytes": 171220992
+          },
+          "peak_working_set_delta_bytes": 692224
+        },
+        {
+          "before": {
+            "requested_payments": 5000,
+            "events": 5104,
+            "entities": 14051,
+            "input_bytes": 5051702,
+            "result_bytes": 229849,
+            "input_sha256": "905794fb4143d55d58e84905d42b23b4105d2f25980a660dea2b60cb53ccafa3",
+            "result_sha256": "f7afe87cc5f7ef91edff13c1b3ebbe0199ecfbc76d990102ebad76d06df03611",
+            "candidates": 10,
+            "distinct_customers": 2850,
+            "distinct_devices": 2690,
+            "process_wall_seconds": 11.124388499883935,
+            "worker_main_seconds": 1.6170274000614882,
+            "peak_working_set_bytes": 253026304,
+            "peak_commit_bytes": 220643328
+          },
+          "after": {
+            "requested_payments": 5000,
+            "events": 5104,
+            "entities": 14051,
+            "input_bytes": 5051702,
+            "result_bytes": 229849,
+            "input_sha256": "905794fb4143d55d58e84905d42b23b4105d2f25980a660dea2b60cb53ccafa3",
+            "result_sha256": "f7afe87cc5f7ef91edff13c1b3ebbe0199ecfbc76d990102ebad76d06df03611",
+            "candidates": 10,
+            "distinct_customers": 2850,
+            "distinct_devices": 2690,
+            "process_wall_seconds": 10.15040779998526,
+            "worker_main_seconds": 1.4756684999447316,
+            "peak_working_set_bytes": 253198336,
+            "peak_commit_bytes": 220917760
+          },
+          "peak_working_set_delta_bytes": 172032
+        },
+        {
+          "before": {
+            "requested_payments": 10000,
+            "events": 10207,
+            "entities": 15401,
+            "input_bytes": 8232845,
+            "result_bytes": 141669,
+            "input_sha256": "0204f0bc7cd3c9cf00925ab38222da3e5d272e2faba65d16a9f02a7ebfe33286",
+            "result_sha256": "f87420618e9ce17161fbab0047319fdcb88329b481ad255e1b098c37ab019452",
+            "candidates": 4,
+            "distinct_customers": 3120,
+            "distinct_devices": 2960,
+            "process_wall_seconds": 12.2427855997812,
+            "worker_main_seconds": 2.8085730001330376,
+            "peak_working_set_bytes": 282853376,
+            "peak_commit_bytes": 250548224
+          },
+          "after": {
+            "requested_payments": 10000,
+            "events": 10207,
+            "entities": 15401,
+            "input_bytes": 8232845,
+            "result_bytes": 141669,
+            "input_sha256": "0204f0bc7cd3c9cf00925ab38222da3e5d272e2faba65d16a9f02a7ebfe33286",
+            "result_sha256": "f87420618e9ce17161fbab0047319fdcb88329b481ad255e1b098c37ab019452",
+            "candidates": 4,
+            "distinct_customers": 3120,
+            "distinct_devices": 2960,
+            "process_wall_seconds": 10.711847699945793,
+            "worker_main_seconds": 2.203589500160888,
+            "peak_working_set_bytes": 282869760,
+            "peak_commit_bytes": 250507264
+          },
+          "peak_working_set_delta_bytes": 16384
+        }
+      ]
+    },
+    {
+      "name": "shared-device",
+      "baseline_source": "198d2dbd43b70935206897032d4440bc4b1d8a94",
+      "source_commit": "83e4bb190679173d1d33031f6b803b72ec25b307",
+      "all_input_and_saved_result_hashes_identical": true,
+      "comparisons": [
+        {
+          "before": {
+            "requested_payments": 250,
+            "events": 257,
+            "entities": 738,
+            "input_bytes": 258531,
+            "result_bytes": 199075,
+            "input_sha256": "eb178fd6f3734cbdc5b1a441be8df6541cb854424908154101bdfe532cb376e6",
+            "result_sha256": "ede63dfbba1a0c3eb076a1fb4c56de6f9a4cc5ffc57a6728c8327f97628013a1",
+            "candidates": 1,
+            "distinct_customers": 163,
+            "distinct_devices": 1,
+            "process_wall_seconds": 9.914975899970159,
+            "worker_main_seconds": 0.3093449999578297,
+            "peak_working_set_bytes": 195706880,
+            "peak_commit_bytes": 162734080
+          },
+          "after": {
+            "requested_payments": 250,
+            "events": 257,
+            "entities": 738,
+            "input_bytes": 258531,
+            "result_bytes": 199075,
+            "input_sha256": "eb178fd6f3734cbdc5b1a441be8df6541cb854424908154101bdfe532cb376e6",
+            "result_sha256": "ede63dfbba1a0c3eb076a1fb4c56de6f9a4cc5ffc57a6728c8327f97628013a1",
+            "candidates": 1,
+            "distinct_customers": 163,
+            "distinct_devices": 1,
+            "process_wall_seconds": 8.876357499975711,
+            "worker_main_seconds": 0.2552237999625504,
+            "peak_working_set_bytes": 194916352,
+            "peak_commit_bytes": 162111488
+          },
+          "peak_working_set_delta_bytes": -790528
+        },
+        {
+          "before": {
+            "requested_payments": 500,
+            "events": 512,
+            "entities": 1472,
+            "input_bytes": 515767,
+            "result_bytes": 442446,
+            "input_sha256": "f32cbe32d618090d48d6272f52f4798b435971daba46adebc09c5734f0ecf45a",
+            "result_sha256": "35c8c8935863624896732d88613bdad1ac11a3da8d26fb660e49ac59017eda5e",
+            "candidates": 1,
+            "distinct_customers": 307,
+            "distinct_devices": 1,
+            "process_wall_seconds": 9.81538929999806,
+            "worker_main_seconds": 0.47479490004479885,
+            "peak_working_set_bytes": 198627328,
+            "peak_commit_bytes": 166129664
+          },
+          "after": {
+            "requested_payments": 500,
+            "events": 512,
+            "entities": 1472,
+            "input_bytes": 515767,
+            "result_bytes": 442446,
+            "input_sha256": "f32cbe32d618090d48d6272f52f4798b435971daba46adebc09c5734f0ecf45a",
+            "result_sha256": "35c8c8935863624896732d88613bdad1ac11a3da8d26fb660e49ac59017eda5e",
+            "candidates": 1,
+            "distinct_customers": 307,
+            "distinct_devices": 1,
+            "process_wall_seconds": 8.93887640000321,
+            "worker_main_seconds": 0.4064211000222713,
+            "peak_working_set_bytes": 198574080,
+            "peak_commit_bytes": 166166528
+          },
+          "peak_working_set_delta_bytes": -53248
+        },
+        {
+          "before": {
+            "requested_payments": 1000,
+            "events": 1021,
+            "entities": 2824,
+            "input_bytes": 1011944,
+            "result_bytes": 854265,
+            "input_sha256": "3586d8639bb3fea69a0a3c363a2d3e4a5c96233b9f61511f25c904f332289f81",
+            "result_sha256": "0d291e479474a04530a2f4269b329cdeafb81051dbae1545ac970b66f522542c",
+            "candidates": 1,
+            "distinct_customers": 595,
+            "distinct_devices": 1,
+            "process_wall_seconds": 10.510579099878669,
+            "worker_main_seconds": 0.9505960999522358,
+            "peak_working_set_bytes": 203100160,
+            "peak_commit_bytes": 171053056
+          },
+          "after": {
+            "requested_payments": 1000,
+            "events": 1021,
+            "entities": 2824,
+            "input_bytes": 1011944,
+            "result_bytes": 854265,
+            "input_sha256": "3586d8639bb3fea69a0a3c363a2d3e4a5c96233b9f61511f25c904f332289f81",
+            "result_sha256": "0d291e479474a04530a2f4269b329cdeafb81051dbae1545ac970b66f522542c",
+            "candidates": 1,
+            "distinct_customers": 595,
+            "distinct_devices": 1,
+            "process_wall_seconds": 9.370653700083494,
+            "worker_main_seconds": 0.80714669986628,
+            "peak_working_set_bytes": 204746752,
+            "peak_commit_bytes": 172167168
+          },
+          "peak_working_set_delta_bytes": 1646592
+        }
+      ]
+    },
+    {
+      "name": "mixed",
+      "baseline_source": "198d2dbd43b70935206897032d4440bc4b1d8a94",
+      "source_commit": "83e4bb190679173d1d33031f6b803b72ec25b307",
+      "all_input_and_saved_result_hashes_identical": true,
+      "comparisons": [
+        {
+          "before": {
+            "requested_payments": 100,
+            "events": 104,
+            "entities": 518,
+            "input_bytes": 136715,
+            "result_bytes": 56592,
+            "input_sha256": "b58f0c7e409d30eeddd2b8dad3a6b9709c9fb5061412e5949ef494938bc0b276",
+            "result_sha256": "a4ea5f6c1e149d8e81075e741f46bf0822919936514b300a2023e196bea85f90",
+            "candidates": 1,
+            "distinct_customers": 94,
+            "distinct_devices": 2,
+            "process_wall_seconds": 10.315320400055498,
+            "worker_main_seconds": 0.20338240009732544,
+            "peak_working_set_bytes": 193171456,
+            "peak_commit_bytes": 160555008
+          },
+          "after": {
+            "requested_payments": 100,
+            "events": 104,
+            "entities": 518,
+            "input_bytes": 136715,
+            "result_bytes": 56592,
+            "input_sha256": "b58f0c7e409d30eeddd2b8dad3a6b9709c9fb5061412e5949ef494938bc0b276",
+            "result_sha256": "a4ea5f6c1e149d8e81075e741f46bf0822919936514b300a2023e196bea85f90",
+            "candidates": 1,
+            "distinct_customers": 94,
+            "distinct_devices": 2,
+            "process_wall_seconds": 8.673189099878073,
+            "worker_main_seconds": 0.1802855001296848,
+            "peak_working_set_bytes": 193323008,
+            "peak_commit_bytes": 160432128
+          },
+          "peak_working_set_delta_bytes": 151552
+        },
+        {
+          "before": {
+            "requested_payments": 250,
+            "events": 257,
+            "entities": 738,
+            "input_bytes": 258531,
+            "result_bytes": 98708,
+            "input_sha256": "136a0a7a4f5e23fff27c67ded0359ba8e528313252524ebb1402f22654e5d552",
+            "result_sha256": "1eb94e3b0edc98f1a3d2358ea78fdfe5b5107150273e0ba1d2179640899af071",
+            "candidates": 1,
+            "distinct_customers": 163,
+            "distinct_devices": 2,
+            "process_wall_seconds": 9.922934100031853,
+            "worker_main_seconds": 0.26156080001965165,
+            "peak_working_set_bytes": 194748416,
+            "peak_commit_bytes": 162091008
+          },
+          "after": {
+            "requested_payments": 250,
+            "events": 257,
+            "entities": 738,
+            "input_bytes": 258531,
+            "result_bytes": 98708,
+            "input_sha256": "136a0a7a4f5e23fff27c67ded0359ba8e528313252524ebb1402f22654e5d552",
+            "result_sha256": "1eb94e3b0edc98f1a3d2358ea78fdfe5b5107150273e0ba1d2179640899af071",
+            "candidates": 1,
+            "distinct_customers": 163,
+            "distinct_devices": 2,
+            "process_wall_seconds": 8.764757999917492,
+            "worker_main_seconds": 0.2333076000213623,
+            "peak_working_set_bytes": 194928640,
+            "peak_commit_bytes": 162144256
+          },
+          "peak_working_set_delta_bytes": 180224
+        },
+        {
+          "before": {
+            "requested_payments": 500,
+            "events": 512,
+            "entities": 1472,
+            "input_bytes": 515767,
+            "result_bytes": 206803,
+            "input_sha256": "d2bdfe3ea33a2b44e9194daa1ace022d8b4dedea2c3ff8f6fcc9f7412edac900",
+            "result_sha256": "17bddd4dd0c845d99cb2ce2e5a8cfab4ec9fb560f80e323a2e4e87bc829e5c5c",
+            "candidates": 1,
+            "distinct_customers": 307,
+            "distinct_devices": 2,
+            "process_wall_seconds": 10.174878100166097,
+            "worker_main_seconds": 0.4093219998758286,
+            "peak_working_set_bytes": 197300224,
+            "peak_commit_bytes": 165060608
+          },
+          "after": {
+            "requested_payments": 500,
+            "events": 512,
+            "entities": 1472,
+            "input_bytes": 515767,
+            "result_bytes": 206803,
+            "input_sha256": "d2bdfe3ea33a2b44e9194daa1ace022d8b4dedea2c3ff8f6fcc9f7412edac900",
+            "result_sha256": "17bddd4dd0c845d99cb2ce2e5a8cfab4ec9fb560f80e323a2e4e87bc829e5c5c",
+            "candidates": 1,
+            "distinct_customers": 307,
+            "distinct_devices": 2,
+            "process_wall_seconds": 8.865271399961784,
+            "worker_main_seconds": 0.37876560003496706,
+            "peak_working_set_bytes": 197873664,
+            "peak_commit_bytes": 164802560
+          },
+          "peak_working_set_delta_bytes": 573440
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Nine sequential local synthetic controls; single sample per shape/size, not percentiles/concurrency/hosted bounds.",
+    "Peak counters cover worker child only; ambient process startup/import variation remains."
+  ]
+}
