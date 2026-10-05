@@ -5,6 +5,39 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+### Latest capacity evidence, after the frontend changes
+
+A fresh isolated worker baseline on cc38ca45f7ea8aca753ffbe9e27c2139da19ca58
+(application source 134c67c) reproduced all historical input/result hashes for
+1,021/5,104/10,207 generated events. Peak worker working sets were 202.9/248.5/
+278.0 MB; worker main times 0.65/2.29/4.34 seconds. This includes current section
+and overview indexing; earlier capacity records predate these changes. Neither
+sample establishes hosted capacity or a causal index-overhead estimate.
+
+New scripts/measure_indexed_reads.py measures the saved synthetic results without
+migration/jobs or whole-object reads. Three repetitions per path verified overview,
+first eight-item page and largest evidence chunk/final hashes. Overview read 93–95
+bytes; pages read 6,146–16,041 bytes. Evidence manifest plus delivery verified the
+containing source fragment twice, reading 91,032/459,698/283,338 bytes internally.
+This bounded amplification is preserved, not hidden by an evidence cache.
+
+Public aggregate reports: results/capacity/windows-worker-indexed-20261005.json
+and indexed-reads-20261005.json. Reproduction, medians and exclusions are in
+ docs/capacity-baseline.md. Driver lint and the actual measurement passed; this
+commit changes measurement tooling/documentation only. Application CI remains
+134c67c: 289 Python/73 browser checks, all six jobs passed. Inspect newer CI after
+this push; do not claim unobserved checks. Private fixture is
+work/capacity-paged-20261005/ (never use it as production data).
+
+Next independent gap: a candidate page limits item count but can still contain
+very large membership/event arrays. Design a bounded queue-summary contract while
+preserving full selected-candidate fragment access; verify dense cases, response
+sizes and browser memory. Investigator selected sections and actual PostgreSQL/
+provider costs also require capacity work. Vercel access, live identity/private DB,
+monitoring, scheduled off-host restore policy and authorized real-model validation
+remain incomplete. Preserve the full goal and release gates below.
+
+
 ### Current continuation checkpoint — email investigation and frontend integration
 
 The four latest RiskWeave GitHub failure emails were read through the connected

@@ -63,3 +63,54 @@ accepted input/result sizes, interruption recovery and all response paths. Recor
 multiple repetitions, latency percentiles and failures. Inspect actual function
 bundle size and provider billing/allowances. Pick supported admission limits only
 after those measurements; local data does not approve the current 100 MB budget.
+
+## Rerun after indexed reads and paged console
+
+On source cc38ca45f7ea8aca753ffbe9e27c2139da19ca58 (application source 134c67c),
+the same three controls ran in a new isolated fixture. Every historical input and
+result checksum reproduced. This includes migrations 0009/0010 and new overview
+scalar metadata; the prior table predates them. One fresh worker per size:
+
+| Actual events | Worker main s | Process/verification s | Peak working set MB | Peak commit MB | Section index rows |
+|---:|---:|---:|---:|---:|---:|
+| 1,021 | 0.65 | 13.22 | 202.9 | 170.5 | 20 |
+| 5,104 | 2.29 | 14.66 | 248.5 | 217.2 | 26 |
+| 10,207 | 4.34 | 16.93 | 278.0 | 246.2 | 14 |
+
+See [worker report](../results/capacity/windows-worker-indexed-20261005.json).
+Timing differences from the earlier sample do not isolate index overhead: caches,
+other processes and process startup also differ. These are still single sparse
+controls, not a distribution or an approved deployment limit.
+
+A read-only companion driver performs three sequential service calls per path
+on each saved generated run, forbids whole-object reads, caps range reads at 2 MB
+and reconstructs the largest candidate evidence with chunk/final SHA checks.
+It measures SQLite/local-storage service calls, excluding HTTP encoding, browser,
+API process memory and provider/network costs. Cache state is uncontrolled.
+
+| Events | Overview bytes / median ms | First page bytes / median ms | Selected evidence bytes | Evidence storage bytes / median ms |
+|---:|---:|---:|---:|---:|
+| 1,021 | 93 / 55.19 | 6,146 / 27.21 | 8,105 | 91,032 / 20.95 |
+| 5,104 | 94 / 38.03 | 16,041 / 29.27 | 26,887 | 459,698 / 29.14 |
+| 10,207 | 95 / 34.58 | 12,059 / 13.77 | 47,354 | 283,338 / 24.96 |
+
+The overview uses six tiny ranges. Pages request up to eight summaries. Evidence
+manifest and delivery each verify the containing source fragment; every result
+here fits one source fragment, so storage bytes are twice complete result bytes.
+That is internal bounded range verification, despite whole-object reads being
+forbidden; it is not a claim that evidence reads only selected bytes internally.
+Dense results crossing multiple fragments need separate measurements. No evidence
+cache or weaker checksum verification was introduced to reduce these numbers.
+
+See [read report](../results/capacity/indexed-reads-20261005.json) for each repetition.
+Reproduce after creating a fresh baseline fixture using the command above:
+
+```powershell
+.venv/Scripts/python scripts/measure_indexed_reads.py --directory work/capacity-new-control
+```
+
+The companion writes only a new report in the fixture directory, never migrates,
+starts jobs or alters saved rows/objects. It requires the generated baseline marker,
+uses the fixed synthetic owner and verifies source/result provenance. Reports
+publish only aggregates and hashes. Large candidate summaries, selected-section
+browser memory, PostgreSQL range costs and all hosted capacity gates remain open.
