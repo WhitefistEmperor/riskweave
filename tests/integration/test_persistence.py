@@ -18,6 +18,7 @@ def test_migration_persistence_and_foreign_keys(tmp_path):
         "artifacts",
         "analysis_runs",
         "result_fragments",
+        "result_sections",
         "candidate_reviews",
         "review_audit",
         "storage_deletions",
