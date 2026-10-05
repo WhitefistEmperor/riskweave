@@ -75,6 +75,7 @@ current shell's normal syntax; these are not production issuer settings.
 Verify the exact deployed HTTPS source with the actual configured issuer:
 authorization-code/PKCE callback, token expiry, rejected/revoked sessions, provider
 logout success and failure, stale tabs/back navigation, owner isolation and no
-private requests after expiry. Cross-tab/provider-session revocation is not proved
-by these local controls. Browser expiry cleanup cannot revoke server tokens.
+private requests after expiry. Open same-origin tabs are covered by the dedicated two-tab control when channels
+are available. Closed/suspended tabs, blocked channels and provider-session
+revocation still require hosted verification. Browser expiry cleanup cannot revoke server tokens.
 The deployment and identity release gates remain open until that evidence exists.

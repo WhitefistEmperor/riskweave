@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 00037c4; documentation may have a newer head. Inspect git status and
+commit is f36eb31; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -45,7 +45,7 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Cross-tab session privacy: current source work, CI pending
+### Cross-tab session privacy: verified source f36eb31
 
 The session boundary now broadcasts only the literal signed-out message through
 a same-origin BroadcastChannel when the analyst explicitly signs out. Other open
@@ -59,9 +59,13 @@ A fourth dedicated browser control loads private cases in two real tabs in the
 same browser context, holds provider discovery pending, signs out in one tab and
 requires both private views/user stores to clear before completing discovery.
 Provider failure then must keep both private views hidden. Local lint/typecheck
-pass; final source CI is pending at this note. Do not call the4 controls verified
-until exact-source CI passes. The normal80-test suite skips the4 dedicated tests;
-the separate production OIDC fixture must execute all4.
+pass. Exact source CI37318693372(push)/37318701787(PR) passed all six jobs:
+306 Python/80 workspace browser tests and4 dedicated OIDC production-browser
+controls execute and pass on each run, zero audit vulnerabilities, containers,
+actual PostgreSQL/SDK background delivery and encrypted restores in both stores.
+Proof: results/operations/cross-tab-session-source-verification-20261005.json.
+Production inventory440875932 bytes remains below450MB; hosted bundles unverified.
+Latest usage snapshot:62% current-window remaining /33% weekly remaining.
 
 The previous local production test-server launch was rejected by automatic review;
 it is not retried through a replacement route. Verification uses the repository's
@@ -69,6 +73,14 @@ existing isolated production-build CI controls. Browser policies can disable
 BroadcastChannel; local expiry/logout still applies but synchronization is not
 claimed there. Closed/suspended tabs, issuer revocation and actual HTTPS deployment
 remain hosted gates. This client signal cannot revoke a server access token.
+
+Supported Vercel connector recheck now confirms account metadata is readable and
+the default team matches the intended target, but teams are empty and default-scope
+RiskWeave project search is empty. Explicit target scope still returns403 and
+requires re-authentication/token access. This is a workspace permission gap, not
+proof that every Vercel read is unavailable. Report:
+results/operations/deployment-access-recheck-20261005.json. No deployment, free
+TLS database/issuer, paid upgrade or unrelated project change is verified.
 
 ### Session privacy boundary: verified source 00037c4
 

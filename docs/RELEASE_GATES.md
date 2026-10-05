@@ -2,8 +2,8 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source00037c4 (all six push/PR checks green:306 Python/80 workspace browser
-plus3 dedicated OIDC session browser controls), the actual
+uses sourcef36eb31 (all six push/PR checks green:306 Python/80 workspace browser
+plus4 dedicated OIDC session browser controls), the actual
 403 scope response and measured sparse/dense workers and cancellable browser grid
 controls. Consult the handoff for exact evidence and remaining capacity work.
 
@@ -27,9 +27,9 @@ Source00037c4 separately adds the client session privacy boundary; see
 |---|---|---|
 | Private investigation workflow | 306 Python/80 browser checks, exact-source push/PR green, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
-| Client session privacy | Configured investigation layout gates initial user, unmounts loaded state on idle expiry/unload and before provider logout;3 production-build controls pass with actual client timers/storage and fixture API bodies | Exact HTTPS issuer callback/expiry/revocation/logout, stale tabs/back navigation and cross-tab behavior |
+| Client session privacy | Configured investigation layout gates initial user, unmounts loaded state on idle expiry/unload and before provider logout;4 production-build controls pass with actual client timers/storage and two-tab BroadcastChannel, fixture API bodies | Exact HTTPS issuer callback/expiry/revocation/logout, stale/closed/suspended tabs, blocked channels and back navigation |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
-| Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Re-authentication: target workspace still returns 403; verify free account allowances, actual projects/deployment, TLS/database/identity |
+| Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Account profile/default team verified; target workspace still returns403 and accessible teams/default-scope RiskWeave search are empty; verify free account allowances, actual projects/deployment, TLS/database/identity |
 | Runtime capacity | All nine original worker hashes preserved; dense10207 worker25.332s/282.6MB. Cancellable complete graphs/bounded searchable selectors: up to5394 entities,6.330s display+Fit,859ms maximum task. Latest instantaneous network heaps up to80.3MB; sparse overhead up to4MB. Single worker samples; generated two-fragment result/evidence delivery verified, higher fragment/candidate extremes remain open | Deployed cold/warm runs, parent/DB/browser overhead, repetitions/percentiles, concurrent and dense cases, largest response paths, duration/memory/bundle/billing |
 | Durable jobs | Actual SDK/PostgreSQL local delivery, leases, retry/deadline/model fencing, bounded reconciliation and erasure checks | Generated hosted queue authentication, cron, browser-independent delivery and interruption/recovery on real provider |
 | Operations and recovery | Private aggregate operator CLI, explicit retention/erasure, manual snapshots, standard age envelopes with actual local encrypted restores, and PostgreSQL 17 restore in both storage modes | External uptime/queue/error monitoring, authorized alert destinations, scheduled encrypted backups, hosted restore/rollback and RPO/RTO ownership |

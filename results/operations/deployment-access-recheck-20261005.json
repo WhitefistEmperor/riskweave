@@ -1,0 +1,19 @@
+{
+  "schema_version": "deployment-access-recheck-v1",
+  "production_ready": false,
+  "date": "2026-10-05",
+  "target_team": "team_TB2LpxHcKF1dYrc4LdY7O9Fu",
+  "scope": "sahilsinghkushwah10thb-9948s-projects",
+  "account_profile_readable": true,
+  "default_team_matches_target": true,
+  "accessible_team_count": 0,
+  "default_scope_riskweave_project_matches": 0,
+  "target_scope_projects_status": 403,
+  "target_scope_error": "Requires re-authentication to this scope or a token with access.",
+  "deployed": false,
+  "limitations": [
+    "User profile/default-scope reads do not establish target workspace/repository/deployment permission.",
+    "No RiskWeave live deployment, free private TLS PostgreSQL or live identity issuer is verified.",
+    "No alternate rejected auth route, paid upgrade or unrelated project modification was attempted."
+  ]
+}
