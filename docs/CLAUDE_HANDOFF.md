@@ -21,7 +21,7 @@ of a failed live deployment:
 - 19d6917, push 37255956899: adversarial encrypted archive fixture omitted
   persisted object files. Fixed in 36bcc25; later encrypted restore checks passed.
 
-The application commit containing this checkpoint adds a verified lightweight
+Pushed application source `134c67cc60de33560edb921ff255c606bdce03fd` adds a verified lightweight
 owner-scoped overview endpoint, eight-item candidate pages in the console and
 checksum-verified selected candidate/evidence chunks with cancellation and stale
 selection protection. It preserves full analyst review, evidence, timeline and
@@ -36,9 +36,13 @@ widths plus new page/reload/corruption/cancellation cases. The full browser run
 also passed actual upload/analysis/evidence/review/revisit against the new API
 (test 28), so this is not only mocked transport coverage. First full run exposed
 a legacy fixture returning unrelated 200 data at the new overview URL; corrected
-to an explicit legacy 404 and restarted. Full 73-browser and Python suites are
-still running at this checkpoint; exact-source GitHub CI has not completed.
-Do not report those pending checks as passed. Native encrypted tests may skip
+to an explicit legacy 404 and restarted. Full local suites subsequently passed: 73 browser tests and 273 Python tests
+(16 skipped pending the Linux/provider prerequisites). [Source CI 37264475124](https://github.com/WhitefistEmperor/riskweave/actions/runs/37264475124)
+and [source CI 37264478796](https://github.com/WhitefistEmperor/riskweave/actions/runs/37264478796)
+passed all six checks on 134c67c: 289 Python tests, 73 production-browser tests,
+containers, actual PostgreSQL inference/background delivery and encrypted restore
+in both storage modes. Neither frontend job required a retry. Production inventory
+is 440,712,884 bytes against 450 MB; actual hosted bundle remains unverified. Native encrypted tests may skip
 without an installed age executable; CI exercises those plus actual PostgreSQL.
 
 Loopback API now session 34961 / PID 54368, frontend session 20073, production
@@ -47,8 +51,8 @@ no migration or case erasure occurred. Generated 1,021-event smoke passed in
 17.29s, preserving historical result SHA bb3977...; reviews and malformed422/
 other-owner404 passed; only its own generated fixture was deleted.
 
-Next: inspect pending local suites and source push/PR CI, fix failures, then record
-exact commit/results here. Measure selected-section and hosted capacity; provision
+Next: preserve this exact source and inspect newer CI after any changes. Measure
+selected-section and hosted capacity; provision
 live authentication, private PostgreSQL, workflow/cron, monitoring and off-host
 backups after Vercel access is restored. Real-data model validation still requires
 authorized exports and resolved labels. Full release gates below remain open.
