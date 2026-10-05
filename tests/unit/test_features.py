@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from datetime import timedelta
 from itertools import combinations
 
 import networkx as nx
@@ -163,3 +164,71 @@ def test_late_resource_bridge_merges_only_observed_components():
     assert [row.values["shared_neighbor_count"] for row in rows] == [0, 1, 0, 2]
     assert [row.values["multi_shared_neighbor_count"] for row in rows] == [0, 0, 0, 0]
     assert rows[-1].values["customer_local_density"] == (2 / (3 * 2)) * 2
+
+
+def test_density_changes_when_another_customer_closes_a_neighbor_triangle():
+    bundle = SyntheticPaymentGenerator(GenerationConfig(seed=105, transactions=100)).generate()
+    ids = {
+        kind: [e.entity_id for e in bundle.entities if e.entity_type is kind][:3]
+        for kind in (
+            EntityType.CUSTOMER,
+            EntityType.DEVICE,
+            EntityType.IP,
+            EntityType.CARD,
+            EntityType.ADDRESS,
+        )
+    }
+    start = bundle.events[0].timestamp
+    events = []
+    for index, (customer, device) in enumerate(
+        [(0, 0), (1, 0), (0, 1), (2, 1), (0, 0), (1, 1), (0, 0)]
+    ):
+        events.append(
+            bundle.events[index].model_copy(
+                update={
+                    "timestamp": start + timedelta(seconds=index),
+                    "customer_id": ids[EntityType.CUSTOMER][customer],
+                    "device_id": ids[EntityType.DEVICE][device],
+                    "ip_id": ids[EntityType.IP][customer],
+                    "card_id": ids[EntityType.CARD][customer],
+                    "address_id": ids[EntityType.ADDRESS][customer],
+                }
+            )
+        )
+    rows = extract_event_features(bundle.model_copy(update={"events": tuple(events)})).rows
+    # The focal customer's own resource memberships/neighbors stay unchanged,
+    # but another customer adds the edge between those neighbors.
+    assert rows[4].values["shared_neighbor_count"] == rows[6].values["shared_neighbor_count"] == 2
+    assert rows[4].values["customer_local_density"] == (2 / (3 * 2)) * 2
+    assert rows[6].values["customer_local_density"] == 1.0
+
+
+def test_rolling_counts_include_exact_cutoff_and_exclude_just_older_events():
+    bundle = SyntheticPaymentGenerator(GenerationConfig(seed=105, transactions=100)).generate()
+    first = bundle.events[0]
+    times = [
+        timedelta(0),
+        timedelta(minutes=15),
+        timedelta(minutes=15, microseconds=1),
+        timedelta(hours=1),
+        timedelta(hours=1, microseconds=1),
+    ]
+    events = tuple(
+        bundle.events[index].model_copy(
+            update={
+                "timestamp": first.timestamp + offset,
+                "customer_id": first.customer_id,
+                "device_id": first.device_id,
+                "ip_id": first.ip_id,
+                "card_id": first.card_id,
+                "address_id": first.address_id,
+                "merchant_id": first.merchant_id,
+                "merchant_bank_account_id": first.merchant_bank_account_id,
+            }
+        )
+        for index, offset in enumerate(times)
+    )
+    rows = extract_event_features(bundle.model_copy(update={"events": events})).rows
+    for field in ("device_events_15m", "ip_events_15m", "merchant_events_15m"):
+        assert [row.values[field] for row in rows] == [1, 2, 2, 1, 2]
+    assert [row.values["customer_events_1h"] for row in rows] == [1, 2, 3, 4, 4]

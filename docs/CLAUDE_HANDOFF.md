@@ -45,6 +45,22 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Profile-guided feature optimization: source checks pending
+
+The large mixed input's diagnostic cProfile found local-density calculations and
+repeated 15-minute cutoff arithmetic as substantial costs. Profiling overhead is
+not a capacity sample. Added one cached density per customer, invalidated globally
+whenever any new projected edge is inserted (including neighbor-to-neighbor edges).
+Extra resource sharing changes multiplicity but not density. Time cutoffs now compute
+once per event; exact comparisons, float operation order and model remain unchanged.
+
+Local Ruff /11 feature tests pass, including neighbor-triangle invalidation and
+exact/just-older rolling boundaries. All5 prior feature captures match, and all
+336831 feature values for10207 mixed events match the pre-change reference exactly.
+Full source CI and post-change repeated worker/hash/memory measurements are pending.
+Private profile/reference: work/mixed-density-profile-20261005. No user cases,
+trained model, production admission limits or observed accuracy approval changed.
+
 ### Repeated mixed dense capacity: measured source 3e0487b
 
 Three fresh sequential worker processes complete the same 10207-event mixed

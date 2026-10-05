@@ -126,12 +126,15 @@ class _CustomerProjection:
         self.neighbors: list[int] = []
         self.multiple: list[int] = []
         self.groups: dict[str, int] = {}
+        self.edge_revision = 0
+        self.densities: list[tuple[int, float] | None] = []
 
     def add(self, customer: str) -> int:
         if customer not in self.indices:
             self.indices[customer] = len(self.neighbors)
             self.neighbors.append(0)
             self.multiple.append(0)
+            self.densities.append(None)
         return self.indices[customer]
 
     def share(self, customer: int, resource: str) -> None:
@@ -139,6 +142,10 @@ class _CustomerProjection:
         own_bit = 1 << customer
         if peers & own_bit:
             return
+        # Density depends on edges between neighbors too, so invalidate globally.
+        # Extra shared resources only change edge multiplicity, not density.
+        if peers & ~self.neighbors[customer]:
+            self.edge_revision += 1
         self.multiple[customer] |= self.neighbors[customer] & peers
         self.neighbors[customer] |= peers
         remaining = peers
@@ -152,11 +159,15 @@ class _CustomerProjection:
         self.groups[resource] = peers | own_bit
 
     def density(self, customer: int, resources: tuple[str, ...]) -> float:
+        cached = self.densities[customer]
+        if cached is not None and cached[0] == self.edge_revision:
+            return cached[1]
         neighbors = self.neighbors[customer]
         if not neighbors:
             return 0.0
         ego = neighbors | (1 << customer)
         if any(self.groups[resource] & ego == ego for resource in resources):
+            self.densities[customer] = (self.edge_revision, 1.0)
             return 1.0
         twice_edges = 0
         remaining = ego
@@ -166,7 +177,9 @@ class _CustomerProjection:
             remaining ^= bit
         nodes = ego.bit_count()
         # Preserve NetworkX's divide-then-multiply float operation order.
-        return ((twice_edges // 2) / (nodes * (nodes - 1))) * 2
+        value = ((twice_edges // 2) / (nodes * (nodes - 1))) * 2
+        self.densities[customer] = (self.edge_revision, value)
+        return value
 
 
 def _window_values(
@@ -210,12 +223,12 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
     for event in sorted(bundle.events, key=lambda item: (item.timestamp, item.event_id)):
         is_refund = event.event_type is EventType.REFUND
         history_item = (event.timestamp, is_refund, event.amount_minor)
+        hour_cutoff = event.timestamp - timedelta(hours=1)
+        quarter_hour_cutoff = event.timestamp - timedelta(minutes=15)
         customer_24h = _window_values(
             histories["customer"], event.customer_id, event.timestamp, timedelta(hours=24)
         )
-        customer_1h_count = sum(
-            item[0] >= event.timestamp - timedelta(hours=1) for item in customer_24h
-        )
+        customer_1h_count = sum(item[0] >= hour_cutoff for item in customer_24h)
         histories["customer"][event.customer_id].append(history_item)
 
         entity_histories = {}
@@ -271,7 +284,7 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
         )
         total_shared = sum(shared_counts)
         history_15m = {
-            name: sum(item[0] >= event.timestamp - timedelta(minutes=15) for item in values)
+            name: sum(item[0] >= quarter_hour_cutoff for item in values)
             for name, values in entity_histories.items()
         }
         customer_values = customer_24h + (history_item,)
