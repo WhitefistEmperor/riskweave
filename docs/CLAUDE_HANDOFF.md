@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is bdac888; documentation may have a newer head. Inspect git status and
+commit is 198d2db; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -46,43 +46,86 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 ## Latest source and verification
 
 
-### Compact projected feature graph continuation
+### Compact projected feature graph: verified source198d2db
 
-Applicatione6ce32e source checks37289913309/37289920666 completed successfully
-after the prior documentation push. New feature work now replaces per-edge
-NetworkX dictionaries with exact Python integer adjacency and repeated-sharing
-bitsets. It keeps the same customer projection and causal feature definitions;
-no trained artifact, threshold, original event/result bytes or saved cases are
-changed. Component union joins one existing resource member, since the prior
-members already form a connected clique. Density counts the exact induced
-edges through masked bit counts and preserves NetworkX's float operation order.
-This still stores quadratic adjacency bits in worst cases and must not be treated
-as an unbounded admission solution. Sparse overhead may differ; measure it.
+Pushed application198d2dbd43b70935206897032d4440bc4b1d8a94 replaces individual
+NetworkX projected edge dictionaries with exact integer adjacency and repeated-
+sharing bitsets. All customer-projection and causal feature meanings are retained.
+Component union needs one existing resource member because earlier group members
+already form one component. Exact induced density uses masked bit counts and
+preserves NetworkX's divide-then-multiply float operation order. No approximation,
+sampling, link removal, retraining, threshold change, migration or original result
+rewrite is introduced. Worst-case adjacency remains quadratic in bits; resource
+masks add sparse overhead. Do not equate this with unbounded admission.
 
-Nine focused feature tests pass, including five independently rebuilt causal
-graph-oracle shapes, a late disconnected-component bridge, label blindness and
-prefix equivalence, and forbidden projected NetworkX graph/traversal use in a
-dense control. Full vectors match exactly for three original controls and two
-mixed controls. Mixed512-event extraction8.106s to0.138s (single sample). See
-results/capacity/compact-feature-equivalence-20261005.json. Complete local Python,
-optimized worker/result/memory and source-CI proofs are pending.
+Nine focused feature tests pass:five independent causal graph-oracle shapes,
+late isolated-component bridge, prefix/label invariance and forbidden projected
+NetworkX allocation/traversal. Full vectors reproduce every captured value for
+three original and two valid mixed controls. Mixed512-event extraction8.106s to
+0.138s in one sample; see compact-feature-equivalence-20261005.json.
 
-The first mixed measurement fixture was correctly rejected by actual ingestion:
-assigning resources per event index broke original-payment/refund context
-consistency. Drivers now assign dense groups by customer identity, preserving
-refund references, and the feature driver checks actual parse_input validation.
-Rejected fixture remains ignored/private; only valid controls are published.
-Three valid original workers on sourcee6ce32e completed104/257/512 events;
-report:results/capacity/windows-worker-mixed-before-20261005.json. The pending
-compact workers must reproduce those complete input/result hashes, plus original
-sparse/shared-device reports. Do not claim result equivalence from features alone.
+Full local Python302 passed/2 PostgreSQL-only skips, Ruff passed. Exact source
+push37291647939 and PR37291657451 passed all six checks:304 Python/79 production-
+browser tests, zero audit advisories, containers, actual PostgreSQL/SDK background
+delivery and encrypted PostgreSQL restores in both storage modes. Production
+inventory440,821,998 bytes is below450MB; actual hosted bundle is still unverified.
+After restart with actual source198, three local investigation browser checks
+passed24.6s:one real upload/background analysis/review/evidence/revisit workflow
+and two mocked uncommon states. Frontend source tree is byte-equivalent tobdac888
+(git diff over frontend is empty); its served build is unchanged and the browser
+driver captures exact graph source bytes. See
+results/operations/compact-projection-source-verification-20261005.json.
 
-Local API8000 was confirmed idle (zero active analyses), then stopped before
-feature edits. Isolated fixture API8001 is also stopped. Frontend5173 remains the
-verifiedbdac888 production build (no frontend changes in this continuation).
-Restart APIs only with actual new source provenance after checks. Original user
-database/storage and trained artifact are preserved. Vercel403, live private
-database/identity, hosted operations and observed model validation remain open.
+All nine complete mixed/shared-device/sparse workers reproduce their original
+input AND canonical result hashes and unchanged trusted model artifact. Reports:
+results/capacity/compact-worker-equivalence-20261005.json and
+windows-worker-compact-{mixed,shared-device,sparse}-20261005.json. Mixed512 worker
+7.859s to0.409s, peak206.1MB to197.3MB. Shared-device1021 worker2.443s to0.951s,
+peak244.4MB to203.1MB. Largest sparse10207 worker2.714s to2.809s and278.9MB to
+282.9MB:small sparse overhead is real, not a uniform speed/memory reduction claim.
+
+Three new dense workers completed2552/5104/10207 events with1426/2850/3120
+customers sharing one device. Main3.429/11.727/25.332s; peaks221.1/252.8/282.6MB.
+Saved results1.540/1.905/1.852MB. Larger shared-device3000/3500/4000-payment
+boundary controls also completed (3063/3573/4083 events), but all results remained
+below the native2MiB fragment boundary. Their timings overlapped one small browser
+workflow; treat all timings as ambient single local observations, not percentiles.
+Read windows-worker-compact-shared-device-{large,boundary}-20261005.json.
+
+Read-only larger indexed queues/evidence passed with whole-object reads forbidden.
+Every selected source result here still fits ONE native fragment. Manifest and
+delivery each verify it, reading up to3.704MB total for the1851840-byte result;
+largest single read1851840 bytes. This is checksum amplification, not a selected-
+bytes-only storage claim. Actual generated multi-fragment/candidate extremes are
+still open; small native test fixtures do not close that capacity gap. Report:
+indexed-reads-compact-shared-device-large-20261005.json.
+
+Real larger browser views (isolated API/SQLite/objects + loopback HTTP relay) passed
+all selection/return-to-evidence checks without browser/HTTP errors or horizontal
+overflow. Graphs4108/5394/5168 entities with2542/3068/3069 links took4.288/4.934/
+4.322s display+Fit; largest tasks1673/2519/2413ms. Network-stage renderer JS heaps
+144.6/69.3/65.7MB are instantaneous samples without forced GC, not per-case peak
+RAM or monotonically scaling estimates. Read dense-browser-compact-large-20261005.json.
+Synchronous graph creation still blocks the page for about2.5s. NEXT useful code
+work:incremental/cancellable large Cytoscape initialization (preserving all graph
+elements and small-network behavior), responsive loading state and actual larger
+browser verification. Do not label the frontend capacity gate finished.
+
+The first mixed measurement fixture was rejected by real ingestion because
+per-event resource reassignment broke payment/refund context. Corrected drivers
+assign groups per customer, preserve references and invoke actual parse_input
+validation. Only valid controls are published; rejected fixtures remain ignored.
+Original user cases, private fixtures and trained artifact are preserved.
+
+Local API8000 is restored/ready on198, jobs enabled, original browser.db/storage.
+Frontend5173 serves the unchanged verifiedbdac grid tree. Isolated API8001 serves
+work/bitset-dense-large-20261005 with jobs disabled. Local servers are NOT hosting.
+Vercel still requires supported scope/GitHub reconnection; the request is pending.
+Original Instinct URL was rechecked by web tool and remains inaccessible. Live
+private database/identity, hosted operations/capacity/recovery and observed model
+validation remain open; do not bypass authentication, invent source requirements
+or claim accuracy from generated controls. Next source/proof pushes must keep
+this GitHub handoff and the copies under outputs current.
 
 ### Dense feature performance continuation checkpoint
 
@@ -206,7 +249,7 @@ No alternate authentication path or unrelated project was substituted.
 
 ### Exact monetary API/UI continuation checkpoint
 
-Latest usage snapshot:47% current-window remaining /46% weekly remaining. The
+Latest usage snapshot:27% current-window remaining /43% weekly remaining. The
 previous10% threshold handoff was already pushed; keep this file current.
 The previous requested10% handoff is already in GitHub history.
 

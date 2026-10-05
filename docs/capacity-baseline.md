@@ -234,7 +234,7 @@ Mixed graph shapes, accepted maxima, response amplification/heap, concurrency,
 actual PostgreSQL/provider behavior and hosted capacity remain open.
 
 
-## Compact exact customer projection (verification in progress)
+## Compact exact customer projection:source198d2db verified
 
 The feature extractor replaces individual NetworkX projected edge dictionaries
 with exact integer adjacency/repeated-sharing bitsets, retaining all edge existence
@@ -242,14 +242,15 @@ and at-least-two-resource information used by the frozen features. Causal resour
 membership and component sizes remain exact. Induced density counts masked
 neighbors and follows the original divide-then-multiply float order. It does not
 sample, approximate or drop links. Worst-case memory is still quadratic in bits;
-resource masks can add sparse overhead. Actual worker/memory/hosted gates remain.
+resource masks can add sparse overhead. Actual worker/memory samples are below; hosted gates remain.
 
 Five full generated feature captures reproduce original input/feature hashes,
 including valid mixed dense controls. Mixed512-event extraction8.106s to0.138s
 in a single sample. See compact-feature-equivalence-20261005.json. Nine focused
 tests cover causal graph-oracle shapes, late component bridging, label blindness,
-prefix equivalence and absence of projected NetworkX allocation. Full application
-checks and compact worker/result/memory proof are pending; read the handoff.
+prefix equivalence and absence of projected NetworkX allocation. Exact source CI37291647939/37291657451 passed all six checks with304 Python/79
+browser tests. Local full Python302 passed/2 PostgreSQL-only skips and Ruff passed.
+All nine complete input/result hashes match originals; see the worker proof below.
 
 The first mixed worker fixture failed strict ingestion because per-event resource
 changes broke refund context. The fixed control assigns groups per customer so
@@ -262,3 +263,38 @@ were not yet in that source; the report captures their actual measurement hash.
 uv run --no-sync python scripts/measure_feature_vectors.py --mixed --output work/new-compact-capture.json --compare results/capacity/compact-feature-equivalence-20261005.json
 uv run --no-sync python scripts/measure_windows_worker.py --directory work/new-mixed-control --model work/models/network-hgb.joblib --model-sha256 182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74 --mixed-infrastructure --payments 100 250 500
 ```
+
+
+All nine worker controls reproduce complete original input/result hashes and the
+trusted model artifact. Report:compact-worker-equivalence-20261005.json. Mixed512
+main7.859s to0.409s, peak206.1MB to197.3MB; dense1021 main2.443s to0.951s, peak
+244.4MB to203.1MB. Sparse10207 main2.714s to2.809s and peak278.9MB to282.9MB;
+resource bitsets incur small sparse overhead. Do not claim uniform reductions.
+
+| New dense events | Customers | Main s | Peak working set MB | Result MB |
+|---:|---:|---:|---:|---:|
+| 2552 | 1426 | 3.429 | 221.1 | 1.540 |
+| 5104 | 2850 | 11.727 | 252.8 | 1.905 |
+| 10207 | 3120 | 25.332 | 282.6 | 1.852 |
+
+All sources pin198d2db and unchanged trusted model SHA. Reports are
+windows-worker-compact-shared-device-large-20261005.json and
+indexed-reads-compact-shared-device-large-20261005.json. Indexed read measurements
+forbid whole-object reads. These results STILL FIT ONE native2MiB source fragment;
+selected manifest/delivery each verifies the containing fragment, so the largest
+1851840-byte result causes3703680 total storage bytes over2 reads. The boundary
+controls3063/3573/4083 events also stayed below2MiB. Native generated multi-fragment
+capacity is unproved. Boundary timings overlapped one small real browser workflow;
+all measurements are ambient single samples, not percentiles or hosted limits.
+
+Larger real browser views display+Fit4108/5394/5168 entities with2542/3068/3069
+links in4.288/4.934/4.322s. No browser/HTTP errors, selection and return-to-evidence
+passed, no horizontal overflow. Largest tasks1673/2519/2413ms; network-stage
+renderer JS heaps144.6/69.3/65.7MB. These are instantaneous samples without forced
+GC, not per-case peak RAM/scaling forecasts. See dense-browser-compact-large-20261005.json.
+The source snapshot198 has the same frontend tree as the servedbdac888 build;
+exact graph/driver source bytes are captured. Synchronous Cytoscape setup still
+blocks for about2.5s. Incremental cancellable large-graph setup is the next useful
+frontend work; preserve every entity/link, inspect viewport fit, retain small
+graphs and test navigation/unmount cleanup. Accepted maxima, concurrency,
+provider/private-PG costs, actual multi-fragment extremes and hosting remain open.
