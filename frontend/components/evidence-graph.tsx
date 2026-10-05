@@ -80,6 +80,7 @@ export default function EvidenceNetwork({
             label: 'data(label)',
             color: '#334155',
             'font-size': 14,
+            'min-zoomed-font-size': largeNetwork ? 8 : 0,
             'text-valign': 'bottom',
             'text-margin-y': 8,
             'text-background-color': '#f8fafc',
@@ -143,11 +144,12 @@ export default function EvidenceNetwork({
       ],
       layout: largeNetwork
         ? {
-            name: 'circle',
+            name: 'grid',
             animate: false,
             padding: 42,
             avoidOverlap: true,
-            nodeDimensionsIncludeLabels: true,
+            nodeDimensionsIncludeLabels: false,
+            condense: true,
           }
         : {
             name: 'cose',
@@ -160,7 +162,7 @@ export default function EvidenceNetwork({
             nodeRepulsion: () => 18000,
             idealEdgeLength: () => 70,
           },
-      minZoom: 0.15,
+      minZoom: largeNetwork ? 0.0001 : 0.15,
       maxZoom: 4,
       wheelSensitivity: 0.2,
     });
@@ -393,7 +395,7 @@ export default function EvidenceNetwork({
       </p>
       {largeNetwork && (
         <p className="muted text-xs">
-          Large networks use a circular layout. Select an entity and use Focus
+          Large networks use a grid layout. Select an entity and use Focus
           selected to inspect its connections. All reported entities and links
           remain available.
         </p>

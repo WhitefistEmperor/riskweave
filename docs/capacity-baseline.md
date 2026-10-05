@@ -193,7 +193,7 @@ authentication/CORS/gateway proof. Before the frontend fix,513/1106 entities wit
 were4237/20190ms. The1021-event case timed out waiting60000ms for the canvas;
 its final graph time/heap was not measured. See dense-browser-before-20261005.json.
 
-Large networks now use deterministic circular layout above250 nodes or500 links.
+The first corrected applicationa974aa6 used circular layout above250 nodes or500 links.
 No entities, explicit links, original evidence or result hashes are removed.
 Smaller networks retain the existing force layout. Entity/link selectors and
 Focus selected remain available; a1201-node/1200-link browser check verifies all
@@ -216,3 +216,20 @@ node scripts/measure_dense_browser.mjs work/new-shared-device-control work/new-d
 
 Mixed graph shapes, browser response amplification/heap at accepted maxima,
 concurrency, actual PostgreSQL/provider behavior and hosted capacity remain open.
+
+
+Visual inspection of applicationa974aa6 after its79 local browser checks found
+the previous0.15 minimum zoom still cropped the large circle even after Fit. The
+correction lowers only large-network minimum zoom to0.0001, preserving the small
+network behavior. Earlier Fit timings measure action completion rather than a
+verified fully visible graph. Final visual/focused/source checks remain pending.
+
+
+Final visual follow-up:lowering minimum zoom fit all2121 circular nodes, but the
+large circle was too faint to inspect. Current correction uses deterministic grid
+layout for large networks, excluding labels from node layout dimensions, with a
+lower minimum zoom and tiny graph labels hidden below8 rendered pixels. Full IDs
+remain accessible through entity selectors/inspector. The private final-grid
+inspection showed all2121 nodes within the viewport and visible entity marks.
+All7 focused large/responsive checks passed on the first grid revision; final
+label-visibility build/source proof and pinned grid timing are pending.

@@ -116,6 +116,9 @@ try {
     await page.getByRole("tab", { name: "Network", exact: true }).click();
     await page.locator(".evidence-canvas canvas").first().waitFor({ timeout: 60000 });
     await page.getByRole("button", { name: "Fit graph", exact: true }).click({ timeout: 60000 });
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
     const networkMs = performance.now() - networkStart;
     const scope = await page.locator(".network-scope").textContent();
     const counts = scope.match(/([\d,]+) entities · ([\d,]+) explicit links/);

@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 343379c; documentation may have a newer head. Inspect git status and
+commit is a974aa6; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -89,26 +89,33 @@ managed-workflow limits still require measured fixes. A real browser density
 measurement found513/1106-entity layouts caused4237/20190ms long tasks and the
 1021-event fixture timed out waiting60000ms for its canvas. These failed/pre-fix
 measurements remain in results/capacity/dense-browser-before-20261005.json.
-The continuation now uses deterministic circular layout above250 nodes or500
-links, preserving every graph element and leaving the exact evidence projection
-unchanged. A1201-entity/1200-link browser regression confirms all selector options,
-last-member selection, its explicit relationship, focus and evidence navigation.
-Focused browser check passed; lint/typecheck/production build passed. Full local
-browser and exact-source CI proof for this frontend change are pending.
+The first correction in applicationa974aa6 used circular layout above250 nodes
+or500 links, preserving every graph element and the exact evidence projection.
+Its1201-entity/1200-link regression verifies all selector options, last-member
+selection, explicit relationship, focus and evidence navigation. All79 local
+browser checks passed (4.6min); both source CI37288093792/37288099371 passed all
+six checks with301 Python/79 browser tests and actual PostgreSQL/SDK/restore proof.
 
-First corrected real fixture measurements completed all three:513/1106/2121
-entities and323/711/1471 explicit links; network display+Fit0.827/1.127/1.670s,
-largest long tasks261/447/825ms. Evidence readiness1.173/0.920/0.961s; no browser
-or HTTP errors, selection/return-to-evidence passed with no horizontal overflow.
-These single samples still show subsecond main-thread work; they do not prove
-maximal accepted capacity, cold/warm percentiles or concurrency. Final committed
-driver measurement will be published after its source is pinned. It uses isolated
-synthetic SQLite/objects with Playwright HTTP relay including its overhead. No
-real hosted identity/CORS/gateway proof is implied. API8000 is source343; frontend
-5173 now serves the corrected build. Isolated fixture API8001 has jobs disabled.
-Original user cases remain untouched. Reproduce with scripts/measure_dense_browser.mjs
-and docs/capacity-baseline.md; do not run fixture-only measurement on private user
-data or point it at hosted services.
+Visual inspection then found the old0.15 minimum zoom cropped the large circle.
+Allowing lower zoom put all2121 nodes inside the viewport but made that enormous
+circle too faint to inspect. The final continuation uses deterministic grid layout
+for large networks, ignores labels in layout dimensions, allows0.0001 minimum zoom
+and hides tiny graph labels below8 rendered pixels (full identifiers remain in
+selectors/inspector). Smaller networks retain their original force layout/style.
+Private visual inspection confirms all2121 nodes fit the final grid viewport and
+the entities are visible. First grid revision passed the7 focused large/responsive
+browser checks; final label-visibility build/source proof is pending.
+
+The earlier circular samples completed513/1106/2121 entities with323/711/1471
+links, in0.827/1.127/1.670s display+Fit with max tasks261/447/825ms. They measure
+action completion, not final-grid or verified viewport performance. Final committed
+grid measurement must supersede them. Single samples do not prove percentiles,
+maximal accepted capacity, concurrency or hosted billing limits. Driver:
+scripts/measure_dense_browser.mjs uses isolated synthetic readonly SQLite/objects,
+fixed synthetic owner and loopback HTTP relay (overhead included); output contains
+only aggregates/hashes. Original user cases are untouched. API8000 is source343;
+frontend5173 is the current corrected build; isolated API8001 has jobs disabled.
+No actual hosted identity/CORS/gateway proof is implied.
 Deployment still needs the correct Vercel/GitHub scope connection; a human
 reconnect request is pending. Do not bypass the rejected authentication popup.
 
