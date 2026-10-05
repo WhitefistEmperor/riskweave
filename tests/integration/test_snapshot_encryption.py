@@ -152,7 +152,7 @@ def test_encrypted_unsafe_archives_fail_before_any_outside_write(encrypted_contr
     plain = tmp_path / "malicious.tar"
     with tarfile.open(plain, "w") as tar:
         if kind in ("duplicate", "undeclared"):
-            for name in ("manifest.json", "database.sqlite3"):
+            for name in ("manifest.json", *validate_snapshot(source)["files"]):
                 tar.add(source / name, arcname=name)
         info = tarfile.TarInfo(
             {
