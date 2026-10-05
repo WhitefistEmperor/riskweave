@@ -139,6 +139,13 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
                 restored, owner, run.id, "restore-candidate", "candidate"
             ) == {"candidate_id": "restore-candidate"}
             assert ReviewService(restored).get(owner, run.id, "restore-candidate")["version"] == 1
+            from ringsentinel.platform.section_transport import SectionTransport
+
+            assert result_sections.page(restored, owner, run.id, limit=1)["total"] == 1
+            section = SectionTransport(restored)
+            section_manifest = section.manifest(owner, run.id, "restore-candidate", "candidate")
+            section_chunk = section.chunk(owner, run.id, "restore-candidate", "candidate", 0)
+            assert section_chunk["section_sha256"] == section_manifest["sha256"]
             transport = ResultTransport(restored)
             manifest = transport.manifest(owner, run.id)
             assert manifest["chunk_count"] == 2

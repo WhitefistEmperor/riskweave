@@ -44,7 +44,11 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
         importlib.import_module(
             "ringsentinel.platform.migrations.versions.0009_result_sections"
         ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0010_candidate_page_index"
+        ).upgrade()
     sql = output.getvalue()
+    assert "CREATE INDEX ix_result_sections_page" in sql
     assert "CREATE TABLE result_sections" in sql
     assert "ADD COLUMN candidate_index JSON" in sql
     assert "candidate_count INTEGER" in sql

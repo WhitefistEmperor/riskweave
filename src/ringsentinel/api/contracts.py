@@ -177,6 +177,37 @@ class CandidateResponse(Contract):
     related_event_ids: list[str]
 
 
+class CandidatePageResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    offset: Annotated[int, Field(ge=0, le=500_000_000)]
+    limit: Annotated[int, Field(ge=1, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    next_offset: int | None
+    items: Annotated[list[CandidateResponse], Field(max_length=100)]
+
+
+class SectionManifestResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    candidate_id: str
+    section: Literal["candidate", "evidence"]
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    encoding: Literal["base64"]
+    content_type: Literal["application/json"]
+    size_bytes: Annotated[int, Field(ge=1, le=500_000_000)]
+    chunk_bytes: Literal[2_000_000]
+    chunk_count: Annotated[int, Field(ge=1, le=250)]
+
+
+class SectionChunkResponse(ResultChunkResponse):
+    candidate_id: str
+    section: Literal["candidate", "evidence"]
+    section_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+
+
 class RingMember(Contract):
     entity_id: str
     entity_type: str

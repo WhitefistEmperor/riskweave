@@ -1,11 +1,15 @@
 """Verified targeted reads over large generated results in both object stores."""
 
+import base64
 import hashlib
+import json
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import delete, func, select
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
+from ringsentinel.api.app import create_app
 from ringsentinel.platform import result_sections
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.database_storage import storage_for
@@ -13,6 +17,7 @@ from ringsentinel.platform.deletion import DeletionService
 from ringsentinel.platform.errors import ProductError
 from ringsentinel.platform.models import AnalysisRun, ResultSection, ReviewDisposition
 from ringsentinel.platform.reviews import ReviewService
+from ringsentinel.platform.section_transport import SectionTransport
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
 
@@ -40,17 +45,30 @@ def saved(tmp_path, request):
     artifact = service.attach(owner, case.id, payload, "input.json", "application/json")
     run = service.start(owner, case.id, artifact.id, "sections-control")
     service.claim()
+
+    def candidate(candidate_id):
+        return {
+            "candidate_id": candidate_id,
+            "risk_score": 0.8,
+            "first_suspicious_timestamp": "2026-01-01T00:00:00Z",
+            "estimated_exposure_minor": 123,
+            "suspicious_relationships": [],
+            "evidence": {},
+            "member_entity_ids": ["Unicode € 测试"],
+            "related_event_ids": [],
+        }
+
     result = {
         "currency": "INR",
         "earlier": {"rings": ["nested decoy"]},
         "padding": "x" * 3_000_001,
         "rings": [
             {
-                "candidate": {"candidate_id": "first", "name": "Unicode € 测试"},
+                "candidate": candidate("first"),
                 "queries": {"sample": {"text": "Unicode € evidence"}},
             },
             {
-                "candidate": {"candidate_id": "second"},
+                "candidate": candidate("second"),
                 "queries": {"sample": {"number": 2, "text": "z" * 2_100_001}},
             },
         ],
@@ -219,3 +237,128 @@ def test_legacy_indexing_refuses_active_analysis_without_mutating_marker(saved):
     with pytest.raises(ValueError, match="Active analysis"):
         result_sections.index_existing(service, writers_stopped=True)
     assert service.run(owner, run_id).candidate_index is None
+
+
+def test_candidate_page_reads_only_requested_summaries_and_checks_owner(saved, monkeypatch):
+    service, owner, _, run_id, result = saved
+    original_range = service.storage.read_range
+    lengths = []
+
+    def ranged(key, offset, length):
+        lengths.append(length)
+        return original_range(key, offset, length)
+
+    monkeypatch.setattr(service.storage, "read", lambda *_: pytest.fail("Whole result read"))
+    monkeypatch.setattr(service.storage, "read_range", ranged)
+    first = result_sections.page(service, owner, run_id, limit=1)
+    second = result_sections.page(service, owner, run_id, offset=first["next_offset"], limit=1)
+    assert first["total"] == second["total"] == 2
+    assert first["items"] == [result["rings"][0]["candidate"]]
+    assert second["items"] == [result["rings"][1]["candidate"]]
+    assert second["next_offset"] is None
+    assert len(lengths) == 2 and max(lengths) < 1000
+    assert result_sections.page(service, owner, run_id, offset=2)["items"] == []
+    with pytest.raises(ProductError) as denied:
+        result_sections.page(service, Principal("other-owner"), run_id, limit=1)
+    assert denied.value.code == "NOT_FOUND"
+    with pytest.raises(ValueError):
+        result_sections.page(service, owner, run_id, limit=101)
+
+
+def test_section_fragments_reconstruct_across_source_boundaries_without_section_assembly(
+    saved, monkeypatch
+):
+    service, owner, _, run_id, result = saved
+    transport = SectionTransport(service)
+    original_range = service.storage.read_range
+
+    def ranged(key, offset, length):
+        assert 0 < length <= 2_000_000
+        return original_range(key, offset, length)
+
+    monkeypatch.setattr(service.storage, "read", lambda *_: pytest.fail("Whole result read"))
+    monkeypatch.setattr(service.storage, "read_range", ranged)
+    monkeypatch.setattr(
+        result_sections, "read", lambda *_: pytest.fail("Complete selected section read")
+    )
+    for kind, field in (("candidate", "candidate"), ("evidence", "queries")):
+        manifest = transport.manifest(owner, run_id, "second", kind)
+        parts = [
+            transport.chunk(owner, run_id, "second", kind, index)
+            for index in range(manifest["chunk_count"])
+        ]
+        content = b""
+        for part in parts:
+            decoded = base64.b64decode(part["data"], validate=True)
+            assert hashlib.sha256(decoded).hexdigest() == part["sha256"]
+            assert part["section_sha256"] == manifest["sha256"]
+            assert part["result_sha256"] == manifest["result_sha256"]
+            assert len(decoded) == part["size_bytes"] <= 2_000_000
+            content += decoded
+        assert len(content) == manifest["size_bytes"]
+        assert hashlib.sha256(content).hexdigest() == manifest["sha256"]
+        assert json.loads(content) == result["rings"][1][field]
+    assert len(parts) == 2
+    with pytest.raises(ProductError) as denied:
+        transport.chunk(Principal("other-owner"), run_id, "second", "evidence", -1)
+    assert denied.value.code == "NOT_FOUND"
+    with pytest.raises(ProductError):
+        transport.chunk(owner, run_id, "second", "evidence", 2)
+
+
+def test_section_fragment_corruption_and_legacy_roundtrip(saved, monkeypatch):
+    service, owner, _, run_id, result = saved
+    transport = SectionTransport(service)
+    actual = service.storage.read_range
+
+    def corrupt(key, offset, length):
+        part = bytearray(actual(key, offset, length))
+        part[0] ^= 1
+        return bytes(part)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(service.storage, "read_range", corrupt)
+        with pytest.raises(ProductError) as bad:
+            transport.chunk(owner, run_id, "second", "evidence", 0)
+        assert bad.value.code == "INTERNAL_ERROR"
+    with service.database.session.begin() as session:
+        session.execute(delete(ResultSection).where(ResultSection.run_id == run_id))
+        session.get(AnalysisRun, run_id).candidate_index = None
+    manifest = transport.manifest(owner, run_id, "first", "candidate")
+    part = transport.chunk(owner, run_id, "first", "candidate", 0)
+    content = base64.b64decode(part["data"])
+    assert hashlib.sha256(content).hexdigest() == manifest["sha256"]
+    assert json.loads(content) == result["rings"][0]["candidate"]
+    assert result_sections.page(service, owner, run_id, offset=1, limit=1)["items"] == [
+        result["rings"][1]["candidate"]
+    ]
+
+
+def test_http_candidate_pages_and_section_contracts_preserve_owner_checks(saved, monkeypatch):
+    service, owner, _, run_id, result = saved
+    with TestClient(create_app(settings=service.settings)) as client:
+        monkeypatch.setattr(
+            client.app.state.platform.storage, "read", lambda *_: pytest.fail("Whole result read")
+        )
+        client.headers["X-Development-User"] = owner.user_id
+        page_path = f"/api/v1/runs/{run_id}/candidate-page"
+        page = client.get(page_path, params={"limit": 1})
+        assert page.status_code == 200, page.text
+        assert page.json()["next_offset"] == 1
+        assert page.json()["items"] == [result["rings"][0]["candidate"]]
+        assert client.get(page_path, params={"limit": 101}).status_code == 422
+        path = f"/api/v1/runs/{run_id}/rings/second/sections/evidence"
+        manifest = client.get(path + "/manifest")
+        assert manifest.status_code == 200, manifest.text
+        parts = [
+            client.get(path + f"/chunks/{index}") for index in range(manifest.json()["chunk_count"])
+        ]
+        assert all(part.status_code == 200 for part in parts)
+        content = b"".join(base64.b64decode(part.json()["data"]) for part in parts)
+        assert hashlib.sha256(content).hexdigest() == manifest.json()["sha256"]
+        assert json.loads(content) == result["rings"][1]["queries"]
+        assert client.get(path + "/chunks/2").status_code == 404
+        client.headers["X-Development-User"] = "other-owner"
+        assert client.get(page_path).status_code == 404
+        assert client.get(path + "/manifest").status_code == 404
+        assert client.get(path + "/chunks/0").status_code == 404

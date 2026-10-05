@@ -2,7 +2,7 @@
 
 import asyncio
 import hmac
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy import select, text
@@ -11,6 +11,7 @@ from starlette.concurrency import run_in_threadpool
 from ringsentinel import __version__
 from ringsentinel.api.contracts import (
     ArtifactResponse,
+    CandidatePageResponse,
     CandidateResponse,
     ErrorResponse,
     EvidenceResponse,
@@ -30,6 +31,8 @@ from ringsentinel.api.contracts import (
     ReviewResponse,
     RunCreate,
     RunResponse,
+    SectionChunkResponse,
+    SectionManifestResponse,
     SessionResponse,
     UploadBegin,
     UploadCancelResponse,
@@ -55,6 +58,7 @@ from ringsentinel.platform.models import (
 )
 from ringsentinel.platform.result_transport import ResultTransport
 from ringsentinel.platform.reviews import ReviewService
+from ringsentinel.platform.section_transport import SectionTransport
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.upload_transport import CHUNK_BYTES, UploadTransport
 
@@ -367,6 +371,46 @@ def result_manifest(run_id: str, principal: CurrentPrincipal, service: Service):
 @router.get("/runs/{run_id}/results/chunks/{index}", response_model=ResultChunkResponse)
 def result_chunk(run_id: str, index: int, principal: CurrentPrincipal, service: Service):
     return ResultTransport(service).chunk(principal, run_id, index)
+
+
+@router.get("/runs/{run_id}/candidate-page", response_model=CandidatePageResponse)
+def candidate_page(
+    run_id: str,
+    principal: CurrentPrincipal,
+    service: Service,
+    offset: Annotated[int, Query(ge=0, le=500_000_000)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+):
+    return result_sections.page(service, principal, run_id, offset=offset, limit=limit)
+
+
+@router.get(
+    "/runs/{run_id}/rings/{candidate_id}/sections/{section}/manifest",
+    response_model=SectionManifestResponse,
+)
+def section_manifest(
+    run_id: str,
+    candidate_id: str,
+    section: Literal["candidate", "evidence"],
+    principal: CurrentPrincipal,
+    service: Service,
+):
+    return SectionTransport(service).manifest(principal, run_id, candidate_id, section)
+
+
+@router.get(
+    "/runs/{run_id}/rings/{candidate_id}/sections/{section}/chunks/{index}",
+    response_model=SectionChunkResponse,
+)
+def section_chunk(
+    run_id: str,
+    candidate_id: str,
+    section: Literal["candidate", "evidence"],
+    index: int,
+    principal: CurrentPrincipal,
+    service: Service,
+):
+    return SectionTransport(service).chunk(principal, run_id, candidate_id, section, index)
 
 
 @router.get("/runs/{run_id}/rings", response_model=list[CandidateResponse])

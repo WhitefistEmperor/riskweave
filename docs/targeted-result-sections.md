@@ -1,7 +1,7 @@
 # Targeted immutable result sections
 
 Migration 0009 adds result_sections and a nullable versioned candidate_index marker
-on analysis_runs. Stop all writers and apply ringsentinel-migrate explicitly before
+on analysis_runs. Migration 0010 adds candidate ordinal indexing. Stop all writers and apply ringsentinel-migrate explicitly before
 starting this source. Existing bytes, checksums and review decisions remain unchanged.
 New completed runs atomically persist byte offsets, sizes, original ordering and
 SHA-256 digests for candidate summaries, query evidence and optional currency.
@@ -42,10 +42,10 @@ checksum corruption, missing rows, rollback, legacy maintenance and active-job r
 Actual PostgreSQL restore additionally checks targeted candidate reads and restored
 review history with full reads disabled.
 
-Limits remain: the selected section is assembled in memory; a single huge evidence
-section can still be large. Listing returns all candidate summaries and needs a
-future pagination contract. Individual evidence responses do not yet have fragment
-transport, and browser complete-result assembly remains unchanged. This implementation
-removes unrelated-result reads; it does not prove hosted memory, response or PostgreSQL
-server decompression bounds. Do not claim the large-case release gate closed until
-those remaining contracts and actual provider measurements are verified.
+Candidate pages and section fragments are now implemented; see
+[candidate section transport](candidate-section-transport.md). Limits remain: direct
+selected evidence/investigator reads assemble the section; the console still assembles
+complete results. A single huge candidate can exceed a page response budget, so use
+its fragment endpoint. Hosted memory, response and PostgreSQL server decompression
+bounds still require measurement and browser adoption. Do not claim the large-case
+release gate closed solely from these API tests.

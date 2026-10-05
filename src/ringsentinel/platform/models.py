@@ -12,6 +12,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     LargeBinary,
     String,
     UniqueConstraint,
@@ -126,6 +127,7 @@ class ResultSection(Base):
     __tablename__ = "result_sections"
     __table_args__ = (
         CheckConstraint("byte_offset >= 0 AND size_bytes > 0", name="result_section_range"),
+        Index("ix_result_sections_page", "run_id", "kind", "ordinal"),
     )
     run_id: Mapped[str] = mapped_column(
         ForeignKey("analysis_runs.id", ondelete="CASCADE"), primary_key=True

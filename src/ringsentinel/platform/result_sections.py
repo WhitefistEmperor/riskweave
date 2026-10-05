@@ -288,3 +288,50 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def page(service, principal, run_id, *, offset=0, limit=50):
+    run = authorized(service, principal, run_id)
+    if (
+        type(offset) is not int
+        or not 0 <= offset <= 500_000_000
+        or type(limit) is not int
+        or not 1 <= limit <= 100
+    ):
+        raise ValueError("Invalid candidate page")
+    if run.candidate_index is None:
+        entries = [ring["candidate"] for ring in service.result(principal, run_id)["rings"]]
+        total, items = len(entries), entries[offset : offset + limit]
+    else:
+        total = run.candidate_index["count"]
+        with service.database.session() as session:
+            rows = list(
+                session.scalars(
+                    select(ResultSection)
+                    .where(
+                        ResultSection.run_id == run.id,
+                        ResultSection.kind == "candidate",
+                        ResultSection.ordinal >= offset,
+                        ResultSection.ordinal < offset + limit,
+                    )
+                    .order_by(ResultSection.ordinal)
+                )
+            )
+        if len(rows) != min(limit, max(total - offset, 0)):
+            raise ProductError("INTERNAL_ERROR")
+        items = []
+        for ordinal, row in enumerate(rows, start=offset):
+            candidate = read(service, run, row)
+            if row.ordinal != ordinal or candidate.get("candidate_id") != row.candidate_id:
+                raise ProductError("INTERNAL_ERROR")
+            items.append(candidate)
+    return {
+        "schema_version": "1",
+        "run_id": run.id,
+        "result_sha256": run.result_checksum,
+        "offset": offset,
+        "limit": limit,
+        "total": total,
+        "items": items,
+        "next_offset": offset + len(items) if offset + len(items) < total else None,
+    }
