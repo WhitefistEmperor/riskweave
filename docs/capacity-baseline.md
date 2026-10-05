@@ -114,3 +114,57 @@ starts jobs or alters saved rows/objects. It requires the generated baseline mar
 uses the fixed synthetic owner and verifies source/result provenance. Reports
 publish only aggregates and hashes. Large candidate summaries, selected-section
 browser memory, PostgreSQL range costs and all hosted capacity gates remain open.
+
+
+## Shared-device density control
+
+Application89ef246 was measured with all generated events assigned the earliest
+observed device, using unchanged validated identities/timestamps/amounts and the
+trusted model. Labels are stripped as before; this deliberately changed sharing
+pattern is a capacity control, not a model accuracy benchmark. Three fresh workers
+used a separate ignored fixture. Available host memory was about2.3 GB, so the
+control used250/500/1000 payments; no larger safe capacity is implied.
+
+| Actual events | Distinct customers | Worker main s | Peak working set MB | Result kB | Candidate evidence kB |
+|---:|---:|---:|---:|---:|---:|
+| 257 | 163 | 2.27 | 198.3 | 199.1 | 182.5 |
+| 512 | 307 | 14.98 | 208.5 | 442.4 | 406.4 |
+| 1,021 | 595 | 102.03 | 245.2 | 854.3 | 784.5 |
+
+Each produced one connected candidate. The prior sparse1021-event worker took
+0.65s on an earlier source; this comparison is directional, not an isolated
+source-overhead experiment. Three read-only repetitions per saved run used only
+26/27/27 bytes for bounded queue scalar reads (medians11.21/10.26/10.99ms).
+Full selected sections retain source-fragment verification amplification.
+See windows-worker-shared-device-before-20261005.json and
+indexed-reads-shared-device-before-20261005.json in results/capacity/.
+
+The feature source repeatedly traversed connected components and counted each
+customer ego graph's edges. The continuation now tracks exact insert-only
+component sizes with path compression and uses density1 only when an already
+observed infrastructure group contains the complete ego network. Other shapes
+still use the original NetworkX density calculation. No feature meaning, causal
+observation order, threshold, trained artifact or stored result is intentionally
+changed. Independent graph-oracle checks cover every event in generated,
+single-device and overlapping-resource controls; a dense test forbids the costly
+traversals. Exact full feature-vector hashes match before/after on three controls.
+The512-event extraction changed from15.38s to0.39s in one local sample.
+See results/capacity/exact-feature-equivalence-20261005.json. Complete worker/result
+hash and exact-source CI proof are pending; check CLAUDE_HANDOFF.md.
+
+Reproduce the density fixture only in a new private directory:
+
+```powershell
+uv run --no-sync python scripts/measure_windows_worker.py --directory work/new-shared-device-control --model work/models/network-hgb.joblib --model-sha256 182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74 --shared-device --payments 250 500 1000
+uv run --no-sync python scripts/measure_indexed_reads.py --directory work/new-shared-device-control
+uv run --no-sync python scripts/measure_feature_vectors.py --output work/new-feature-capture.json --compare results/capacity/exact-feature-equivalence-20261005.json
+```
+
+Drivers refuse to overwrite existing fixture/output paths. Reports pin driver,
+feature source, model and/or application identity and contain aggregate synthetic
+proof only. Default worker sizes remain1000/5000/10000 when --payments is omitted.
+This optimization retains the projected pairwise edge graph, which can still grow
+quadratically. Mixed dense neighborhoods may still need expensive exact density
+work. Browser graph layout/heap, maximal accepted input, concurrency, PostgreSQL
+and managed provider limits remain open; do not approve admission budgets from
+these small local controls.

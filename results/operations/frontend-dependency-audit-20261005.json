@@ -41,6 +41,17 @@
     "duration_seconds": 228,
     "production_build": true
   },
-  "source_ci": "pending",
+  "source_ci": {
+    "application_commit": "89ef246921d97122cd4967d584db0d5107556e29",
+    "runs": [
+      37283049586,
+      37283054514
+    ],
+    "all_six_checks": "passed",
+    "python_tests": 297,
+    "browser_tests": 78,
+    "container_mit_notice_byte_comparison": "passed",
+    "full_dependency_audit": "zero advisories"
+  },
   "served_mit_notice_matches_source": true
 }

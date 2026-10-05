@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 7cd46e0; documentation may have a newer head. Inspect git status and
+commit is 89ef246; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -45,8 +45,47 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Dense feature performance continuation checkpoint
+
+Three isolated shared-device generated controls on application89ef246 completed
+257/512/1021 events. Worker main took2.27/14.98/102.03s, with peak working sets
+198.3/208.5/245.2 MB. Each produced one connected candidate. A dense1021-event
+result was854.3kB, including784.5kB selected evidence. Read-only indexed queues
+needed26/27/27 scalar bytes; original section hashing remains intact. Reports are
+in results/capacity/*shared-device-before-20261005.json. User cases are untouched.
+The host had about2.3GB free RAM; these small controls do not approve larger cases.
+
+Current implementation replaces repeated component traversal with exact union /
+path compression and skips density enumeration only when observed sharing proves
+the whole ego network is a clique. Mixed shapes retain the original calculation.
+Four new tests compare graph features at every event to an independent rebuilt
+NetworkX oracle on three shapes, and forbid costly traversals for a single-device
+clique. All6 focused feature tests passed. Exact full feature hashes for original
+1021 events and dense257/512 events match before/after. One dense512 extraction
+changed from15.38s to0.39s. The committed measurement driver reproduced all three
+feature hashes against the captured report. Trained artifact/threshold/features'
+meaning are unchanged; no original result rewrite or migration is needed.
+
+The final local full Python run passed299 with2 PostgreSQL-only skips, using
+the trusted age executable and one OpenMP thread. Ruff passed. Optimized complete
+worker/result-hash and exact-source CI checks remain pending. The
+previously tested application is89ef246, whose source checks passed all six (297
+Python/78 browser, zero audit advisories, real PostgreSQL/SDK/encrypted restores).
+Do not attribute those checks to the unfinished optimization. See
+scripts/measure_feature_vectors.py and docs/capacity-baseline.md for reproduction.
+
+The pairwise projected graph still grows quadratically. Mixed dense neighborhoods,
+browser heap/layout, accepted input maxima, concurrency and hosted/private-PG/
+managed-workflow limits still require measured fixes. Deployment still needs the
+correct Vercel/GitHub scope connection; a human reconnect request is pending.
+The owned idle API was stopped before feature-source changes to prevent fresh
+workers carrying an old build identity. Frontend33385 remains the verified89ef246
+build; restart the API with the actual optimized commit after its checks pass.
+
+
 ### Frontend dependency security continuation checkpoint
 
+Pushed application89ef246921d97122cd4967d584db0d5107556e29 removes the CLI.
 The shadcn CLI was used only for its stylesheet import. The full original 4.18.0
 stylesheet is now local with an unchanged 16,041-byte body and MIT provenance/
 notice. A public copy of the license survives CSS minification and is shipped by
@@ -61,7 +100,12 @@ The three production CSS rule bundles have identical hashes/byte lengths to the
 prior exact-money build. Frontend lint/typecheck/production build passed. All 78 local production-browser checks passed (3.8m), including responsive
 keyboard widths and real upload/analysis/evidence/revisit. The served MIT notice
 returned200 and matched its source bytes after the owned frontend restart.
-Exact-source CI remains pending. A CI audit step now rejects known moderate
+Both exact-source CI runs37283049586/37283054514 passed all six checks:
+297 Python tests,78 production-browser tests, actual PostgreSQL analysis/SDK
+background delivery and encrypted restore in both stores, zero audit advisories
+and a byte-identical container-served MIT notice. No retry was required.
+[Push source CI](https://github.com/WhitefistEmperor/riskweave/actions/runs/37283049586)
+and [PR source CI](https://github.com/WhitefistEmperor/riskweave/actions/runs/37283054514). A CI audit step now rejects known moderate
 or higher findings, and the container smoke compares its served MIT notice to
 the source bytes. See docs/frontend-dependencies.md and the aggregate report
 results/operations/frontend-dependency-audit-20261005.json.
@@ -743,8 +787,8 @@ the embedded queue. Do not deploy the test harness as a durable worker.
 
 ## Next work, in order
 
-Next independent code work: finish exact-source CI verification of the new paged
-console and measure selected-section, summary and investigator capacity. Preserve small-case behavior and full
+Next independent code work: verify the exact dense-feature optimization and
+measure browser/selected-section/investigator capacity on real generated results. Preserve small-case behavior and full
 analyst functionality. Then remeasure browser/selected-section/indexing overhead and
 verify actual hosted limits. Deployment/data blockers remain separate.
 

@@ -58,9 +58,7 @@ TEMPORAL_NETWORK_FEATURES = (
 )
 
 NETWORK_FEATURES = (
-    INFRASTRUCTURE_SHARING_FEATURES
-    + STRUCTURAL_GRAPH_FEATURES
-    + TEMPORAL_NETWORK_FEATURES
+    INFRASTRUCTURE_SHARING_FEATURES + STRUCTURAL_GRAPH_FEATURES + TEMPORAL_NETWORK_FEATURES
 )
 
 
@@ -86,6 +84,39 @@ class FeatureTable:
 
 
 HistoryItem = tuple[datetime, bool, int]
+
+
+class _CustomerComponents:
+    """Exact insert-only component sizes without repeated graph traversal."""
+
+    def __init__(self):
+        self.parents: dict[str, str] = {}
+        self.sizes: dict[str, int] = {}
+
+    def root(self, customer: str) -> str:
+        if customer not in self.parents:
+            self.parents[customer] = customer
+            self.sizes[customer] = 1
+        root = customer
+        while self.parents[root] != root:
+            root = self.parents[root]
+        while customer != root:
+            parent = self.parents[customer]
+            self.parents[customer] = root
+            customer = parent
+        return root
+
+    def join(self, left: str, right: str) -> None:
+        left, right = self.root(left), self.root(right)
+        if left == right:
+            return
+        if self.sizes[left] < self.sizes[right]:
+            left, right = right, left
+        self.parents[right] = left
+        self.sizes[left] += self.sizes.pop(right)
+
+    def size(self, customer: str) -> int:
+        return self.sizes[self.root(customer)]
 
 
 def _window_values(
@@ -122,6 +153,7 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
     }
     device_ip_counts: Counter[tuple[str, str]] = Counter()
     projected = nx.Graph()
+    components = _CustomerComponents()
     seen_customer_infrastructure: set[tuple[str, str]] = set()
     rows: list[EventFeatureRow] = []
 
@@ -166,6 +198,7 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
                         other_customer,
                         shared_types=int(current.get("shared_types", 0)) + 1,
                     )
+                    components.join(event.customer_id, other_customer)
                 seen_customer_infrastructure.add(key)
                 customer_index[entity_id].add(event.customer_id)
 
@@ -183,9 +216,21 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
             projected[event.customer_id][neighbor].get("shared_types", 0) >= 2
             for neighbor in neighbors
         )
-        component_size = len(nx.node_connected_component(projected, event.customer_id))
+        component_size = components.size(event.customer_id)
         ego_nodes = (event.customer_id, *neighbors)
-        local_density = nx.density(projected.subgraph(ego_nodes)) if neighbors else 0.0
+        # Every observed infrastructure group forms a clique. If one current
+        # group contains the whole ego network, density is exactly 1, without
+        # enumerating its quadratic edge set again for every event.
+        complete_ego = bool(neighbors) and any(
+            all(customer in index[entity_id] for customer in ego_nodes)
+            for entity_id, index in infrastructure
+        )
+        if not neighbors:
+            local_density = 0.0
+        elif complete_ego:
+            local_density = 1.0
+        else:
+            local_density = nx.density(projected.subgraph(ego_nodes))
 
         shared_counts = (
             len(customers_by_device[event.device_id]),

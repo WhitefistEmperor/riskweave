@@ -5,6 +5,7 @@ import base64
 import hashlib
 import json
 import statistics
+import subprocess
 import time
 from pathlib import Path
 
@@ -88,6 +89,8 @@ def main():
         production_ready=False,
         data_origin="synthetic-control",
         source_commit=baseline["source_commit"],
+        read_source_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        density_control=baseline.get("density_control", "original-generator"),
         model_sha256=baseline["model_sha256"],
         driver_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         scope="Local SQLite/local storage service calls; excludes HTTP, browser and hosted runtime",
@@ -132,12 +135,23 @@ def main():
                     result_sha256=original["result_sha256"],
                     index_rows=len(rows),
                     candidates=run.candidate_count,
+                    queue_indexed=bool(
+                        run.candidate_index and run.candidate_index.get("queue_present")
+                    ),
+                    largest_candidate_bytes=max(
+                        row.size_bytes for row in rows if row.kind == "candidate"
+                    ),
                     largest_evidence_bytes=selected.size_bytes,
                     overview=measure(
                         lambda run=run: result_sections.overview(service, owner, run.id)
                     ),
                     first_candidate_page=measure(
                         lambda run=run: result_sections.page(
+                            service, owner, run.id, offset=0, limit=8
+                        )
+                    ),
+                    first_queue_page=measure(
+                        lambda run=run: result_sections.queue_page(
                             service, owner, run.id, offset=0, limit=8
                         )
                     ),

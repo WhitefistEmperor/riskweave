@@ -59,6 +59,12 @@ def main():
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--model", type=Path)
     parser.add_argument("--model-sha256")
+    parser.add_argument("--payments", type=int, nargs=3, default=(1000, 5000, 10000))
+    parser.add_argument(
+        "--shared-device",
+        action="store_true",
+        help="Generated density control: every event shares one device",
+    )
     args = parser.parse_args()
     if sys.platform != "win32":
         raise ValueError("This baseline uses Windows process counters only")
@@ -67,6 +73,8 @@ def main():
         return
     if not args.directory or not args.model or not args.model_sha256:
         parser.error("directory, trusted model and SHA are required")
+    if any(not 100 <= value <= 10000 for value in args.payments):
+        parser.error("Each control requires 100 to 10000 requested payments")
     # Check the trust pin without deserializing; operator must trust the model source.
     model = args.model.resolve()
     if hashlib.sha256(model.read_bytes()).hexdigest() != args.model_sha256:
@@ -120,15 +128,30 @@ def main():
         logical_cpus=os.cpu_count(),
         model_sha256=args.model_sha256,
         data_origin="synthetic-control",
+        density_control="all-events-share-one-device"
+        if args.shared_device
+        else "original-generator",
         samples=[],
     )
     try:
-        for requested in (1000, 5000, 10000):
+        for requested in args.payments:
             bundle = SyntheticPaymentGenerator(
                 GenerationConfig(seed=105, transactions=requested)
             ).generate()
+            shared_device = min(
+                bundle.events, key=lambda item: (item.timestamp, item.event_id)
+            ).device_id
             payments = PaymentDataset(
-                schema_version="payments-v1", entities=bundle.entities, events=bundle.events
+                schema_version="payments-v1",
+                entities=bundle.entities,
+                events=(
+                    tuple(
+                        event.model_copy(update={"device_id": shared_device})
+                        for event in bundle.events
+                    )
+                    if args.shared_device
+                    else bundle.events
+                ),
             )
             content = payments.model_dump_json().encode()
             case = service.create(owner, "Synthetic capacity fixture")
@@ -161,6 +184,8 @@ def main():
                 input_sha256=hashlib.sha256(content).hexdigest(),
                 result_sha256=saved.result_checksum,
                 candidates=saved.candidate_count,
+                distinct_customers=len({event.customer_id for event in payments.events}),
+                distinct_devices=len({event.device_id for event in payments.events}),
                 process_wall_seconds=time.perf_counter() - start,
                 **measured,
             )
