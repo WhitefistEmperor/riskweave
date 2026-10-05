@@ -7,7 +7,6 @@ from collections import Counter, defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-import networkx as nx
 import numpy as np
 
 from ringsentinel.data.schema import DatasetBundle, EntityType, EventType, PaymentStatus
@@ -119,6 +118,57 @@ class _CustomerComponents:
         return self.sizes[self.root(customer)]
 
 
+class _CustomerProjection:
+    """Exact causal undirected adjacency and repeated sharing, stored as bitsets."""
+
+    def __init__(self):
+        self.indices: dict[str, int] = {}
+        self.neighbors: list[int] = []
+        self.multiple: list[int] = []
+        self.groups: dict[str, int] = {}
+
+    def add(self, customer: str) -> int:
+        if customer not in self.indices:
+            self.indices[customer] = len(self.neighbors)
+            self.neighbors.append(0)
+            self.multiple.append(0)
+        return self.indices[customer]
+
+    def share(self, customer: int, resource: str) -> None:
+        peers = self.groups.get(resource, 0)
+        own_bit = 1 << customer
+        if peers & own_bit:
+            return
+        self.multiple[customer] |= self.neighbors[customer] & peers
+        self.neighbors[customer] |= peers
+        remaining = peers
+        while remaining:
+            bit = remaining & -remaining
+            peer = bit.bit_length() - 1
+            if self.neighbors[peer] & own_bit:
+                self.multiple[peer] |= own_bit
+            self.neighbors[peer] |= own_bit
+            remaining ^= bit
+        self.groups[resource] = peers | own_bit
+
+    def density(self, customer: int, resources: tuple[str, ...]) -> float:
+        neighbors = self.neighbors[customer]
+        if not neighbors:
+            return 0.0
+        ego = neighbors | (1 << customer)
+        if any(self.groups[resource] & ego == ego for resource in resources):
+            return 1.0
+        twice_edges = 0
+        remaining = ego
+        while remaining:
+            bit = remaining & -remaining
+            twice_edges += (self.neighbors[bit.bit_length() - 1] & ego).bit_count()
+            remaining ^= bit
+        nodes = ego.bit_count()
+        # Preserve NetworkX's divide-then-multiply float operation order.
+        return ((twice_edges // 2) / (nodes * (nodes - 1))) * 2
+
+
 def _window_values(
     history: defaultdict[str, deque[HistoryItem]],
     key: str,
@@ -152,7 +202,7 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
         name: defaultdict(deque) for name in ("customer", "device", "ip", "merchant", "payout")
     }
     device_ip_counts: Counter[tuple[str, str]] = Counter()
-    projected = nx.Graph()
+    projected = _CustomerProjection()
     components = _CustomerComponents()
     seen_customer_infrastructure: set[tuple[str, str]] = set()
     rows: list[EventFeatureRow] = []
@@ -179,7 +229,7 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
             histories[name][key].append(history_item)
             entity_histories[name] = values + (history_item,)
 
-        projected.add_node(event.customer_id)
+        customer_index_number = projected.add(event.customer_id)
         infrastructure = (
             (event.device_id, customers_by_device),
             (event.ip_id, customers_by_ip),
@@ -189,16 +239,11 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
         for entity_id, customer_index in infrastructure:
             key = (event.customer_id, entity_id)
             if key not in seen_customer_infrastructure:
-                for other_customer in customer_index[entity_id]:
-                    if other_customer == event.customer_id:
-                        continue
-                    current = projected.get_edge_data(event.customer_id, other_customer) or {}
-                    projected.add_edge(
-                        event.customer_id,
-                        other_customer,
-                        shared_types=int(current.get("shared_types", 0)) + 1,
-                    )
-                    components.join(event.customer_id, other_customer)
+                members = customer_index[entity_id]
+                # Prior members of a resource already form one component.
+                if members:
+                    components.join(event.customer_id, next(iter(members)))
+                projected.share(customer_index_number, entity_id)
                 seen_customer_infrastructure.add(key)
                 customer_index[entity_id].add(event.customer_id)
 
@@ -211,26 +256,12 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
         repeated_device_ip = device_ip_counts[device_ip_key]
         device_ip_counts[device_ip_key] += 1
 
-        neighbors = tuple(projected.neighbors(event.customer_id))
-        multi_shared_neighbors = sum(
-            projected[event.customer_id][neighbor].get("shared_types", 0) >= 2
-            for neighbor in neighbors
-        )
+        neighbor_count = projected.neighbors[customer_index_number].bit_count()
+        multi_shared_neighbors = projected.multiple[customer_index_number].bit_count()
         component_size = components.size(event.customer_id)
-        ego_nodes = (event.customer_id, *neighbors)
-        # Every observed infrastructure group forms a clique. If one current
-        # group contains the whole ego network, density is exactly 1, without
-        # enumerating its quadratic edge set again for every event.
-        complete_ego = bool(neighbors) and any(
-            all(customer in index[entity_id] for customer in ego_nodes)
-            for entity_id, index in infrastructure
+        local_density = projected.density(
+            customer_index_number, tuple(entity_id for entity_id, _ in infrastructure)
         )
-        if not neighbors:
-            local_density = 0.0
-        elif complete_ego:
-            local_density = 1.0
-        else:
-            local_density = nx.density(projected.subgraph(ego_nodes))
 
         shared_counts = (
             len(customers_by_device[event.device_id]),
@@ -270,7 +301,7 @@ def extract_event_features(bundle: DatasetBundle) -> FeatureTable:
             "customer_merchant_degree": float(len(merchants_by_customer[event.customer_id])),
             "infrastructure_customer_max": float(max(shared_counts)),
             "shared_infrastructure_concentration": max(shared_counts) / total_shared,
-            "shared_neighbor_count": float(len(neighbors)),
+            "shared_neighbor_count": float(neighbor_count),
             "multi_shared_neighbor_count": float(multi_shared_neighbors),
             "customer_component_size": float(component_size),
             "customer_local_density": local_density,

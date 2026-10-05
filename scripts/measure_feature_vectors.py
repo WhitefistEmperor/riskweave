@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
-from ringsentinel.data.ingestion import PaymentDataset
+from ringsentinel.data.ingestion import PaymentDataset, parse_input
 from ringsentinel.features.extractor import extract_event_features
 
 
@@ -16,6 +16,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--compare", type=Path)
+    parser.add_argument(
+        "--mixed", action="store_true", help="Also capture overlapping dense groups"
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("Measurement output exists; no overwrite")
@@ -29,18 +32,46 @@ def main():
         scope="One local extraction per shape/size; not a hosted limit or accuracy test",
         controls=[],
     )
-    for count, dense in ((1000, False), (250, True), (500, True)):
+    controls = [(1000, False, False), (250, True, False), (500, True, False)]
+    if args.mixed:
+        controls.extend([(250, False, True), (500, False, True)])
+    for count, dense, mixed in controls:
         bundle = SyntheticPaymentGenerator(
             GenerationConfig(seed=105, transactions=count)
         ).generate()
         device = min(bundle.events, key=lambda event: (event.timestamp, event.event_id)).device_id
+        first = min(bundle.events, key=lambda event: (event.timestamp, event.event_id))
+        other_device = next(event.device_id for event in bundle.events if event.device_id != device)
+        events = bundle.events
+        if dense:
+            events = tuple(event.model_copy(update={"device_id": device}) for event in events)
+        elif mixed:
+            customer_order = {
+                customer: index
+                for index, customer in enumerate(sorted({event.customer_id for event in events}))
+            }
+            events = tuple(
+                event.model_copy(
+                    update={
+                        "device_id": device
+                        if customer_order[event.customer_id] % 2
+                        else other_device,
+                        **({"ip_id": first.ip_id} if customer_order[event.customer_id] % 3 else {}),
+                        **(
+                            {"card_id": first.card_id}
+                            if customer_order[event.customer_id] % 5 == 0
+                            else {}
+                        ),
+                    }
+                )
+                for event in events
+            )
         payments = PaymentDataset(
             schema_version="payments-v1",
             entities=bundle.entities,
-            events=tuple(event.model_copy(update={"device_id": device}) for event in bundle.events)
-            if dense
-            else bundle.events,
+            events=events,
         )
+        parse_input(payments.model_dump_json().encode())
         start = time.perf_counter()
         features = extract_event_features(payments)
         feature_seconds = time.perf_counter() - start
@@ -53,6 +84,7 @@ def main():
             dict(
                 requested_payments=count,
                 dense=dense,
+                mixed=mixed,
                 events=len(features.rows),
                 input_sha256=hashlib.sha256(payments.model_dump_json().encode()).hexdigest(),
                 feature_sha256=hashlib.sha256(encoded).hexdigest(),
@@ -67,6 +99,8 @@ def main():
         ):
             raise ValueError("Requires a synthetic-control baseline")
         for old, new in zip(baseline["controls"], report["controls"], strict=True):
+            if old.get("mixed", False) != new["mixed"]:
+                raise ValueError("Control shape differs")
             for field in (
                 "requested_payments",
                 "dense",

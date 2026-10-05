@@ -45,6 +45,45 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+
+### Compact projected feature graph continuation
+
+Applicatione6ce32e source checks37289913309/37289920666 completed successfully
+after the prior documentation push. New feature work now replaces per-edge
+NetworkX dictionaries with exact Python integer adjacency and repeated-sharing
+bitsets. It keeps the same customer projection and causal feature definitions;
+no trained artifact, threshold, original event/result bytes or saved cases are
+changed. Component union joins one existing resource member, since the prior
+members already form a connected clique. Density counts the exact induced
+edges through masked bit counts and preserves NetworkX's float operation order.
+This still stores quadratic adjacency bits in worst cases and must not be treated
+as an unbounded admission solution. Sparse overhead may differ; measure it.
+
+Nine focused feature tests pass, including five independently rebuilt causal
+graph-oracle shapes, a late disconnected-component bridge, label blindness and
+prefix equivalence, and forbidden projected NetworkX graph/traversal use in a
+dense control. Full vectors match exactly for three original controls and two
+mixed controls. Mixed512-event extraction8.106s to0.138s (single sample). See
+results/capacity/compact-feature-equivalence-20261005.json. Complete local Python,
+optimized worker/result/memory and source-CI proofs are pending.
+
+The first mixed measurement fixture was correctly rejected by actual ingestion:
+assigning resources per event index broke original-payment/refund context
+consistency. Drivers now assign dense groups by customer identity, preserving
+refund references, and the feature driver checks actual parse_input validation.
+Rejected fixture remains ignored/private; only valid controls are published.
+Three valid original workers on sourcee6ce32e completed104/257/512 events;
+report:results/capacity/windows-worker-mixed-before-20261005.json. The pending
+compact workers must reproduce those complete input/result hashes, plus original
+sparse/shared-device reports. Do not claim result equivalence from features alone.
+
+Local API8000 was confirmed idle (zero active analyses), then stopped before
+feature edits. Isolated fixture API8001 is also stopped. Frontend5173 remains the
+verifiedbdac888 production build (no frontend changes in this continuation).
+Restart APIs only with actual new source provenance after checks. Original user
+database/storage and trained artifact are preserved. Vercel403, live private
+database/identity, hosted operations and observed model validation remain open.
+
 ### Dense feature performance continuation checkpoint
 
 Three isolated shared-device generated controls on application89ef246 completed

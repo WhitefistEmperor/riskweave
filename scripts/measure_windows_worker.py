@@ -60,10 +60,16 @@ def main():
     parser.add_argument("--model", type=Path)
     parser.add_argument("--model-sha256")
     parser.add_argument("--payments", type=int, nargs=3, default=(1000, 5000, 10000))
-    parser.add_argument(
+    density = parser.add_mutually_exclusive_group()
+    density.add_argument(
         "--shared-device",
         action="store_true",
         help="Generated density control: every event shares one device",
+    )
+    density.add_argument(
+        "--mixed-infrastructure",
+        action="store_true",
+        help="Overlapping dense device/IP/card groups",
     )
     args = parser.parse_args()
     if sys.platform != "win32":
@@ -128,7 +134,9 @@ def main():
         logical_cpus=os.cpu_count(),
         model_sha256=args.model_sha256,
         data_origin="synthetic-control",
-        density_control="all-events-share-one-device"
+        density_control="mixed-dense-infrastructure"
+        if args.mixed_infrastructure
+        else "all-events-share-one-device"
         if args.shared_device
         else "original-generator",
         samples=[],
@@ -141,17 +149,46 @@ def main():
             shared_device = min(
                 bundle.events, key=lambda item: (item.timestamp, item.event_id)
             ).device_id
+            events = bundle.events
+            if args.shared_device:
+                events = tuple(
+                    event.model_copy(update={"device_id": shared_device}) for event in events
+                )
+            elif args.mixed_infrastructure:
+                first = min(events, key=lambda event: (event.timestamp, event.event_id))
+                other_device = next(
+                    event.device_id for event in events if event.device_id != shared_device
+                )
+                customer_order = {
+                    customer: index
+                    for index, customer in enumerate(
+                        sorted({event.customer_id for event in events})
+                    )
+                }
+                events = tuple(
+                    event.model_copy(
+                        update={
+                            "device_id": shared_device
+                            if customer_order[event.customer_id] % 2
+                            else other_device,
+                            **(
+                                {"ip_id": first.ip_id}
+                                if customer_order[event.customer_id] % 3
+                                else {}
+                            ),
+                            **(
+                                {"card_id": first.card_id}
+                                if customer_order[event.customer_id] % 5 == 0
+                                else {}
+                            ),
+                        }
+                    )
+                    for event in events
+                )
             payments = PaymentDataset(
                 schema_version="payments-v1",
                 entities=bundle.entities,
-                events=(
-                    tuple(
-                        event.model_copy(update={"device_id": shared_device})
-                        for event in bundle.events
-                    )
-                    if args.shared_device
-                    else bundle.events
-                ),
+                events=events,
             )
             content = payments.model_dump_json().encode()
             case = service.create(owner, "Synthetic capacity fixture")

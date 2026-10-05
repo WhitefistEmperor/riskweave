@@ -232,3 +232,33 @@ node scripts/measure_dense_browser.mjs work/new-shared-device-control work/new-d
 
 Mixed graph shapes, accepted maxima, response amplification/heap, concurrency,
 actual PostgreSQL/provider behavior and hosted capacity remain open.
+
+
+## Compact exact customer projection (verification in progress)
+
+The feature extractor replaces individual NetworkX projected edge dictionaries
+with exact integer adjacency/repeated-sharing bitsets, retaining all edge existence
+and at-least-two-resource information used by the frozen features. Causal resource
+membership and component sizes remain exact. Induced density counts masked
+neighbors and follows the original divide-then-multiply float order. It does not
+sample, approximate or drop links. Worst-case memory is still quadratic in bits;
+resource masks can add sparse overhead. Actual worker/memory/hosted gates remain.
+
+Five full generated feature captures reproduce original input/feature hashes,
+including valid mixed dense controls. Mixed512-event extraction8.106s to0.138s
+in a single sample. See compact-feature-equivalence-20261005.json. Nine focused
+tests cover causal graph-oracle shapes, late component bridging, label blindness,
+prefix equivalence and absence of projected NetworkX allocation. Full application
+checks and compact worker/result/memory proof are pending; read the handoff.
+
+The first mixed worker fixture failed strict ingestion because per-event resource
+changes broke refund context. The fixed control assigns groups per customer so
+original-payment/refund references remain consistent. Feature capture now invokes
+the same parse_input validation. Published windows-worker-mixed-before-20261005.json
+contains only the valid104/257/512-event controls on sourcee6ce32e. Driver changes
+were not yet in that source; the report captures their actual measurement hash.
+
+```powershell
+uv run --no-sync python scripts/measure_feature_vectors.py --mixed --output work/new-compact-capture.json --compare results/capacity/compact-feature-equivalence-20261005.json
+uv run --no-sync python scripts/measure_windows_worker.py --directory work/new-mixed-control --model work/models/network-hgb.joblib --model-sha256 182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74 --mixed-infrastructure --payments 100 250 500
+```
