@@ -1,0 +1,60 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "ae8e9404a38a558618ee066d639a7986789457a9",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37297821071,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37297821071",
+      "source": "ae8e9404a38a558618ee066d639a7986789457a9",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "event": "pr",
+      "id": 37297827506,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37297827506",
+      "source": "ae8e9404a38a558618ee066d639a7986789457a9",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "local_frontend": {
+    "passed": 80,
+    "duration": "4.3m",
+    "focused_passed": 8,
+    "build": "passed",
+    "lint": "passed",
+    "typecheck": "passed"
+  },
+  "limitations": [
+    "Hosted deployment/access remains unverified (Vercel scope403).",
+    "Observed exports and independently resolved/matured labels remain unavailable.",
+    "Local synthetic single-sample timing is not a percentile or hosted admission proof."
+  ]
+}

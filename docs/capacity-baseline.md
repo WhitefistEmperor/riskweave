@@ -293,8 +293,34 @@ passed, no horizontal overflow. Largest tasks1673/2519/2413ms; network-stage
 renderer JS heaps144.6/69.3/65.7MB. These are instantaneous samples without forced
 GC, not per-case peak RAM/scaling forecasts. See dense-browser-compact-large-20261005.json.
 The source snapshot198 has the same frontend tree as the servedbdac888 build;
-exact graph/driver source bytes are captured. Synchronous Cytoscape setup still
-blocks for about2.5s. Incremental cancellable large-graph setup is the next useful
-frontend work; preserve every entity/link, inspect viewport fit, retain small
-graphs and test navigation/unmount cleanup. Accepted maxima, concurrency,
+exact graph/driver source bytes are captured. Correction: these overall longest
+tasks include selector opening/selection and do not isolate graph setup. The
+newest handoff records cancellable initialization and bounded searchable choices,
+with separate graph and selector phase measurements. Accepted maxima, concurrency,
 provider/private-PG costs, actual multi-fragment extremes and hosting remain open.
+
+### Cancellable large networks and bounded choices (ae8e940)
+
+Large graphs now load all elements in cancellable100-element animation-frame
+batches with progress, followed by full Fit. Large entity/relationship selectors
+render64 choices per page with full-identifier search; this never filters graph
+data. Eight focused checks include navigation during8001-entity/8000-link loading
+and inspection of the last entity/relationship. All80 frontend tests pass locally.
+
+Pinned real API/local production-browser report:
+`results/capacity/dense-browser-incremental-20261005.json`.
+
+| Events | Entities / links | Display + Fit seconds | Graph maximum task ms | Selector maximum task ms | Overall maximum task ms |
+|---|---|---|---|---|---|
+|2552|4108 /2542|4.882|584|568|584|
+|5104|5394 /3068|6.330|760|859|859|
+|10207|5168 /3069|5.800|706|752|752|
+
+Every sample preserves saved result hashes/counts, reports zero browser/HTTP
+errors, working selection/return to evidence and no overflow. Intermediate
+incremental code before bounded selectors had selector tasks1837/2102/2207ms;
+phase instrumentation corrects the earlier claim that all overall delay came
+from initialization. Residual600-860ms tasks still need accepted workload limits.
+These ambient local synthetic samples establish neither percentiles/concurrency
+nor hosted authentication or capacity. Instantaneous network renderer heaps
+80.3/62.5/64.7MB are not peak process memory. Original data/model are unchanged.

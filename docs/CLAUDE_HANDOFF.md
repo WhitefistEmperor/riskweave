@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 198d2db; documentation may have a newer head. Inspect git status and
+commit is ae8e940; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -45,7 +45,7 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
-### Cancellable networks and bounded selectors: current checkpoint
+### Cancellable networks and bounded selectors: source ae8e940
 
 The current frontend change inserts large Cytoscape graphs in cancellable
 100-element animation-frame batches with visible progress and disabled controls
@@ -57,8 +57,13 @@ Every entity and explicit link remains inspectable. Small graph layout is retain
 Eight focused browser checks pass (48.4s), including 1201 entities/1200 links,
 last-page/search/relationship/evidence navigation, and cancellation/revisit with
 8001 entities/8000 links. Production build, lint and typecheck pass. Full 80-test
-frontend suite is running; exact-source remote CI and pinned measurement are
-pending at this checkpoint. Do not describe these pending checks as passed.
+frontend suite passes all80 tests (4.3m). Pushed source is
+ae8e9404a38a558618ee066d639a7986789457a9. Both source CI runs37297821071 and
+37297827506 are complete/success: all six backend/frontend/container jobs green.
+Remote logs confirm304 Python tests and80 browser tests on each run; audit reports
+zero vulnerabilities. Container/actual PostgreSQL SDK delivery and encrypted
+restore checks pass. Local frontend80 tests pass. Proof:
+results/operations/incremental-network-source-verification-20261005.json.
 
 Correction to the older capacity interpretation below: the overall longest task
 included graph preparation AND selector opening/selection. Phase instrumentation
@@ -73,8 +78,13 @@ These are single local synthetic samples, not percentiles or hosted admission;
 Private measurements: work/incremental-browser-phases-before-picker-20261005.json
 and work/incremental-picker-phases-after-20261005.json. Their HEAD metadata is
 b5e46de although source bytes were uncommitted; do not call them exact-source b5
-proof. Pin final source, repeat measurement, publish aggregate evidence, check
-both source CI runs, then update this checkpoint and release gates/PR.
+proof. Final pinned measurement is now published as
+results/capacity/dense-browser-incremental-20261005.json: overall584/859/752ms,
+graph584/760/706ms, selector568/859/752ms. Display+Fit4.882/6.330/5.800s;
+full graph counts and saved result hashes match the earlier controls. All checks
+pass, no browser/HTTP errors or overflow. Instantaneous network heaps80.3/62.5/
+64.7MB are not peak RAM. Both final source CI runs are green; hosted release
+and real-data/model approval remain incomplete.
 
 Backend remains198d2db; local main API8000, isolated synthetic API8001 and
 production frontend5173 are running. Preserve their ignored databases/storage,
@@ -83,8 +93,15 @@ rewrite occurred. Deployment still needs supported Vercel access (last403), free
 private TLS database/live identity and hosted workflow/recovery verification.
 Observed export/label validation and native multi-fragment capacity remain open.
 
-Usage snapshot at this checkpoint:13% current-window remaining,41% weekly
-remaining. Keep this GitHub file current before the requested10% handoff threshold.
+Usage snapshot at this checkpoint:10% current-window remaining,41% weekly
+remaining. Requested threshold reached; this continuation brief is being pushed.
+Claude: verify current HEAD/CI, read release gates, preserve private fixtures and
+user cases, then restore supported Vercel scope access before deploying. Verify
+free database/identity/workflow allowances and hosted end-to-end operations.
+Further independent code work: repeated dense browser/worker measurements,
+accepted maxima/concurrency and genuinely generated multi-fragment cases.
+Do not reduce evidence, invent observed accuracy or treat synthetic controls as
+release approval. All source work is on codex/production-foundation/draft PR1.
 
 
 ### Compact projected feature graph: verified source198d2db
@@ -147,10 +164,10 @@ overflow. Graphs4108/5394/5168 entities with2542/3068/3069 links took4.288/4.934
 4.322s display+Fit; largest tasks1673/2519/2413ms. Network-stage renderer JS heaps
 144.6/69.3/65.7MB are instantaneous samples without forced GC, not per-case peak
 RAM or monotonically scaling estimates. Read dense-browser-compact-large-20261005.json.
-Synchronous graph creation still blocks the page for about2.5s. NEXT useful code
-work:incremental/cancellable large Cytoscape initialization (preserving all graph
-elements and small-network behavior), responsive loading state and actual larger
-browser verification. Do not label the frontend capacity gate finished.
+Historical interpretation corrected by the latest checkpoint: these longest
+tasks include selector opening/selection and do not isolate graph initialization.
+Cancellable setup and bounded searchable selectors are now implemented; consult
+the newer phase measurements. Frontend capacity is still not fully approved.
 
 The first mixed measurement fixture was rejected by real ingestion because
 per-event resource reassignment broke payment/refund context. Corrected drivers
