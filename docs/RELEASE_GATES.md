@@ -2,8 +2,9 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source 144fbd4 (all six push/PR checks green without retry), the actual account-access response and
-the measured local worker baseline; consult the handoff for newer exact commits.
+uses source343379c (all six push/PR checks green:301 Python/78 browser), the actual
+account-access response and measured sparse/dense local workers. Consult the
+handoff for newer exact commits and incomplete browser capacity work.
 
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|

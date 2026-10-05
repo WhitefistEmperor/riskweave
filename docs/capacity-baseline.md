@@ -149,8 +149,21 @@ changed. Independent graph-oracle checks cover every event in generated,
 single-device and overlapping-resource controls; a dense test forbids the costly
 traversals. Exact full feature-vector hashes match before/after on three controls.
 The512-event extraction changed from15.38s to0.39s in one local sample.
-See results/capacity/exact-feature-equivalence-20261005.json. Complete worker/result
-hash and exact-source CI proof are pending; check CLAUDE_HANDOFF.md.
+See results/capacity/exact-feature-equivalence-20261005.json. Complete optimized workers on343379c reproduce all original input/result hashes:
+
+| Actual dense events | Before main s | After main s | After peak MB |
+|---:|---:|---:|---:|
+| 257 | 2.268 | 0.410 | 197.5 |
+| 512 | 14.982 | 0.899 | 207.9 |
+| 1,021 | 102.031 | 2.443 | 244.4 |
+
+Sparse1021/5104/10207-event controls also retain original input/result hashes,
+with main0.383/1.547/2.714s and peaks202.9/249.7/278.9MB. These are single local
+worker samples. Reports are windows-worker-shared-device-optimized-20261005.json,
+windows-worker-sparse-optimized-20261005.json and
+indexed-reads-shared-device-optimized-20261005.json in results/capacity/. Both
+source CI runs37286112105/37286116756 passed all six checks with301 Python and78
+browser tests. No hosted capacity or observed model accuracy approval is implied.
 
 Reproduce the density fixture only in a new private directory:
 
@@ -168,3 +181,38 @@ quadratically. Mixed dense neighborhoods may still need expensive exact density
 work. Browser graph layout/heap, maximal accepted input, concurrency, PostgreSQL
 and managed provider limits remain open; do not approve admission budgets from
 these small local controls.
+
+
+## Browser graph density continuation
+
+The same isolated real API/SQLite/object fixtures were opened in Chromium against
+the production frontend through a Playwright HTTP relay injecting the fixed
+synthetic development owner. Timings include relay overhead. This is not hosted
+authentication/CORS/gateway proof. Before the frontend fix,513/1106 entities with
+323/711 links took5.069/21.372s to display and Fit; their largest main-thread tasks
+were4237/20190ms. The1021-event case timed out waiting60000ms for the canvas;
+its final graph time/heap was not measured. See dense-browser-before-20261005.json.
+
+Large networks now use deterministic circular layout above250 nodes or500 links.
+No entities, explicit links, original evidence or result hashes are removed.
+Smaller networks retain the existing force layout. Entity/link selectors and
+Focus selected remain available; a1201-node/1200-link browser check verifies all
+selector entries, last-member inspection, its link and switching back to evidence.
+First fixed measurements display+Fit513/1106/2121 entities in0.827/1.127/1.670s.
+The corresponding largest tasks261/447/825ms still warrant further browser work.
+These are single local samples, not capacity approval or percentiles.
+
+To reproduce, serve only the complete shared-device fixture database/objects in a
+separate loopback API with test development authentication and jobs disabled,
+plus a production frontend. The driver requires exactly three completed fixture
+runs owned by synthetic-capacity-only and matching report/result checksums. It
+opens SQLite readonly and does not write API cases/reviews or saved objects.
+Output must be a new path; only aggregates/hashes are published. Frontend graph
+source and driver bytes are hashed. Do not point it at original user cases.
+
+```powershell
+node scripts/measure_dense_browser.mjs work/new-shared-device-control work/new-dense-browser-report.json http://127.0.0.1:8001 http://127.0.0.1:5173
+```
+
+Mixed graph shapes, browser response amplification/heap at accepted maxima,
+concurrency, actual PostgreSQL/provider behavior and hosted capacity remain open.

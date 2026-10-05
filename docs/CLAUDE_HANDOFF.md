@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 89ef246; documentation may have a newer head. Inspect git status and
+commit is 343379c; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -67,20 +67,51 @@ feature hashes against the captured report. Trained artifact/threshold/features'
 meaning are unchanged; no original result rewrite or migration is needed.
 
 The final local full Python run passed299 with2 PostgreSQL-only skips, using
-the trusted age executable and one OpenMP thread. Ruff passed. Optimized complete
-worker/result-hash and exact-source CI checks remain pending. The
-previously tested application is89ef246, whose source checks passed all six (297
-Python/78 browser, zero audit advisories, real PostgreSQL/SDK/encrypted restores).
-Do not attribute those checks to the unfinished optimization. See
-scripts/measure_feature_vectors.py and docs/capacity-baseline.md for reproduction.
+the trusted age executable and one OpenMP thread. Ruff passed. Pushed application
+343379cbe3725f964d20267ecd4bcc6966bea772 passed all six checks on source push
+37286112105 and PR37286116756:301 Python/78 production-browser tests, zero audit
+advisories, containers, actual PostgreSQL/SDK background delivery and encrypted
+PostgreSQL restores in both storage modes. Production inventory440,791,945 bytes
+is below the450MB repository gate; it is not an actual hosted bundle measurement.
+
+All three optimized dense workers completed on source343379c, reproducing every
+original input/result hash and the unchanged model hash. Main time for257/512/1021
+events is0.410/0.899/2.443s (before2.268/14.982/102.031s). Peaks are197.5/207.9/
+244.4MB. Three sparse workers also reproduce the earlier input/result hashes at
+1021/5104/10207 events, taking0.383/1.547/2.714s with peaks202.9/249.7/278.9MB.
+Reports:results/capacity/windows-worker-{shared-device,sparse}-optimized-20261005.json
+and indexed-reads-shared-device-optimized-20261005.json. Single local samples do
+not establish percentiles, concurrency, provider costs or admission limits.
 
 The pairwise projected graph still grows quadratically. Mixed dense neighborhoods,
 browser heap/layout, accepted input maxima, concurrency and hosted/private-PG/
-managed-workflow limits still require measured fixes. Deployment still needs the
-correct Vercel/GitHub scope connection; a human reconnect request is pending.
-The owned idle API was stopped before feature-source changes to prevent fresh
-workers carrying an old build identity. Frontend33385 remains the verified89ef246
-build; restart the API with the actual optimized commit after its checks pass.
+managed-workflow limits still require measured fixes. A real browser density
+measurement found513/1106-entity layouts caused4237/20190ms long tasks and the
+1021-event fixture timed out waiting60000ms for its canvas. These failed/pre-fix
+measurements remain in results/capacity/dense-browser-before-20261005.json.
+The continuation now uses deterministic circular layout above250 nodes or500
+links, preserving every graph element and leaving the exact evidence projection
+unchanged. A1201-entity/1200-link browser regression confirms all selector options,
+last-member selection, its explicit relationship, focus and evidence navigation.
+Focused browser check passed; lint/typecheck/production build passed. Full local
+browser and exact-source CI proof for this frontend change are pending.
+
+First corrected real fixture measurements completed all three:513/1106/2121
+entities and323/711/1471 explicit links; network display+Fit0.827/1.127/1.670s,
+largest long tasks261/447/825ms. Evidence readiness1.173/0.920/0.961s; no browser
+or HTTP errors, selection/return-to-evidence passed with no horizontal overflow.
+These single samples still show subsecond main-thread work; they do not prove
+maximal accepted capacity, cold/warm percentiles or concurrency. Final committed
+driver measurement will be published after its source is pinned. It uses isolated
+synthetic SQLite/objects with Playwright HTTP relay including its overhead. No
+real hosted identity/CORS/gateway proof is implied. API8000 is source343; frontend
+5173 now serves the corrected build. Isolated fixture API8001 has jobs disabled.
+Original user cases remain untouched. Reproduce with scripts/measure_dense_browser.mjs
+and docs/capacity-baseline.md; do not run fixture-only measurement on private user
+data or point it at hosted services.
+Deployment still needs the correct Vercel/GitHub scope connection; a human
+reconnect request is pending. Do not bypass the rejected authentication popup.
+
 
 
 ### Frontend dependency security continuation checkpoint

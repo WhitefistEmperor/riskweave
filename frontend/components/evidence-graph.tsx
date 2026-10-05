@@ -43,6 +43,7 @@ export default function EvidenceNetwork({
   const network = useRef<Core | null>(null);
   const [selection, setSelection] = useState('');
   const [height, setHeight] = useState(460);
+  const largeNetwork = graph.nodes.length > 250 || graph.edges.length > 500;
   const node = graph.nodes.find((item) => item.id === selection);
   const edge = graph.edges.find((item) => item.id === selection);
   const related = node
@@ -140,17 +141,25 @@ export default function EvidenceNetwork({
         },
         { selector: '.dimmed', style: { opacity: 0.22 } },
       ],
-      layout: {
-        name: 'cose',
-        nodeDimensionsIncludeLabels: true,
-        nodeOverlap: 12,
-        componentSpacing: 40,
-        randomize: false,
-        animate: false,
-        padding: 42,
-        nodeRepulsion: () => 18000,
-        idealEdgeLength: () => 70,
-      },
+      layout: largeNetwork
+        ? {
+            name: 'circle',
+            animate: false,
+            padding: 42,
+            avoidOverlap: true,
+            nodeDimensionsIncludeLabels: true,
+          }
+        : {
+            name: 'cose',
+            nodeDimensionsIncludeLabels: true,
+            nodeOverlap: 12,
+            componentSpacing: 40,
+            randomize: false,
+            animate: false,
+            padding: 42,
+            nodeRepulsion: () => 18000,
+            idealEdgeLength: () => 70,
+          },
       minZoom: 0.15,
       maxZoom: 4,
       wheelSensitivity: 0.2,
@@ -167,7 +176,7 @@ export default function EvidenceNetwork({
       cy.destroy();
       network.current = null;
     };
-  }, [graph]);
+  }, [graph, largeNetwork]);
   useEffect(() => {
     const cy = network.current;
     if (!cy) return;
@@ -382,6 +391,13 @@ export default function EvidenceNetwork({
         Unshared-resource links are not present in these queries. No missing
         relationship is inferred.
       </p>
+      {largeNetwork && (
+        <p className="muted text-xs">
+          Large networks use a circular layout. Select an entity and use Focus
+          selected to inspect its connections. All reported entities and links
+          remain available.
+        </p>
+      )}
     </div>
   );
 }
