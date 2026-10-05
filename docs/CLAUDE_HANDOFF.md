@@ -5,6 +5,39 @@ the project is already deployed or validated on real financial data.
 
 ## Instructions for Claude at the usage handoff
 
+### Current continuation checkpoint: 2% remaining
+
+At 2026-10-05 15:17 UTC, the current usage window is 98% used (2% remaining),
+with 24% remaining weekly. Commit 5b13e8250c78c6c570a55288e292d3dfaa859a7d
+matches the remote branch. Push37330928814 and PR37330936144 are completed:
+backend, frontend and containers all succeeded on both runs. The published
+capacity evidence remains pinned to measured application source350e0f5 below.
+
+The supported connector recheck still returns403 for the target Vercel workspace;
+accessible teams are empty. No deployment was attempted. The earlier supported
+reconnect question and authorized export/label-location question remain pending.
+The full goal is incomplete. Continue with these required inputs and actions:
+
+1. Restore supported connector permission to the specified Vercel workspace and
+   repository; verify free allowances before creating resources. Read
+   docs/vercel-deployment.md and deploy the tested branch, never old main.
+2. Configure private TLS PostgreSQL, explicit migrations, live OIDC, managed
+   Workflow and cron. Verify the complete investigation and session workflow over
+   hosted HTTPS, including browser-close execution, owner isolation and erasure.
+3. Obtain authorized provider exports and independently confirmed, matured labels.
+   Review mappings and run the documented frozen temporal evaluation; do not
+   describe synthetic-trained results as observed fraud accuracy.
+4. Measure deployed concurrency and full API/parent/database/browser memory and
+   duration. The six sequential PostgreSQL worker controls do not supply these.
+5. Install external monitoring, authorized alerts and encrypted scheduled off-host
+   backups; verify hosted restore, rollback, retention and recovery ownership.
+6. Resolve the unread Instinct requirements through supported access. Keep this
+   handoff current, preserve private fixtures/user cases, and push source changes.
+
+Check remote HEAD/status before continuing. A newer documentation-only checkpoint
+may follow 5b13e82; do not confuse it with the measured application source. The
+historical 9% checkpoint below is retained for provenance, not as a live CI wait.
+
 ### Usage threshold checkpoint: 9% remaining
 
 Follow-up: source350e0f5 CI completed successfully and both canonical artifacts
