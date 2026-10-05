@@ -5,6 +5,38 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+- New application source `799e75b6def2be3f190ca87d3f40cfde1b9bd5a9`, pushed.
+  Adds owner-scoped candidate pages (1–100 items, stable ordinal ranges) and
+  candidate/evidence section manifest/chunk endpoints. Indexed fragment delivery
+  verifies containing source result chunks and never assembles the complete section;
+  each raw read/chunk is at most 2 MB. Original bytes/hashes and old routes remain.
+  Migration 0010 adds a page-range index without changing migration 0009.
+  All 25 focused section/persistence/PostgreSQL compilation tests passed locally,
+  including eight new cases across both storage modes and actual HTTP contracts.
+  [Push CI 37261238329](https://github.com/WhitefistEmperor/riskweave/actions/runs/37261238329)
+  and PR CI 37261242414 passed all six checks: 287 Python tests, 69 browser tests,
+  containers and encrypted actual PostgreSQL restore in both storage modes.
+  Push browser first failed rapid keyboard selection at 1024px; PR passed and one
+  push failed-job retry passed. Trace shows no selected entity, but exact cause is
+  unresolved. Retain/reproduce this timing signal; no assertion was loosened.
+  Ignored diagnostic archive is work/section-transport-browser-diagnostics/.
+  Production inventory is 440,704,096 bytes against 450 MB, not hosted bundle size.
+  PostgreSQL encrypted restore drills now
+  exercise paginated candidates and section fragments with whole reads disabled.
+  See `docs/candidate-section-transport.md` for client reconstruction integrity gates.
+  The console still assembles complete results; API completion does not close browser
+  or hosted capacity. Candidate page count does not bound a single summary's bytes.
+  Local preview was idle, its owned API was stopped, and a verified offline SQLite
+  copy plus 34 object files was created at work/browser-before-0010-20261005/.
+  This is a raw migration safeguard, not a manifest-format backup CLI snapshot.
+  Explicit migration through 0010 preserved all original table row counts and run
+  result checksum/reference fingerprints; SQLite integrity passed. API restarted
+  session 84114 / PID 17628, loopback8000, trusted unchanged model and local jobs.
+  Generated 1,021-event smoke completed/reviewed/deleted only its own fixture;
+  historical result SHA bb3977... unchanged, malformed422/other-owner404, cleanupcomplete.
+  Log work/section-transport-api.log. No live deployment or actual cases were erased.
+  Earlier statements that the browser DB is 0008 describe historical state.
+
 - New application source `ab475aeb93dc493e530ec087183199ed2aa52a14`, pushed.
   Migration 0009 adds immutable candidate/query/currency range metadata and an
   explicit index marker. New ring/evidence/investigator/review membership paths
@@ -371,11 +403,11 @@ the embedded queue. Do not deploy the test harness as a durable worker.
 
 ## Next work, in order
 
-Next independent code work: finish the remaining contracts in
-`docs/targeted-result-sections.md`: candidate pagination and individual evidence
-fragment delivery, then measure selected-section and browser memory. The current
-source implements targeted immutable reads without discarding large workflows.
-Verify the exact-source CI before release. Deployment/data blockers remain separate.
+Next independent code work: adopt candidate pages/section fragment APIs in the
+console with request cancellation, owner/run scoping, progress and complete-section
+integrity gates before showing evidence. Preserve small-case behavior and full
+analyst functionality. Then remeasure browser/selected-section/indexing overhead and
+verify actual hosted limits. Deployment/data blockers remain separate.
 
 1. Verify the pushed branch/PR checks and preserve the passing source. Fix concrete
    failures before release. Update this file with exact tested commits/results.
@@ -389,7 +421,7 @@ Verify the exact-source CI before release. Deployment/data blockers remain separ
    is not a hosted bundle measurement. Configure both cron secrets identically.
    Normal filesystem/scheduler defaults are unsafe for serverless; the dedicated
    entry point requires database/request/managed-workflow mode explicitly.
-4. Apply migrations explicitly through 0009 and provision a live OIDC provider.
+4. Apply migrations explicitly through 0010 and provision a live OIDC provider.
    Align issuer/audience/scope/JWKS and registered exact HTTPS callbacks/logout.
    Verify the implemented bounded HTTPS public-key cache/rotation against that
    provider, including overlap, removal, outages and cache expiry; see

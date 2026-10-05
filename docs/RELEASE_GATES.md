@@ -2,12 +2,12 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source ab475ae (all six push/PR checks green), the actual account-access response and
+uses source 799e75b (all six push/PR checks green after one push browser retry), the actual account-access response and
 the measured local worker baseline; consult the handoff for newer exact commits.
 
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|
-| Private investigation workflow | 279 Python/69 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
+| Private investigation workflow | 287 Python/69 browser checks, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
 | Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Re-authentication: target workspace still returns 403; verify free account allowances, actual projects/deployment, TLS/database/identity |
@@ -23,7 +23,7 @@ the measured local worker baseline; consult the handoff for newer exact commits.
    An instruction to deploy does not itself supply account credentials. Preserve
    unrelated projects; never bypass the rejected login popup or substitute old main.
 2. Follow `vercel-deployment.md` using the tested branch, verified free allowances,
-   private TLS PostgreSQL, explicit migration 0009, live OIDC and managed Workflow.
+   private TLS PostgreSQL, explicit migration 0010, live OIDC and managed Workflow.
    Do not invent a deployed URL or claim provider durability from embedded tests.
 3. Provide authorized private payment exports and independently resolved fraud labels,
    with actual meaning/resolution time and agreed error/review costs. Analyst
@@ -70,3 +70,10 @@ tests, containers and encrypted PostgreSQL restores in both storage modes. See t
 The remaining gap is candidate pagination, evidence fragment responses, selected
 section/browser memory and actual hosted capacity. Retain the historical audit
 above as its trigger; it describes e2926f4, not the new targeted implementation.
+
+Source 799e75b adds candidate pages and individual candidate/evidence fragments,
+with source-fragment verification and an ordinal range index (migration 0010).
+All six checks passed: 287 Python/69 browser tests and actual PostgreSQL restore.
+One push browser keyboard test needed a retry; preserve its timing signal. Browser adoption, cancellation/final
+integrity handling and real provider measurements remain required; existing direct
+selected-section paths and large individual summaries still need capacity review.
