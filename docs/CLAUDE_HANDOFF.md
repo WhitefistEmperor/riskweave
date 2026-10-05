@@ -5,6 +5,12 @@ the project is already deployed or validated on real financial data.
 
 ## Latest source and verification
 
+- Documentation/audit head `3692d3d09a8c3709e761ef64a4e0a31b5d920cb6`
+  passed all six push/PR checks (37259040665 / 37259044441). Application source
+  remains e2926f4. The next independent implementation is targeted candidate and
+  evidence reads, including review membership; see the release audit's confirmed
+  gap. Current green checks do not prove large-result memory/response bounds.
+
 - Current readiness fix `e2926f46588166323e40075bb90db9249031dd16`, pushed. Ruff and all 31 focused lifecycle,
   operational-limit and deletion checks passed locally. Local storage readiness
   now owns one write lock through its quota check, probe write/read and final
@@ -337,6 +343,13 @@ the embedded queue. Do not deploy the test harness as a durable worker.
   Do not invent requirements from it or accept terms/login on the user's behalf.
 
 ## Next work, in order
+
+Immediate independent code task: close the targeted-read gap documented at the end
+of `docs/RELEASE_GATES.md`. Current ring/evidence/investigator and review-membership
+paths load the whole result. Implement atomic candidate indexing and owner-scoped
+verified targeted reads while preserving result hashes, legacy runs and full analyst
+functionality. Do not replace this work with blanket large-result rejection or more
+small-case tests. Deployment/data blockers remain separate.
 
 1. Verify the pushed branch/PR checks and preserve the passing source. Fix concrete
    failures before release. Update this file with exact tested commits/results.

@@ -38,3 +38,27 @@ the measured local worker baseline; consult the handoff for newer exact commits.
 
 See `CLAUDE_HANDOFF.md` for state/continuation instructions and
 `capacity-baseline.md` for method, hashes, reproducibility and measurement limits.
+
+## Confirmed targeted-read gap
+
+Audit of source e2926f4 confirms that `src/ringsentinel/api/platform_api.py`
+loads the entire immutable result for ring listing, individual candidates, evidence
+and investigator questions. `ReviewService._candidate` in
+`src/ringsentinel/platform/reviews.py` does the same for review reads and writes.
+The 2 MB whole-results response guard and indexed fragment delivery do not cover
+these paths. This is an application implementation gap, independent of account access.
+
+Next implementation must preserve the full analyst workflow for large results:
+add an owner-authorized immutable candidate/evidence index built atomically with
+successful result persistence, use targeted verified reads for candidate evidence
+and investigator queries, and check candidate membership for reviews without
+loading the entire result. Preserve the original result bytes/checksum and legacy
+runs through explicit verified maintenance or compatible fallback. Candidate
+pagination and individual evidence response sizes still require explicit contracts.
+Do not replace these workflows with a blanket result-size rejection.
+
+Proof must include both storage modes, large generated results with full-object
+reads disabled, another owner's denial, missing/corrupt index rejection, failed
+persistence rollback, legacy maintenance, deletion and actual PostgreSQL restore.
+Retain the limitation until these paths are implemented and verified; a passing
+small-case suite alone does not close it.
