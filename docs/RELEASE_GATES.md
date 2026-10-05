@@ -6,13 +6,23 @@ uses sourceae8e940 (all six push/PR checks green:304 Python/80 browser), the act
 403 scope response and measured sparse/dense workers and cancellable browser grid
 controls. Consult the handoff for exact evidence and remaining capacity work.
 
+New driver sourceb97cde2 generates valid long-identifier inputs and real saved
+two-fragment results (2.571/3.200MB); complete native and selected-evidence hashes
+verify with whole reads forbidden and individual reads at most2000000 bytes.
+Real browser consumption passes with all graph elements retained. This closes the
+absence of generated multi-fragment proof at two fragments; higher extremes,
+worker repetitions, actual PostgreSQL/hosted capacity and release limits remain
+open. Source CI37298832782/37298839105 passes all six checks:304 Python/80 browser,
+zero advisories, containers, actual PostgreSQL/SDK delivery and encrypted restores.
+Application tree is unchanged fromae8e940.
+
 | Requirement | Evidence now | What still proves completion |
 |---|---|---|
 | Private investigation workflow | 304 Python/80 browser checks, exact-source push/PR green, persisted reviews, two-owner isolation and erasure, actual PostgreSQL/container workflows | Repeat on exact hosted HTTPS source with real identity and browser-close/reload |
 | Real-data ingestion | Strict unlabeled JSON, explicit CSV mappings, identity/refund/currency checks, source hashes and synthetic feature-preservation proof | Review actual authorized provider export semantics, missing features and identity/history completeness |
 | Model validity | Frozen pinned synthetic-trained detector; temporal labels, validation-only thresholds, missing-label coverage and descriptive feature shift tooling | Authorized observed temporal holdouts, label maturation, calibration, subgroup/error analysis, shift/operating limits and independent approval |
 | Free hosting | Vercel target selected; production entry/build/Workflow source and CI packaging checks | Re-authentication: target workspace still returns 403; verify free account allowances, actual projects/deployment, TLS/database/identity |
-| Runtime capacity | All nine original worker hashes preserved; dense10207 worker25.332s/282.6MB. Cancellable complete graphs/bounded searchable selectors: up to5394 entities,6.330s display+Fit,859ms maximum task. Latest instantaneous network heaps up to80.3MB; sparse overhead up to4MB. Single samples; native generated multi-fragment extremes remain open | Deployed cold/warm runs, parent/DB/browser overhead, repetitions/percentiles, concurrent and dense cases, largest response paths, duration/memory/bundle/billing |
+| Runtime capacity | All nine original worker hashes preserved; dense10207 worker25.332s/282.6MB. Cancellable complete graphs/bounded searchable selectors: up to5394 entities,6.330s display+Fit,859ms maximum task. Latest instantaneous network heaps up to80.3MB; sparse overhead up to4MB. Single worker samples; generated two-fragment result/evidence delivery verified, higher fragment/candidate extremes remain open | Deployed cold/warm runs, parent/DB/browser overhead, repetitions/percentiles, concurrent and dense cases, largest response paths, duration/memory/bundle/billing |
 | Durable jobs | Actual SDK/PostgreSQL local delivery, leases, retry/deadline/model fencing, bounded reconciliation and erasure checks | Generated hosted queue authentication, cron, browser-independent delivery and interruption/recovery on real provider |
 | Operations and recovery | Private aggregate operator CLI, explicit retention/erasure, manual snapshots, standard age envelopes with actual local encrypted restores, and PostgreSQL 17 restore in both storage modes | External uptime/queue/error monitoring, authorized alert destinations, scheduled encrypted backups, hosted restore/rollback and RPO/RTO ownership |
 | Source requirements | Repository and user instructions inspected | Instinct source link remains unread: prior phone/auth/terms gate; current fetch inaccessible. Do not invent its contents |

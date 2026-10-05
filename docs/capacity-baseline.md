@@ -324,3 +324,37 @@ from initialization. Residual600-860ms tasks still need accepted workload limits
 These ambient local synthetic samples establish neither percentiles/concurrency
 nor hosted authentication or capacity. Instantaneous network renderer heaps
 80.3/62.5/64.7MB are not peak process memory. Original data/model are unchanged.
+
+### Generated native multi-fragment controls (b97cde2)
+
+The worker driver now optionally appends128 characters consistently to generated
+customer entity/event identifiers. Actual strict ingestion and the unchanged
+worker generate results exceeding the2000000-byte native fragment boundary.
+This varies input identifier width; saved output is not padded afterward.
+
+| Events | Result bytes | Native fragments | Evidence bytes | Worker seconds | Peak working set MB |
+|---|---|---|---|---|---|
+|1021|1411961|1|1275521|0.876|206.8|
+|2552|2570587|2|2309700|3.002|221.7|
+|5104|3200467|2|2862549|9.808|254.1|
+
+The read driver verifies full immutable result reconstruction from native
+fragments, then each selected evidence section's complete hash and delivery chunk
+hashes. Each path is measured three times, whole-object reads forbidden and every
+individual storage read bounded to2000000 bytes. Largest evidence delivery median
+0.102s reads7601401 total bytes over5 reads because source fragments are verified
+again across manifest/delivery chunks. First queue page reads27 bytes over2 reads.
+This is bounded read amplification, not selected-bytes-only storage behavior.
+
+Actual local browser controls consume the verified evidence through isolated
+API8002 and the unchanged production frontend. All three pass inspection/return
+to evidence with zero browser/HTTP errors and no overflow. Graphs2121/4108/5394
+entities retain1471/2542/3068 links; display+Fit2.593/4.672/6.066s, overall maximum
+tasks369/586/817ms. Instantaneous network renderer heaps48.8/79.0/136.9MB are not
+peak RAM. Local owner relay does not prove hosted authentication.
+
+Reports: windows-worker-long-identifiers-20261005.json,
+indexed-reads-native-fragments-20261005.json and
+dense-browser-native-fragments-20261005.json. This closes the missing generated
+two-fragment sample; higher fragment/candidate extremes, repeated worker
+percentiles, actual PostgreSQL capacity and hosted admission remain open.

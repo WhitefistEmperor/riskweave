@@ -7,7 +7,7 @@ the project is already deployed or validated on real financial data.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is ae8e940; documentation may have a newer head. Inspect git status and
+commit is b97cde2; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 
@@ -44,6 +44,55 @@ reproduction is in docs/vercel-deployment.md. Source/main and unrelated projects
 must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
+
+### Native generated multi-fragment capacity: source b97cde2
+
+Pushed b97cde2427ca37dba13ce626f2882767d29b38f8 changes measurement drivers
+only. The application/frontend/model remain the verified ae8e940 tree. Optional
+--customer-id-padding128 consistently extends synthetic customer entity/event
+identifiers, preserving refund references and resource membership. Actual upload,
+strict ingestion and normal worker generate the saved results; payloads are not
+padded after serialization. Default fixtures remain unchanged. No original case
+or model artifact is modified. Ruff passes.
+
+Controls1021/2552/5104 events produce1411961/2570587/3200467-byte results and
+native fragment counts1/2/2. Full native fragment reconstruction matches each
+saved immutable result checksum. Selected evidence1275521/2309700/2862549 bytes
+also reconstructs its full section hash and individual delivery hashes over three
+read-only repetitions. Whole-object reads are forbidden; maximum individual read
+is2000000 bytes. Largest selected evidence delivery reads7601401 total storage
+bytes over5 reads, median0.102s: checksum verification amplifies reads and is not
+a selected-bytes-only claim. Queue first-page reads27 total bytes over2 reads.
+
+Worker main0.876/3.002/9.808s, peak working sets206.8/221.7/254.1MB; these are
+single local synthetic workers, not percentiles or hosted concurrency admission.
+The exact fragment size is2000000 decimal bytes (earlier "2MiB" is shorthand).
+
+Real isolated API8002/SQLite/local-storage + production frontend5173 passes all
+three browser controls, including both multi-fragment cases. Graphs2121/4108/5394
+entities and1471/2542/3068 links display+Fit2.593/4.672/6.066s; overall largest
+tasks369/586/817ms. No browser/HTTP errors or overflow; selection and return to
+evidence pass. The larger cases each issue14 API requests. Instantaneous network
+heaps48.8/79.0/136.9MB are not peak RAM. Browser relay injects synthetic owner;
+this does not prove hosted identity. Full IDs remain retained in evidence.
+
+Published aggregate reports under results/capacity:
+windows-worker-long-identifiers-20261005.json,
+indexed-reads-native-fragments-20261005.json,
+dense-browser-native-fragments-20261005.json. Ignored fixture is
+work/long-id-native-fragments-20261005; preserve it and other private cases.
+Source CI37298832782(push)/37298839105(PR) passed all six checks. Logs confirm
+304 Python/80 browser tests on each run, zero audit vulnerabilities, containers,
+actual PostgreSQL/SDK background delivery and encrypted restores in both stores.
+Proof: results/operations/native-fragment-source-verification-20261005.json.
+Latest usage snapshot:6% current-window remaining /40% weekly remaining; the
+10% handoff was already pushed and this update retains precise continuation state.
+
+This closes the earlier absence of a generated two-fragment control, including
+selected evidence that itself spans fragments. Higher fragment/candidate counts,
+repeated workers, accepted maxima/concurrency, actual PostgreSQL capacity and
+hosted budgets remain open. Deployment still returns403; live identity/operations
+and observed-data/model validation remain required. Keep the full goal intact.
 
 ### Cancellable networks and bounded selectors: source ae8e940
 
@@ -99,7 +148,8 @@ Claude: verify current HEAD/CI, read release gates, preserve private fixtures an
 user cases, then restore supported Vercel scope access before deploying. Verify
 free database/identity/workflow allowances and hosted end-to-end operations.
 Further independent code work: repeated dense browser/worker measurements,
-accepted maxima/concurrency and genuinely generated multi-fragment cases.
+accepted maxima/concurrency and higher fragment/candidate counts. Generated
+two-fragment result/evidence delivery is now verified in the latest checkpoint.
 Do not reduce evidence, invent observed accuracy or treat synthetic controls as
 release approval. All source work is on codex/production-foundation/draft PR1.
 
