@@ -2,8 +2,12 @@
 
 import base64
 import hashlib
+import json
 import os
+import platform
 import subprocess
+import sys
+import time
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -11,7 +15,7 @@ from uuid import uuid4
 import psycopg
 import pytest
 from psycopg import sql
-from sqlalchemy import delete
+from sqlalchemy import delete, text
 from sqlalchemy.engine import make_url
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
@@ -455,3 +459,159 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
     finally:
         source_db.engine.dispose()
         target_db.engine.dispose()
+
+
+def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
+    from ringsentinel.data.ingestion import PaymentDataset
+    from ringsentinel.platform.models import Status
+    from ringsentinel.platform.vercel_build import build
+    from ringsentinel.platform.vercel_entry import MODEL_DIRECTORY
+
+    if sys.platform != "linux":
+        pytest.skip("Linux child peak RSS measurement is configured in CI")
+    source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    model = build(tmp_path)
+    settings = Settings(
+        environment="test",
+        database_url=databases[0],
+        storage_backend="database",
+        storage_root=tmp_path / "objects",
+        jobs_enabled=False,
+        model_artifact_path=tmp_path / MODEL_DIRECTORY / "network-hgb.joblib",
+        model_artifact_sha256=model["sha256"],
+        build_commit=source,
+    )
+    bundle = SyntheticPaymentGenerator(GenerationConfig(seed=105, transactions=10000)).generate()
+    first = min(bundle.events, key=lambda event: (event.timestamp, event.event_id))
+    other_device = next(
+        event.device_id for event in bundle.events if event.device_id != first.device_id
+    )
+    customers = {
+        customer: index
+        for index, customer in enumerate(sorted({event.customer_id for event in bundle.events}))
+    }
+    events = tuple(
+        event.model_copy(
+            update={
+                "device_id": first.device_id if customers[event.customer_id] % 2 else other_device,
+                **({"ip_id": first.ip_id} if customers[event.customer_id] % 3 else {}),
+                **({"card_id": first.card_id} if customers[event.customer_id] % 5 == 0 else {}),
+            }
+        )
+        for event in bundle.events
+    )
+    content = (
+        PaymentDataset(schema_version="payments-v1", entities=bundle.entities, events=events)
+        .model_dump_json()
+        .encode()
+    )
+    input_sha = hashlib.sha256(content).hexdigest()
+    assert input_sha == "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3"
+    environment = {
+        key: value for key, value in os.environ.items() if not key.startswith("RINGSENTINEL_")
+    }
+    environment.update(
+        RINGSENTINEL_ENVIRONMENT="test",
+        RINGSENTINEL_AUTH_MODE="development",
+        RINGSENTINEL_JOBS_ENABLED="false",
+        RINGSENTINEL_EXECUTION_MODE="local",
+        RINGSENTINEL_BACKGROUND_DISPATCH="none",
+        RINGSENTINEL_DATABASE_URL=databases[0],
+        RINGSENTINEL_STORAGE_BACKEND="database",
+        RINGSENTINEL_STORAGE_ROOT=str(settings.storage_root),
+        RINGSENTINEL_MODEL_ARTIFACT_PATH=str(settings.model_artifact_path),
+        RINGSENTINEL_MODEL_ARTIFACT_SHA256=model["sha256"],
+        RINGSENTINEL_BUILD_COMMIT=source,
+        RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS="300",
+        OMP_NUM_THREADS="1",
+    )
+    database = Database(databases[0])
+    samples = []
+    try:
+        database.migrate()
+        with database.session() as session:
+            server = session.scalar(text("SHOW server_version"))
+            size_before = session.scalar(text("SELECT pg_database_size(current_database())"))
+        service = InvestigationService(database, storage_for(database, settings), settings)
+        owner = Principal("generated-linux-capacity-owner")
+        for index in range(3):
+            case = service.create(owner, "Generated Linux PostgreSQL capacity control")
+            artifact = service.attach(owner, case.id, content, "control.json", "application/json")
+            run = service.start(owner, case.id, artifact.id, "capacity")
+            assert service.claim() == run.id
+            started = time.perf_counter()
+            child = subprocess.run(
+                [sys.executable, "scripts/measure_linux_worker_ci.py", "--run-id", run.id],
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=320,
+            )
+            wall = time.perf_counter() - started
+            assert child.returncode == 0, (
+                "Isolated generated worker failed; inspect private CI diagnostics"
+            )
+            measured = json.loads(child.stdout)
+            assert measured["worker_main_seconds"] > 0 and measured["peak_worker_rss_bytes"] > 0
+            saved = service.run(owner, run.id)
+            assert saved.status == Status.COMPLETED
+            assert saved.version_metadata["model_artifact_sha256"] == model["sha256"]
+            assert saved.version_metadata["build_commit"] == source
+            result = service.result_content(owner, run.id)
+            assert hashlib.sha256(result).hexdigest() == saved.result_checksum
+            with pytest.raises(ProductError):
+                service.run(Principal("another-owner"), run.id)
+            with database.session() as session:
+                size_after = session.scalar(text("SELECT pg_database_size(current_database())"))
+            samples.append(
+                {
+                    "repetition": index + 1,
+                    "input_sha256": input_sha,
+                    "result_sha256": saved.result_checksum,
+                    "result_bytes": len(result),
+                    "candidates": saved.candidate_count,
+                    "process_wall_seconds": wall,
+                    "database_size_bytes_after": size_after,
+                    **measured,
+                }
+            )
+        assert len({sample["result_sha256"] for sample in samples}) == 1
+        aggregate = {
+            "schema_version": "linux-postgres-worker-baseline-v1",
+            "source_commit": source,
+            "production_ready": False,
+            "data_origin": "synthetic-control",
+            "storage_backend": "database",
+            "execution_mode": "local",
+            "model_sha256": model["sha256"],
+            "input_bytes": len(content),
+            "events": len(events),
+            "entities": len(bundle.entities),
+            "customers": len(customers),
+            "density_control": "mixed-dense-infrastructure",
+            "server_version": server,
+            "python_version": platform.python_version(),
+            "platform": platform.platform(),
+            "logical_cpus": os.cpu_count(),
+            "database_size_bytes_before": size_before,
+            "samples": samples,
+            "all_saved_results_identical": True,
+            "limitations": [
+                "Three sequential fresh workers on one ephemeral CI runner; "
+                "not reliable percentiles, concurrency or hosted admission.",
+                "Worker-main excludes module import; child wall includes startup "
+                "but excludes generation/upload and parent checksum checks.",
+                "Peak RSS covers the worker child, not PostgreSQL/API/parent/browser. "
+                "Database size is cumulative allocated disk, not RAM or storage quota usage.",
+                "Local execution with PostgreSQL object storage; "
+                "not hosted HTTPS/Workflow delivery or observed model accuracy.",
+            ],
+        }
+        serialized = json.dumps(aggregate, sort_keys=True, indent=2)
+        assert all(
+            private not in serialized
+            for private in (owner.user_id, databases[0], run.id, case.id, artifact.storage_key)
+        )
+        (tmp_path / "postgres-worker-capacity.json").write_text(serialized + "\n", encoding="utf-8")
+    finally:
+        database.engine.dispose()

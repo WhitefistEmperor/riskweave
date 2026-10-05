@@ -45,6 +45,23 @@ must not be substituted for the tested branch. Latest usage snapshot is below.
 
 ## Latest source and verification
 
+### Linux/PostgreSQL worker capacity: source checks pending
+
+Added a guarded Linux child measurement wrapper and actual PostgreSQL repeated
+worker control. Only the dedicated loopback CI role and fresh UUID drill database
+names are admitted. Three fresh workers consume the same 10207-event mixed input,
+with a build-owned pinned model and database object storage. The control checks
+completed results/checksums, owner isolation, source/model provenance and repeated
+output equality. It records worker-main/child-wall times, child peak RSS/CPU and
+cumulative allocated database disk size; no identifiers, paths or database URL.
+CI retains only the aggregate postgres-worker-capacity.json as an artifact.
+
+Local Ruff and the sanitized non-Linux refusal pass. All 7 PostgreSQL module cases
+skip locally because its isolated database/clients are absent. Full source CI,
+actual Linux measurements and artifact inspection are pending. No numbers/hosted
+capacity approval are claimed yet. Parent/API/browser/PostgreSQL RAM, concurrency,
+percentiles, managed Workflow execution and observed model validity remain open.
+
 ### Profile-guided feature optimization: verified source 83e4bb1
 
 The large mixed input's diagnostic cProfile found local-density calculations and

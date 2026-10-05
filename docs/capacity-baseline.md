@@ -430,3 +430,29 @@ Exact source push 37325896012 / PR 37325905806 passes all six checks: 318 Python
 80 workspace browser plus 4 session controls, zero advisories, containers and actual
 PostgreSQL/SDK delivery/encrypted restores. Aggregate source/profile evidence is in
 results/operations/cached-features-source-verification-20261005.json.
+
+### Isolated Linux/PostgreSQL repeated worker measurement
+
+The PostgreSQL integration module now includes three fresh child workers with
+database object storage and the same 10207-event mixed input used above. A release
+build-owned model is pinned in the child environment. Only the dedicated loopback
+CI role/fresh UUID database pattern can execute the measurement wrapper; source
+database names/credentials and case/run/object identifiers are omitted from reports.
+Functional checks cover completed result bytes/checksum, source/model pin, owner
+isolation and repeated-result equality. CI publishes only the aggregate JSON.
+Consult the exact-source CI/artifact before claiming execution or quoting numbers.
+
+The child uses Linux `getrusage(RUSAGE_SELF).ru_maxrss` converted from KiB to bytes,
+per the [Linux manual](https://man7.org/linux/man-pages/man2/getrusage.2.html).
+This is the child lifetime peak, including wrapper/import/startup effects, not a
+combined parent/API/PostgreSQL/browser peak or a physical-memory admission bound.
+Worker-main timing begins after worker imports; child wall includes startup but
+excludes input generation/upload and parent checksum validation. Database size
+uses `pg_database_size(current_database())` and grows across retained control cases;
+it is allocated disk, not database RAM or logical object quota usage.
+
+Three sequential measurements on an ephemeral Linux CI runner do not establish
+reliable percentiles, concurrency, hosted cold/warm latency or provider limits.
+This uses local worker execution, not hosted HTTPS/managed Workflow dispatch;
+generated controls do not establish observed model accuracy. All production
+admission/deployment gates remain until measured against the actual service.
