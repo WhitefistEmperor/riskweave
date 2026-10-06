@@ -7,6 +7,30 @@ the project is already deployed or validated on real financial data.
 
 ### Sequential continuation, 6 October 2026
 
+Follow-up: evaluation source18da064 push37464767703/PR37464773313 completed:
+backend and containers passed on both; frontend failed at the dependency-advisory
+gate before browser tests. The refreshed full npm audit found3 affected packages:
+source-map-js1.2.1 (high), tinypool2.1.0 (critical), and its oxfmt dependent
+(critical via tinypool). The prior zero-advisory checkpoint is historical.
+The compatible patch updates only source-map-js to1.2.2 and overrides oxfmt's
+tinypool to2.1.2; no broad formatter/framework update or audit-gate suppression.
+Fresh npm ci, full audit (zero vulnerabilities), lint, typecheck and production
+build pass locally. The actual oxfmt write/check and execution of a generated
+control pass with the patched worker. Corrected-source full CI still needs checking.
+Maintainer references:
+https://github.com/tinylibs/tinypool/security/advisories/GHSA-85c8-ppgw-ccpr
+https://github.com/7rulnik/source-map-js/releases/tag/v1.2.2
+
+Actual pinned-model CLI smoke also passes on a synthetic timing control:55
+validation/49 test events, selected threshold0.66, validation flags10/55 (18.18%)
+within the25% limit, held-out flags16/49 (32.65%) reported without retuning.
+The first attempt correctly rejected the older frozen-policy smoke labels as
+NO_RESOLVED_LABELS_IN_WINDOW: they resolve too late for historical selection.
+Original input/labels/plan/model files are preserved. A separate new plan and
+synthetic event-plus-one-minute label timing control are under ignored
+work/review-capacity-smoke-20261006-01. These are generated controls, not observed
+fraud outcomes, staffing capacity or a production threshold change.
+
 The user asked to work through steps one by one and skip blocked steps when
 independent work can continue. Deployment recheck still returns403 for the target
 workspace. The same-endpoint CLI fallback could not run because `vercel` is not

@@ -13,6 +13,14 @@ do not hide workload and held-out test demand cannot retune the threshold. Local
 focused controls pass; new-source CI remains to be verified. This is tooling,
 not observed-data validation, staffed review capacity or production approval.
 
+Source18da064 backend/container checks passed on push37464767703/PR37464773313,
+but frontend failed at the refreshed dependency advisory gate (3 affected
+packages). Compatible source-map-js1.2.2/tinypool2.1.2 patches now pass local npm
+ci, full audit (zero vulnerabilities), lint, typecheck, build and formatter smoke.
+Corrected-source CI/browser verification remains pending; prior green source is
+not proof of this patch. Pinned-model synthetic CLI review-capacity smoke passes;
+deployment and observed validation remain blocked as described in the handoff.
+
 Opt-in online PostgreSQL/database-object backups now share one exported snapshot
 for reference verification and pg_dump. Exact-source push37321333408/PR37321347090
 CI passed the concurrent erasure/write and fresh-target restore control on actual
