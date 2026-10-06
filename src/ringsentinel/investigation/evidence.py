@@ -7,6 +7,7 @@ from collections.abc import Callable
 from datetime import UTC
 from typing import Any
 
+from ringsentinel.data.ingestion import single_currency
 from ringsentinel.data.schema import DatasetBundle, EntityType, EventType, PaymentEvent
 from ringsentinel.data.validation import calculate_ring_exposure
 from ringsentinel.detection.candidates import RingCandidate
@@ -22,6 +23,7 @@ class RingEvidenceService:
         *,
         scores: dict[str, float] | None = None,
     ) -> None:
+        self.currency = single_currency(bundle) if bundle.events else None
         self._entities = {entity.entity_id: entity for entity in bundle.entities}
         self._events = {event.event_id: event for event in bundle.events}
         self._candidates = {candidate.candidate_id: candidate for candidate in candidates}

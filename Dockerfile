@@ -8,6 +8,7 @@ COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src ./src
 COPY results/phase3 ./results/phase3
 RUN uv sync --locked --no-dev --no-editable
+RUN OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 .venv/bin/python -m ringsentinel.models.artifact --output /app/models/network-hgb.joblib
 
 FROM python:3.13-slim-bookworm AS runtime
 ARG BUILD_COMMIT=unknown
@@ -21,6 +22,8 @@ ENV PATH="/app/.venv/bin:$PATH" \
     RINGSENTINEL_FRONTEND_ORIGINS='["https://localhost"]' \
     RINGSENTINEL_DATABASE_URL=sqlite:////app/work/ringsentinel.db \
     RINGSENTINEL_STORAGE_ROOT=/app/work/storage \
+    RINGSENTINEL_API_HOST=0.0.0.0 \
+    RINGSENTINEL_MODEL_ARTIFACT_MANIFEST=/app/models/network-hgb.metadata.json \
     RINGSENTINEL_LLM_PROVIDER=deterministic
 WORKDIR /app
 RUN groupadd --gid 10001 ringsentinel \
@@ -28,9 +31,11 @@ RUN groupadd --gid 10001 ringsentinel \
     && mkdir -p /app/work/storage \
     && chown -R ringsentinel:ringsentinel /app/work
 COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/models /app/models
+COPY scripts/serve_background_test.py /app/scripts/serve_background_test.py
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"
 # One API worker owns one local scheduler; never multiply workers with this executor.
-CMD ["uvicorn", "ringsentinel.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--timeout-keep-alive", "5", "--timeout-graceful-shutdown", "20", "--no-access-log"]
+CMD ["python", "-m", "ringsentinel.platform.serve"]

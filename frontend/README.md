@@ -1,11 +1,14 @@
 # RiskWeave analyst console
 
-React/TypeScript, Vinext, Tailwind/shadcn, and Cytoscape. The root route opens the
+React/TypeScript, Next.js, Tailwind/shadcn, and Cytoscape. The root route opens the
 persisted investigation worklist; `/demo` is the separate synthetic replay workspace.
 
 Follow the repository's [quick start](../docs/quick-start.md) for backend installation,
 migrations, a sample upload, frontend startup, browser dependencies, and production-preview
 commands. No hosted service or paid model key is required for the default local workflow.
+
+The console uses native Next.js builds on Vercel; see [deployment prerequisites](../docs/vercel-deployment.md).
+Docker enables standalone output explicitly and runs its generated `server.js` as the node user.
 
 From this directory, with the backend already running:
 
@@ -49,3 +52,8 @@ The evidence graph renders query-provided relationships only; it never fills mis
 Scores are uncalibrated and sharing alone is not proof of abuse. See the
 [Phase 5B frontend notes](../docs/phase5b-frontend.md) for implementation history and
 [Phase 5C gates](../docs/phase5c-final.md) for unresolved production risks.
+
+The shared shadcn stylesheet is vendored with its MIT notice; the application does
+not install the shadcn CLI. See [dependency maintenance](../docs/frontend-dependencies.md)
+for provenance, updates and the CI advisory gate. The distributed notice is available
+at `/licenses/shadcn-MIT.txt`.

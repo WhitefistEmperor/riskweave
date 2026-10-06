@@ -1,0 +1,71 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "a8d316decd6b33e84e475c5f4fec413c3e118495",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37321333408,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37321333408",
+      "source": "a8d316decd6b33e84e475c5f4fec413c3e118495",
+      "jobs": [
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 309,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0,
+      "postgres_backup_module_tests_executed": 5
+    },
+    {
+      "event": "pull_request",
+      "id": 37321347090,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37321347090",
+      "source": "a8d316decd6b33e84e475c5f4fec413c3e118495",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 309,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0,
+      "postgres_backup_module_tests_executed": 5
+    }
+  ],
+  "scope": "PostgreSQL17/database-object online backup using an exported read-only snapshot. A separate writer commits case/object erasure and a new case/upload after export, before pg_dump; fresh-target restore retains original case/input/result/checksum/owner and excludes the late case.",
+  "limitations": [
+    "Generated lifecycle fixture; no observed model accuracy claim.",
+    "No hosted scheduling, off-host transfer, RPO/RTO or capacity proof.",
+    "Restore requires stopped writers/new empty target and reconciliation of in-flight work and later erasures."
+  ],
+  "local": {
+    "ruff": "passed",
+    "focused_tests_passed": 8,
+    "environment_skips": 19,
+    "postgres_live": false
+  },
+  "inventory_bytes": 440889514,
+  "inventory_budget_bytes": 450000000
+}

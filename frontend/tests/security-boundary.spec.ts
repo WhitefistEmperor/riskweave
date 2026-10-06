@@ -2,6 +2,23 @@ import { test, expect } from '@playwright/test';
 import { validSession } from '../lib/response-validation';
 import { spawnSync } from 'node:child_process';
 
+test('OIDC build configuration rejects partial, insecure, and credential-bearing issuers', () => {
+  for (const [authority, clientId] of [
+    ['https://issuer.example', ''],
+    ['', 'riskweave'],
+    ['http://issuer.example', 'riskweave'],
+    ['https://user:fixture-secret@issuer.example', 'riskweave'],
+  ]) {
+    const result = spawnSync(process.execPath,
+      ['--experimental-strip-types', '--input-type=module', '-e', "await import('./next.config.ts')"],
+      { encoding: 'utf8', env: { ...process.env, RINGSENTINEL_ENVIRONMENT: 'production',
+        RINGSENTINEL_API_PROXY_TARGET: 'https://api.example', NEXT_PUBLIC_RINGSENTINEL_API_BASE_URL: '',
+        NEXT_PUBLIC_RISKWEAVE_OIDC_AUTHORITY: authority, NEXT_PUBLIC_RISKWEAVE_OIDC_CLIENT_ID: clientId } });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).not.toContain('fixture-secret');
+  }
+});
+
 test('production frontend configuration fails closed without leaking malformed proxy values', () => {
   for (const target of ['', 'http://user:fixture-secret@', 'https://user:fixture-secret@api.example']) {
     const result = spawnSync(process.execPath,
@@ -28,7 +45,7 @@ test('built frontend sends security headers and renders verified session without
   await page.route('**/api/v1/session', route => route.fulfill({ json: {
     user_id: 'jwt_verified_fixture', authentication_mode: 'jwt', production_authentication: true,
   } }));
-  await page.route('**/api/v1/investigations', route => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/investigations/page?*', route => route.fulfill({ json: { items: [], total: 0, matched: 0, offset: 0, limit: 10 } }));
   const response = await page.goto('/investigations');
   expect(response?.headers()['x-content-type-options']).toBe('nosniff');
   expect(response?.headers()['x-frame-options']).toBe('DENY');

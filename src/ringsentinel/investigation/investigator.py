@@ -169,6 +169,12 @@ class InvestigatorService:
             )
 
         queries = choose_queries(question)
+        currency = getattr(self.evidence, "currency", None)
+
+        def amount(value: int) -> str:
+            # Preserve source units exactly; no guessed currency scale or exchange rate.
+            return f"{value:,} {currency or 'unknown-currency'} minor units"
+
         for query in queries:
             result = getattr(self.evidence, query)(candidate_id)
             sources.append({"query": query, "result": result})
@@ -183,8 +189,8 @@ class InvestigatorService:
                 )
             elif query == "calculate_exposure":
                 add(
-                    "Observed estimated exposure is INR "
-                    f"{result['estimated_exposure_minor'] / 100:,.2f}. " + result["definition"],
+                    f"Observed estimated exposure is {amount(result['estimated_exposure_minor'])}. "
+                    + result["definition"],
                     query,
                     "estimated_exposure_minor",
                 )
@@ -220,7 +226,7 @@ class InvestigatorService:
                 for index, event in enumerate(result[:6]):
                     add(
                         f"{event['timestamp']}: {event['event_type']} "
-                        f"of INR {event['amount_minor'] / 100:,.2f} "
+                        f"of {amount(event['amount_minor'])} "
                         f"from {event['customer_id']} to {event['merchant_id']}.",
                         query,
                         str(index),
@@ -244,8 +250,8 @@ class InvestigatorService:
                 )
             elif query == "get_refund_patterns":
                 add(
-                    f"Observed refund count: {result['refund_count']}; refund value: INR "
-                    f"{result['refund_amount_minor'] / 100:,.2f}. "
+                    f"Observed refund count: {result['refund_count']}; refund value: "
+                    f"{amount(result['refund_amount_minor'])}. "
                     "Refund value must not be added again to exposure.",
                     query,
                     "$",

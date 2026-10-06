@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-05",
+  "previous_application": "7cd46e0c7e0a90a0bbdac3f42990af1ee6edd108",
+  "scope": "local dependency/CSS verification; not a hosted release or comprehensive security assessment",
+  "audit_before": {
+    "moderate": 3,
+    "high": 8,
+    "total": 11
+  },
+  "audit_after": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "cli_packages_removed": 286,
+  "retained_component_package": "@shadcn/react 0.3.0",
+  "compatible_patch": "fast-uri 3.1.7 -> 3.1.8",
+  "original_shadcn_stylesheet_sha256": "bc7d83425702955b4cb67cb14ede9d603f9d912376d57a2d81d661094d2a782a",
+  "vendored_body_identical": true,
+  "generated_css_rule_bundles_identical": true,
+  "generated_css_bundles": [
+    {
+      "bytes": 13148,
+      "normalized_sha256": "bd1e8130f0eb52623eeb64a070f5b4c2709ba7f5d99edd4f0565b3493100103f"
+    },
+    {
+      "bytes": 204393,
+      "normalized_sha256": "b39eb09b3c546a570fbd1089c35827737ccc67f7d47099f0c091e08ae76b66d4"
+    },
+    {
+      "bytes": 3713,
+      "normalized_sha256": "c8e4caa2e4ab01331794e621cc8de8fd8ebc68a473f41aa619a332300e830b15"
+    }
+  ],
+  "license_path": "frontend/public/licenses/shadcn-MIT.txt",
+  "browser_checks": {
+    "passed": 78,
+    "duration_seconds": 228,
+    "production_build": true
+  },
+  "source_ci": {
+    "application_commit": "89ef246921d97122cd4967d584db0d5107556e29",
+    "runs": [
+      37283049586,
+      37283054514
+    ],
+    "all_six_checks": "passed",
+    "python_tests": 297,
+    "browser_tests": 78,
+    "container_mit_notice_byte_comparison": "passed",
+    "full_dependency_audit": "zero advisories"
+  },
+  "served_mit_notice_matches_source": true
+}

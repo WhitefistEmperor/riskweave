@@ -17,7 +17,12 @@ The internal `ringsentinel` package, commands, environment variables, and API pa
 
 - [Architecture overview](architecture.md) and [persisted production foundation](PRODUCTION_ARCHITECTURE.md)
 - [Data model and DatasetBundle](data-model.md)
+- [Unlabeled payment ingestion](payment-ingestion.md)
+- [Current product completion work and deployment gates](production-progress.md)
+- [Model build artifacts](model-artifact.md) and [browser sign-in configuration](browser-authentication.md)
 - [Evidence UI semantics](evidence-ui.md) and [investigator design](investigator-design.md)
+- [Analyst reviews, notes and decision history](analyst-review.md)
+- [Investigation deletion, cleanup recovery and retention](data-lifecycle.md)
 - [Benchmark methodology](benchmark-methodology.md) and [measured Phase 3 results](../results/phase3/phase3_summary.md)
 - [Offline backup/restore](backup-restore.md)
 
@@ -32,3 +37,16 @@ Start with [Phase 5C final verification and remaining gates](phase5c-final.md).
 - [Container verification plan](phase5c-container-verification.md): outstanding, not deployed
 - [Original replay demo](demo-flow.md) and [original Phase 4 gallery](screenshots/)
 - [Persistence architecture decision](adr/0001-persisted-analysis-foundation.md)
+
+
+## Current payment preparation and release operations
+
+- [Payment input](payment-ingestion.md) and [private CSV mapping](csv-payment-mapping.md).
+- [Frozen-model temporal evaluation](real-data-evaluation.md): labels remain separate.
+- [Indexed result transport and maintenance](result-fragment-index.md).
+- [Current progress and release gates](production-progress.md).
+- [Continuation handoff](CLAUDE_HANDOFF.md): verified source and remaining work.
+
+- [Worklist review progress](worklist-review-progress.md): latest completed run, current dispositions and explicit legacy unknown totals.
+
+- [Measured Windows capacity baseline](capacity-baseline.md) and [release acceptance gates](RELEASE_GATES.md).

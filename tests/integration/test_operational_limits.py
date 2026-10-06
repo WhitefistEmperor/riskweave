@@ -151,3 +151,39 @@ def test_os_lock_is_exclusive_across_processes_and_released_on_exit(tmp_path):
         child.stdout.close()
     with FileLock(path):
         assert path.exists()
+
+
+def test_readiness_contention_preserves_existing_objects_and_recovers(service):
+    storage = service.storage
+    original = storage.save(b"existing")
+    with FileLock(storage.root / ".write.lock"):
+        assert storage.ready() is False
+    assert storage.read(original.key) == b"existing"
+    assert storage.ready() is True
+    assert list(storage.root.glob("*.json")) == [storage.root / original.key]
+
+
+def test_readiness_holds_lock_through_read_and_removes_probe_on_read_failure(service, monkeypatch):
+    storage = service.storage
+    original = storage.save(b"existing")
+
+    def failed_read(key):
+        assert key != original.key
+        with pytest.raises(RuntimeError):
+            FileLock(storage.root / ".write.lock").acquire()
+        raise OSError("Generated probe read failure")
+
+    monkeypatch.setattr(storage, "read", failed_read)
+    assert storage.ready() is False
+    assert list(storage.root.glob("*.json")) == [storage.root / original.key]
+    assert (storage.root / original.key).read_bytes() == b"existing"
+    with FileLock(storage.root / ".write.lock"):
+        pass
+
+
+def test_readiness_at_storage_capacity_does_not_write_probe(service):
+    storage = LocalStorageBackend(service.settings.storage_root, limit_bytes=8)
+    original = storage.save(b"12345678")
+    assert storage.ready() is False
+    assert storage.read(original.key) == b"12345678"
+    assert list(storage.root.glob("*.json")) == [storage.root / original.key]

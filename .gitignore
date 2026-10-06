@@ -29,5 +29,7 @@ dist/
 htmlcov/
 work/
 outputs/
+.vercel/
+deployment/generated-model/
 data/generated/*
 !data/generated/.gitkeep

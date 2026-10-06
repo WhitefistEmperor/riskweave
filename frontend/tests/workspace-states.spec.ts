@@ -20,10 +20,10 @@ test('malformed successful responses and internal errors stay safe and include r
     }),
   );
   await page.goto(workspaceUrl);
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'Response could not be read',
   );
-  await expect(page.getByRole('alert')).toContainText('malformed-fixture');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('malformed-fixture');
   await expect(
     page.getByRole('heading', { name: 'Persisted findings' }),
   ).toHaveCount(0);
@@ -41,9 +41,9 @@ test('malformed successful responses and internal errors stay safe and include r
     }),
   );
   await page.reload();
-  await expect(page.getByRole('alert')).toContainText('internal-fixture');
-  await expect(page.getByRole('alert')).not.toContainText('Traceback');
-  await expect(page.getByRole('alert')).not.toContainText('secret.py');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('internal-fixture');
+  await expect(page.getByRole('main').getByRole('alert')).not.toContainText('Traceback');
+  await expect(page.getByRole('main').getByRole('alert')).not.toContainText('secret.py');
   await page.route(`**/api/v1/runs/${runId}`, (route) =>
     route.fulfill({
       headers: { 'X-Request-ID': 'malformed-run' },
@@ -55,10 +55,10 @@ test('malformed successful responses and internal errors stay safe and include r
     }),
   );
   await page.reload();
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'Response could not be read',
   );
-  await expect(page.getByRole('alert')).toContainText('malformed-run');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('malformed-run');
 });
 
 test('missing and mismatched run URLs never display another investigation’s findings', async ({
@@ -73,8 +73,8 @@ test('missing and mismatched run URLs never display another investigation’s fi
     }),
   );
   await page.goto(workspaceUrl);
-  await expect(page.getByRole('alert')).toContainText('Record not available');
-  await expect(page.getByRole('alert')).toContainText('stale-fixture');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('Record not available');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('stale-fixture');
   await page.unroute(`**/api/v1/runs/${runId}`);
   await page.route(`**/api/v1/runs/${runId}`, (route) =>
     route.fulfill({
@@ -82,7 +82,7 @@ test('missing and mismatched run URLs never display another investigation’s fi
     }),
   );
   await page.reload();
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'different investigation',
   );
   await expect(
@@ -123,8 +123,8 @@ test('oversized and malformed uploads give actionable errors without starting an
   await page
     .getByRole('button', { name: 'Upload dataset', exact: true })
     .click();
-  await expect(page.getByRole('alert')).toContainText('Dataset is too large');
-  await expect(page.getByRole('alert')).toContainText('size-fixture');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('Dataset is too large');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('size-fixture');
   await expect(
     page.getByRole('button', { name: 'Start analysis', exact: true }),
   ).toHaveCount(0);
@@ -143,10 +143,10 @@ test('oversized and malformed uploads give actionable errors without starting an
   await page
     .getByRole('button', { name: 'Upload dataset', exact: true })
     .click();
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'valid RiskWeave DatasetBundle',
   );
-  await expect(page.getByRole('alert')).toContainText('upload-fixture');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('upload-fixture');
 });
 
 test('ambiguous start retry reuses idempotency key and completed polling stops', async ({
@@ -175,7 +175,7 @@ test('ambiguous start retry reuses idempotency key and completed polling stops',
   await page
     .getByRole('button', { name: 'Start analysis', exact: true })
     .click();
-  await expect(page.getByRole('alert')).toContainText('Backend unavailable');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('Backend unavailable');
   await page
     .getByRole('button', { name: 'Start analysis', exact: true })
     .click();
@@ -203,7 +203,7 @@ test('polling connection loss is recoverable without re-enqueuing a run', async 
   });
   await page.route(`**/api/v1/runs/${runId}`, (route) => route.abort('failed'));
   await page.goto(workspaceUrl);
-  await expect(page.getByRole('alert')).toContainText('Backend unavailable');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('Backend unavailable');
   await page.unroute(`**/api/v1/runs/${runId}`);
   await page.route(`**/api/v1/runs/${runId}`, (route) =>
     route.fulfill({ json: run }),
@@ -213,6 +213,33 @@ test('polling connection loss is recoverable without re-enqueuing a run', async 
     page.getByRole('heading', { name: 'Persisted findings' }),
   ).toBeVisible();
   expect(posts).toBe(0);
+});
+
+test('request execution retries capacity on the saved run without enqueuing a duplicate', async ({ page }) => {
+  const queued = { ...run, status: 'queued' as const, configuration_snapshot: { execution_mode: 'request' } };
+  await installWorkspace(page, queued);
+  const posts: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST') posts.push(new URL(request.url()).pathname);
+  });
+  await page.route(`**/api/v1/runs/${runId}/execute`, (route) =>
+    route.fulfill({ json: posts.length === 1 ? queued : run }),
+  );
+  await page.goto(workspaceUrl);
+  await expect(page.getByRole('heading', { name: 'Persisted findings' })).toBeVisible();
+  expect(posts).toEqual([`/api/v1/runs/${runId}/execute`, `/api/v1/runs/${runId}/execute`]);
+  await page.waitForTimeout(2200);
+  expect(posts).toHaveLength(2);
+});
+
+test('an execution reply for another investigation fails closed', async ({ page }) => {
+  await installWorkspace(page, { ...run, status: 'queued', configuration_snapshot: { execution_mode: 'request' } });
+  await page.route(`**/api/v1/runs/${runId}/execute`, (route) =>
+    route.fulfill({ json: { ...run, investigation_id: '00000000-0000-4000-8000-000000000099' } }),
+  );
+  await page.goto(workspaceUrl);
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('unreadable response');
+  await expect(page.getByRole('heading', { name: 'Persisted findings' })).toHaveCount(0);
 });
 
 test('investigator malformed/provider-unavailable replies stay grounded and citations open their source', async ({
@@ -232,7 +259,7 @@ test('investigator malformed/provider-unavailable replies stay grounded and cita
   await page
     .getByRole('button', { name: 'Ask investigator', exact: true })
     .click();
-  await expect(page.getByRole('alert')).toContainText('investigator-malformed');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('investigator-malformed');
   await expect(page.locator('.answer-statements li')).toHaveCount(0);
   await page.unroute('**/investigate');
   await page.route('**/investigate', (route) =>
@@ -287,7 +314,7 @@ test('unknown candidate URL does not substitute a different ring', async ({
     route.fulfill({ json: candidateResult }),
   );
   await page.goto(workspaceUrl + '&ring=missing-candidate');
-  await expect(page.getByRole('alert')).toContainText(
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
     'Candidate not available in this run',
   );
   await expect(

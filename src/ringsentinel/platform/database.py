@@ -1,10 +1,11 @@
 """Explicit migration entrypoint and short-lived transaction factory."""
 
+from contextlib import contextmanager
 from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 
 from ringsentinel.platform.settings import Settings
@@ -22,6 +23,12 @@ def make_engine(url: str):
 
         @event.listens_for(engine, "connect")
         def sqlite_constraints(connection, _):
+            connection.create_function(
+                "riskweave_lower",
+                1,
+                lambda value: value.lower() if isinstance(value, str) else value,
+                deterministic=True,
+            )
             connection.execute("PRAGMA foreign_keys=ON")
             connection.execute("PRAGMA busy_timeout=10000")
 
@@ -29,6 +36,8 @@ def make_engine(url: str):
 
 
 class Database:
+    revision = "0010"
+
     def __init__(self, url: str):
         self.engine = make_engine(url)
         self.session = sessionmaker(self.engine, expire_on_commit=False)
@@ -39,6 +48,16 @@ class Database:
         with self.engine.begin() as connection:
             config.attributes["connection"] = connection
             command.upgrade(config, "head")
+
+    @contextmanager
+    def write(self):
+        """Serialize admission and mutations across processes and hosts."""
+        with self.session.begin() as session:
+            if self.engine.dialect.name == "sqlite":
+                session.connection().exec_driver_sql("BEGIN IMMEDIATE")
+            else:
+                session.execute(text("SELECT pg_advisory_xact_lock(593002)"))
+            yield session
 
 
 def main() -> None:

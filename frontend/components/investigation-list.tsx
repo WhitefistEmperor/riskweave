@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowRight, FolderSearch, Plus } from 'lucide-react';
 import { ProductShell } from '@/components/product-shell';
 import { Button } from '@/components/ui/button';
@@ -24,41 +25,71 @@ import {
   platformApi,
   type InvestigationRecord,
   type AnalysisRun,
+  type WorklistReviewSummary,
 } from '@/lib/platform-api';
 
 export function InvestigationList() {
   const [records, setRecords] = useState<InvestigationRecord[] | null>(null);
   const [latest, setLatest] = useState<Record<string, AnalysisRun | null>>({});
+  const [reviews, setReviews] = useState<
+    Record<string, WorklistReviewSummary | null> | undefined
+  >();
   const [name, setName] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [page, setPage] = useState(0);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('all');
+  const removed = useSearchParams()?.get('removed');
   const inFlight = useRef(false);
-  const visible = records?.slice(page * 10, page * 10 + 10);
+  const loadedHistory = useRef(new Map<string, string>());
+  const [total, setTotal] = useState(0);
+  const [matched, setMatched] = useState(0);
+  const currentPage = page;
+  const requestKey = JSON.stringify([page, query, status, attempt]);
+  const [loadedKey, setLoadedKey] = useState('');
+  const visible = loadedKey === requestKey ? records : null;
   useEffect(() => {
     const controller = new AbortController();
-    platformApi
-      .investigations(controller.signal)
-      .then((items) => {
-        if (!controller.signal.aborted)
-          setRecords(
-            [...items].sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
-          );
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) setError(reason);
-      });
-    return () => controller.abort();
-  }, [attempt]);
+    const timer = setTimeout(
+      () =>
+        platformApi
+          .investigationPage(page * 10, query, status, controller.signal)
+          .then((items) => {
+            if (!controller.signal.aborted) {
+              setTotal(items.total);
+              setMatched(items.matched);
+              if (items.matched > 0 && items.offset >= items.matched) {
+                setPage(Math.ceil(items.matched / 10) - 1);
+              } else {
+                setRecords(items.items);
+                setReviews(items.review_summaries);
+                setLoadedKey(requestKey);
+                setError(null);
+              }
+            }
+          })
+          .catch((reason) => {
+            if (!controller.signal.aborted) setError(reason);
+          }),
+      150,
+    );
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [attempt, page, query, status, requestKey]);
   useEffect(() => {
     const controller = new AbortController();
     // Bound history reads to visible records, without fetching full results or polling.
-    for (const item of records?.slice(page * 10, page * 10 + 10) ?? []) {
+    for (const item of records ?? []) {
+      if (loadedHistory.current.get(item.id) === item.updated_at) continue;
       platformApi
         .runs(item.id, controller.signal)
         .then((runs) => {
-          if (!controller.signal.aborted)
+          if (!controller.signal.aborted) {
+            loadedHistory.current.set(item.id, item.updated_at);
             setLatest((current) => ({
               ...current,
               [item.id]:
@@ -66,11 +97,12 @@ export function InvestigationList() {
                   .sort((a, b) => a.created_at.localeCompare(b.created_at))
                   .at(-1) ?? null,
             }));
+          }
         })
         .catch(() => undefined);
     }
     return () => controller.abort();
-  }, [records, page]);
+  }, [records]);
   async function create() {
     if (inFlight.current || !name.trim()) return;
     inFlight.current = true;
@@ -87,6 +119,13 @@ export function InvestigationList() {
   }
   return (
     <ProductShell>
+      {(removed === 'complete' || removed === 'pending') && (
+        <output className="block panel p-4 mb-4">
+          {removed === 'complete'
+            ? 'Investigation deleted from the workspace and its stored files removed.'
+            : 'Investigation removed from the workspace. Some stored files are awaiting cleanup.'}
+        </output>
+      )}
       <div className="workspace-heading">
         <div>
           <span className="product-kicker">INVESTIGATION WORKLIST</span>
@@ -97,7 +136,7 @@ export function InvestigationList() {
           </p>
         </div>
         <span className="workspace-count">
-          {records ? `${records.length} saved` : 'Loading'}
+          {records ? `${total} saved` : 'Loading'}
         </span>
       </div>
       <Failure
@@ -123,7 +162,7 @@ export function InvestigationList() {
           <div>
             <Input
               id="investigation-name"
-              disabled={records === null || busy}
+              disabled={visible === null || busy}
               placeholder="e.g. September shared-infrastructure review"
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -137,13 +176,88 @@ export function InvestigationList() {
           </div>
         </form>
       </Card>
-      {!records && !error && <LoadingState label="Loading investigations…" />}
-      {records?.length === 0 && (
+      {!visible && !error && <LoadingState label="Loading investigations…" />}
+      {total > 0 && (
+        <Card className="panel p-4 mb-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex-1 min-w-48">
+              <label htmlFor="investigation-search">
+                Search investigations
+              </label>
+              <Input
+                id="investigation-search"
+                type="search"
+                maxLength={120}
+                placeholder="Name or case ID"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPage(0);
+                }}
+              />
+            </div>
+            <div>
+              <label htmlFor="investigation-status-filter" className="block">
+                Case status
+              </label>
+              <select
+                id="investigation-status-filter"
+                value={status}
+                className="rounded-md border px-3 py-2 bg-background text-foreground"
+                onChange={(event) => {
+                  setStatus(event.target.value);
+                  setPage(0);
+                }}
+              >
+                <option value="all">All statuses</option>
+                {[
+                  'created',
+                  'uploading',
+                  'queued',
+                  'running',
+                  'completed',
+                  'failed',
+                ].map((value) => (
+                  <option key={value} value={value}>
+                    {value[0].toUpperCase() + value.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              variant="outline"
+              disabled={!query && status === 'all'}
+              onClick={() => {
+                setQuery('');
+                setStatus('all');
+                setPage(0);
+              }}
+            >
+              Clear filters
+            </Button>
+          </div>
+          <output className="block muted text-sm mt-3" aria-live="polite">
+            {visible === null
+              ? 'Loading matches...'
+              : `${matched} matching of ${total} saved`}
+          </output>
+        </Card>
+      )}
+      {visible !== null && total > 0 && matched === 0 && (
+        <Card className="panel workspace-empty">
+          <h2>No investigations match these filters</h2>
+          <p>
+            Change the name, case ID or status, or clear the filters to see your
+            saved cases.
+          </p>
+        </Card>
+      )}
+      {visible !== null && total === 0 && (
         <Card className="panel workspace-empty">
           <FolderSearch size={32} />
           <h2>No investigations yet</h2>
           <p>
-            Start with a name above. Upload a DatasetBundle JSON file,
+            Start with a name above. Upload a payment dataset JSON file,
             <br className="hidden md:block" /> run analysis, then review
             candidate rings and their evidence.
           </p>
@@ -167,6 +281,7 @@ export function InvestigationList() {
                 <TableHead>Status</TableHead>
                 <TableHead>Last updated</TableHead>
                 <TableHead>Latest analysis</TableHead>
+                <TableHead>Review progress</TableHead>
                 <TableHead>
                   <span className="sr-only">Open</span>
                 </TableHead>
@@ -205,6 +320,35 @@ export function InvestigationList() {
                     )}
                   </TableCell>
                   <TableCell>
+                    {reviews?.[item.id] ? (
+                      <Link
+                        className="text-xs record-link"
+
+                        href={`/investigations/${item.id}?run=${reviews[item.id]!.run_id}`}
+                      >
+                        <span>
+                          {reviews[item.id]!.candidate_count === null
+                            ? `${reviews[item.id]!.assessed} assessed · total unknown`
+                            : `${reviews[item.id]!.assessed} of ${reviews[item.id]!.candidate_count} assessed`}
+                        </span>
+                        <span className="record-subtitle">
+                          Latest completed analysis
+                        </span>
+                        <span className="record-subtitle">
+                          {reviews[item.id]!.investigating} investigating ·{' '}
+                          {reviews[item.id]!.escalated} escalated ·{' '}
+                          {reviews[item.id]!.dismissed} dismissed
+                        </span>
+                      </Link>
+                    ) : (
+                      <span className="muted text-xs">
+                        {reviews === undefined
+                          ? 'Review summary unavailable'
+                          : 'No completed analysis'}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <Link
                       className="open-record"
                       aria-label={`Open ${item.name}`}
@@ -222,22 +366,22 @@ export function InvestigationList() {
           </Table>
           <div className="list-pagination">
             <span>
-              {page * 10 + 1}–{Math.min((page + 1) * 10, records!.length)} of{' '}
-              {records!.length}
+              {currentPage * 10 + 1}–{Math.min((currentPage + 1) * 10, matched)}{' '}
+              of {matched}
             </span>
             <Button
               variant="outline"
               size="sm"
-              disabled={page === 0}
-              onClick={() => setPage((n) => n - 1)}
+              disabled={currentPage === 0}
+              onClick={() => setPage(currentPage - 1)}
             >
               Previous
             </Button>
             <Button
               variant="outline"
               size="sm"
-              disabled={(page + 1) * 10 >= records!.length}
-              onClick={() => setPage((n) => n + 1)}
+              disabled={(currentPage + 1) * 10 >= matched}
+              onClick={() => setPage(currentPage + 1)}
             >
               Next
             </Button>

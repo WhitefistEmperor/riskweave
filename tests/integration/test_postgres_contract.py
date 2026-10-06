@@ -3,6 +3,7 @@
 import importlib
 import io
 
+import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_mock_engine
@@ -20,11 +21,54 @@ def test_actual_migration_and_metadata_compile_for_postgresql():
     revision = importlib.import_module("ringsentinel.platform.migrations.versions.0001_foundation")
     with Operations.context(context):
         revision.upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0002_candidate_review"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0003_storage_deletion"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0004_request_execution"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0005_chunked_upload"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0006_background_dispatch"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0007_result_fragments"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0008_review_summary"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0009_result_sections"
+        ).upgrade()
+        importlib.import_module(
+            "ringsentinel.platform.migrations.versions.0010_candidate_page_index"
+        ).upgrade()
     sql = output.getvalue()
+    assert "CREATE INDEX ix_result_sections_page" in sql
+    assert "CREATE TABLE result_sections" in sql
+    assert "ADD COLUMN candidate_index JSON" in sql
+    assert "candidate_count INTEGER" in sql
     assert "CREATE TABLE analysis_runs" in sql
     assert "TIMESTAMP WITH TIME ZONE" in sql
     assert "UNIQUE (active_slot)" in sql
     assert "FOREIGN KEY(owner_id) REFERENCES users" in sql
+    assert "CREATE TABLE result_fragments" in sql
+    assert "ON DELETE CASCADE" in sql
+    assert "CREATE TABLE candidate_reviews" in sql
+    assert "CREATE TABLE review_audit" in sql
+    assert "CREATE TABLE storage_deletions" in sql
+    assert "CREATE TABLE stored_objects" in sql and "BYTEA" in sql
+    assert "CREATE UNIQUE INDEX uq_analysis_runs_executor_slot" in sql
+    assert "CREATE TABLE upload_sessions" in sql and "CREATE TABLE upload_parts" in sql
+    assert "CREATE TABLE analysis_dispatches" in sql
+    assert "CREATE TABLE dispatch_budgets" in sql and "CREATE TABLE dispatch_schedules" in sql
+    assert "ADD COLUMN dispatch_state" in sql
+    assert "FOREIGN KEY(run_id, candidate_id)" in sql
     statements = []
     engine = create_mock_engine(
         "postgresql+psycopg://",
@@ -44,6 +88,10 @@ def test_postgres_backup_commands_keep_password_out_of_arguments(tmp_path, monke
     try:
         pg_command(db, "backup", tmp_path / "database.dump")
         pg_command(db, "restore", tmp_path / "database.dump")
+        pg_command(db, "backup", tmp_path / "database.dump", snapshot="00000003-0000001B-1")
+        for action, snapshot in [("restore", "00000003-0000001B-1"), ("backup", "invalid;command")]:
+            with pytest.raises(ValueError, match="Invalid exported snapshot"):
+                pg_command(db, action, tmp_path / "database.dump", snapshot=snapshot)
     finally:
         db.engine.dispose()
     for args, kwargs in calls:
@@ -53,3 +101,4 @@ def test_postgres_backup_commands_keep_password_out_of_arguments(tmp_path, monke
         assert kwargs["timeout"] == 300
         assert kwargs.get("shell", False) is False
     assert "--single-transaction" in calls[1][0]
+    assert len(calls) == 3 and "--snapshot=00000003-0000001B-1" in calls[2][0]
