@@ -5,6 +5,34 @@ the project is already deployed or validated on real financial data.
 
 ## Instructions for Claude at the usage handoff
 
+### Concurrent request capacity control, 6 October 2026
+
+The user asked whether steps3–6 can move forward. Step4 now has a new actual
+PostgreSQL request-mode burst control awaiting remote execution: three generated
+10207-event mixed investigations from three owners are queued before inference.
+Independent database connections race through a barrier for the real single
+request executor slot, then repeat with two/one remaining contenders. Require
+exactly one active run, all losers still queued, all three normal pinned-model
+workers completed, preserved model/source provenance and baseline result hashes,
+and denial of another owner's access. The local worker lock is retained.
+
+The canonical postgres-request-capacity artifact contains only aggregate batch
+elapsed times, child wall/worker time, approximate worker-image memory and database
+disk sizes. Batch elapsed includes uploads/earlier checks; it is not per-run queue
+age or an HTTPS SLA. This checks concurrent admission/backpressure for the actual
+single-slot design, not parallel inference, hosted HTTP/Workflow, total API/parent/
+database/browser memory, percentiles or release quotas. Existing sequential
+capacity controls remain separate. Local request suite passes13 tests;8 actual
+PostgreSQL controls skip locally and must run in CI. Ruff passes. New-source CI
+and both canonical artifacts must be inspected before claiming the new control.
+
+Step3 still needs authorized observed exports/matured fraud labels; the review
+capacity tooling above is implemented and verified. Step5 needs deployed resources
+and operator destinations/recovery ownership to install actual monitoring and
+scheduled off-host backups. Step6 original Instinct link recheck is still inaccessible
+through the web tool; do not invent requirements or bypass authentication/terms.
+Continue the complete goal and skip only genuinely dependent work.
+
 ### Sequential continuation, 6 October 2026
 
 Final verification: corrected sourceb4bb93b8eeda4e3993496ce874f81e409abd8854

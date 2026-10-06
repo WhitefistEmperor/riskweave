@@ -496,3 +496,21 @@ linux-postgres-mixed-worker-pr-20261005.json under results/capacity, with source
 in results/operations/linux-postgres-capacity-source-verification-20261005.json.
 Next: actual deployed cold/warm/concurrent measurements and full process/database
 memory, then accepted limits and recovery objectives. Access/data gates remain.
+# Concurrent request-slot control, 6 October 2026
+
+The PostgreSQL CI capacity fixture now runs both local sequential workers and a
+request-mode burst of three generated10207-event mixed investigations owned by
+three separate principals. Independent database connections race at a barrier for
+the actual single executor slot. Require one active run and queued losers; after
+normal worker completion, repeat with two then one remaining contenders. Original
+worker locking, result integrity, model/source pins and owner checks remain active.
+The request-mode artifact is `postgres-request-capacity-<checkout>-<run>` with one
+canonical `postgres-request-capacity.json`; no private IDs, paths or URLs are included.
+
+New-source remote execution/artifact inspection is pending. The local13-test
+request suite passes, but all8 PostgreSQL controls skip without the isolated CI
+database. Do not interpret the local skips as concurrent PostgreSQL proof.
+Batch elapsed time starts before case/upload preparation and includes preceding
+checks; it is not individual queue age or HTTPS latency. This supplies single-slot
+admission/backpressure and queued-work completion evidence, not parallel inference,
+hosted transport/Workflow, full-service RAM, percentiles, billing or release limits.

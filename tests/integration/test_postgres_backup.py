@@ -8,14 +8,16 @@ import platform
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from pathlib import Path
+from threading import Barrier
 from uuid import uuid4
 
 import psycopg
 import pytest
 from psycopg import sql
-from sqlalchemy import delete, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.engine import make_url
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
@@ -461,9 +463,10 @@ def test_postgres_snapshot_reopens_bytes_owner_and_migration_state(
         target_db.engine.dispose()
 
 
-def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
+@pytest.mark.parametrize("execution_mode", ["local", "request"])
+def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path, execution_mode):
     from ringsentinel.data.ingestion import PaymentDataset
-    from ringsentinel.platform.models import Status
+    from ringsentinel.platform.models import AnalysisRun, Status
     from ringsentinel.platform.vercel_build import build
     from ringsentinel.platform.vercel_entry import MODEL_DIRECTORY
 
@@ -477,6 +480,7 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
         storage_backend="database",
         storage_root=tmp_path / "objects",
         jobs_enabled=False,
+        execution_mode=execution_mode,
         model_artifact_path=tmp_path / MODEL_DIRECTORY / "network-hgb.joblib",
         model_artifact_sha256=model["sha256"],
         build_commit=source,
@@ -514,7 +518,7 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
         RINGSENTINEL_ENVIRONMENT="test",
         RINGSENTINEL_AUTH_MODE="development",
         RINGSENTINEL_JOBS_ENABLED="false",
-        RINGSENTINEL_EXECUTION_MODE="local",
+        RINGSENTINEL_EXECUTION_MODE=execution_mode,
         RINGSENTINEL_BACKGROUND_DISPATCH="none",
         RINGSENTINEL_DATABASE_URL=databases[0],
         RINGSENTINEL_STORAGE_BACKEND="database",
@@ -534,11 +538,71 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
             size_before = session.scalar(text("SELECT pg_database_size(current_database())"))
         service = InvestigationService(database, storage_for(database, settings), settings)
         owner = Principal("generated-linux-capacity-owner")
+        pending = []
+        batch_started = time.perf_counter()
+        if execution_mode == "request":
+            for ordinal in range(3):
+                request_owner = Principal(f"generated-request-capacity-owner-{ordinal}")
+                request_case = service.create(request_owner, "Generated queued request control")
+                request_artifact = service.attach(
+                    request_owner, request_case.id, content, "control.json", "application/json"
+                )
+                request_run = service.start(
+                    request_owner, request_case.id, request_artifact.id, "capacity"
+                )
+                pending.append((request_owner, request_case, request_artifact, request_run))
+        contender_counts = []
         for index in range(3):
-            case = service.create(owner, "Generated Linux PostgreSQL capacity control")
-            artifact = service.attach(owner, case.id, content, "control.json", "application/json")
-            run = service.start(owner, case.id, artifact.id, "capacity")
-            assert service.claim() == run.id
+            if execution_mode == "local":
+                case = service.create(owner, "Generated Linux PostgreSQL capacity control")
+                artifact = service.attach(
+                    owner, case.id, content, "control.json", "application/json"
+                )
+                run = service.start(owner, case.id, artifact.id, "capacity")
+                assert service.claim() == run.id
+            else:
+                # Separate connections compete using the actual production request-slot rule.
+                barrier = Barrier(len(pending))
+
+                def compete(item, start_barrier=barrier):
+                    isolated_db = Database(databases[0])
+                    isolated = InvestigationService(
+                        isolated_db, storage_for(isolated_db, settings), settings
+                    )
+                    try:
+                        start_barrier.wait(timeout=30)
+                        return isolated.claim(item[3].id, item[0])
+                    finally:
+                        isolated_db.engine.dispose()
+
+                with ThreadPoolExecutor(max_workers=len(pending)) as pool:
+                    claims = list(pool.map(compete, pending))
+                admitted = [claim for claim in claims if claim is not None]
+                assert len(admitted) == 1
+                contender_counts.append(len(pending))
+                owner, case, artifact, run = next(
+                    item for item in pending if item[3].id == admitted[0]
+                )
+                pending = [item for item in pending if item[3].id != run.id]
+                assert service.run(owner, run.id).status == Status.RUNNING
+                assert all(
+                    service.run(item[0], item[3].id).status == Status.QUEUED for item in pending
+                )
+                with database.session() as session:
+                    assert (
+                        session.scalar(
+                            select(func.count())
+                            .select_from(AnalysisRun)
+                            .where(AnalysisRun.status == Status.RUNNING)
+                        )
+                        == 1
+                    )
+                # Another owner cannot consume the capacity slot or read the admitted run.
+                with pytest.raises(ProductError):
+                    service.run(Principal("another-owner"), run.id)
+            queued_wait = (
+                time.perf_counter() - batch_started if execution_mode == "request" else None
+            )
             started = time.perf_counter()
             child = subprocess.run(
                 [sys.executable, "scripts/measure_linux_worker_ci.py", "--run-id", run.id],
@@ -562,6 +626,9 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
             assert saved.version_metadata["build_commit"] == source
             result = service.result_content(owner, run.id)
             assert hashlib.sha256(result).hexdigest() == saved.result_checksum
+            assert saved.result_checksum == (
+                "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324"
+            )
             with pytest.raises(ProductError):
                 service.run(Principal("another-owner"), run.id)
             with database.session() as session:
@@ -575,17 +642,25 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
                     "candidates": saved.candidate_count,
                     "process_wall_seconds": wall,
                     "database_size_bytes_after": size_after,
+                    "queue_wait_since_batch_preparation_seconds": queued_wait,
+                    "batch_elapsed_after_completion_seconds": (
+                        time.perf_counter() - batch_started if execution_mode == "request" else None
+                    ),
                     **measured,
                 }
             )
         assert len({sample["result_sha256"] for sample in samples}) == 1
+        if execution_mode == "request":
+            assert not pending and contender_counts == [3, 2, 1]
         aggregate = {
             "schema_version": "linux-postgres-worker-baseline-v1",
             "source_commit": source,
             "production_ready": False,
             "data_origin": "synthetic-control",
             "storage_backend": "database",
-            "execution_mode": "local",
+            "execution_mode": execution_mode,
+            "concurrent_request_contenders_per_round": contender_counts,
+            "maximum_admitted_active_workers": 1,
             "model_sha256": model["sha256"],
             "input_bytes": len(content),
             "events": len(events),
@@ -601,14 +676,17 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
             "all_saved_results_identical": True,
             "limitations": [
                 "Three sequential fresh workers on one ephemeral CI runner; "
-                "not reliable percentiles, concurrency or hosted admission.",
+                "request mode races three/two/one callers for the single active slot. "
+                "Not reliable percentiles, parallel inference or hosted admission.",
                 "Worker-main excludes module import; child wall includes startup "
                 "but excludes generation/upload and parent checksum checks.",
+                "Request batch elapsed time includes batch creation/upload, claims and "
+                "earlier result checks. It is not per-run queue age or an HTTPS latency SLA.",
                 "VmHWM/VmRSS are approximate kernel counters for the current worker image; "
                 "lifetime getrusage peak can retain pre-exec accounting. "
                 "These do not measure PostgreSQL/API/parent/browser RAM. "
                 "Database size is cumulative allocated disk, not RAM or storage quota usage.",
-                "Local execution with PostgreSQL object storage; "
+                "Generated native workers with PostgreSQL object storage; "
                 "not hosted HTTPS/Workflow delivery or observed model accuracy.",
             ],
         }
@@ -618,7 +696,12 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path):
             for private in (owner.user_id, databases[0], run.id, case.id, artifact.storage_key)
         )
         # Canonical root avoids pytest's 'current' directory alias duplicating artifacts.
-        with (tmp_path.parent / "postgres-worker-capacity.json").open("x", encoding="utf-8") as out:
+        report_name = (
+            "postgres-worker-capacity.json"
+            if execution_mode == "local"
+            else "postgres-request-capacity.json"
+        )
+        with (tmp_path.parent / report_name).open("x", encoding="utf-8") as out:
             out.write(serialized + "\n")
     finally:
         database.engine.dispose()
