@@ -7,6 +7,15 @@ the project is already deployed or validated on real financial data.
 
 ### Sequential continuation, 6 October 2026
 
+Final verification: corrected sourceb4bb93b8eeda4e3993496ce874f81e409abd8854
+push37465688466/PR37465695028 completed successfully, all six jobs green. Actual
+backend/frontend logs on each run report328 Python/80 workspace browser/4 separate
+OIDC session controls and zero npm vulnerabilities. This closes this tooling and
+dependency-patch verification step. The aggregate receipt is
+results/operations/review-capacity-release-verification-20261006.json.
+Remaining hosted/model/operations requirements below stay open; skip blocked
+steps only where independent useful work can continue. This is not a full release.
+
 Follow-up: evaluation source18da064 push37464767703/PR37464773313 completed:
 backend and containers passed on both; frontend failed at the dependency-advisory
 gate before browser tests. The refreshed full npm audit found3 affected packages:
@@ -137,7 +146,7 @@ the rejected auth popup or modify unrelated projects/purchase upgrades.
 
 Use repository WhitefistEmperor/riskweave, branch codex/production-foundation,
 draft PR #1. Read this file and docs/RELEASE_GATES.md first. The tested application
-commit is 350e0f5; documentation may have a newer head. Inspect git status and
+commit is b4bb93b; documentation may have a newer head. Inspect git status and
 remote CI before editing; preserve local/private fixtures and all user cases.
 The current goal is still the complete deployed product and validated model.
 

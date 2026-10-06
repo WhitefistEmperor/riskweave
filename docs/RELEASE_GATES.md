@@ -2,7 +2,7 @@
 
 The goal remains a complete deployed product with a validated model. Passing the
 repository checks or the local controls does not satisfy that goal. This audit
-uses source 350e0f5 (all six push/PR checks green:319 Python/80 workspace browser
+uses source b4bb93b (all six push/PR checks green:328 Python/80 workspace browser
 plus4 dedicated OIDC session browser controls), the actual
 403 scope response and measured sparse/dense workers and cancellable browser grid
 controls. Consult the handoff for exact evidence and remaining capacity work.
@@ -20,6 +20,12 @@ ci, full audit (zero vulnerabilities), lint, typecheck, build and formatter smok
 Corrected-source CI/browser verification remains pending; prior green source is
 not proof of this patch. Pinned-model synthetic CLI review-capacity smoke passes;
 deployment and observed validation remain blocked as described in the handoff.
+
+Final corrected-source b4bb93b push37465688466/PR37465695028 passes all six jobs.
+Inspected job logs each report328 Python/80 browser/4 separate session controls
+and zero audit vulnerabilities. The preceding pending note records the local
+checkpoint; this final verification resolves it. The measured capacity reports
+remain pinned to their original sources. Hosted and observed-data gates stay open.
 
 Opt-in online PostgreSQL/database-object backups now share one exported snapshot
 for reference verification and pg_dump. Exact-source push37321333408/PR37321347090
