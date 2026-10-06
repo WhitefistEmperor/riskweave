@@ -7,6 +7,12 @@ plus4 dedicated OIDC session browser controls), the actual
 403 scope response and measured sparse/dense workers and cancellable browser grid
 controls. Consult the handoff for exact evidence and remaining capacity work.
 
+6 October continuation adds a validation-only event review-fraction constraint
+and all-event review-load reporting to frozen-model evaluation. Missing labels
+do not hide workload and held-out test demand cannot retune the threshold. Local
+focused controls pass; new-source CI remains to be verified. This is tooling,
+not observed-data validation, staffed review capacity or production approval.
+
 Opt-in online PostgreSQL/database-object backups now share one exported snapshot
 for reference verification and pg_dump. Exact-source push37321333408/PR37321347090
 CI passed the concurrent erasure/write and fresh-target restore control on actual

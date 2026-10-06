@@ -43,6 +43,9 @@ class EvaluationPlan(StrictModel):
     threshold_policy: Literal["frozen", "validation-cost"] = "frozen"
     false_positive_cost: float = Field(default=1, gt=0, allow_inf_nan=False, strict=True)
     false_negative_cost: float = Field(default=1, gt=0, allow_inf_nan=False, strict=True)
+    max_validation_review_fraction: float | None = Field(
+        default=None, ge=0, le=1, allow_inf_nan=False, strict=True
+    )
 
     @model_validator(mode="after")
     def admitted(self):
@@ -52,6 +55,11 @@ class EvaluationPlan(StrictModel):
             raise ValueError("Authorization declaration required")
         if not self.validation_start < self.test_start < self.test_end <= self.labels_as_of:
             raise ValueError("Invalid temporal window order")
+        if (
+            self.max_validation_review_fraction is not None
+            and self.threshold_policy != "validation-cost"
+        ):
+            raise ValueError("Review constraint requires validation-cost selection")
         return self
 
 
@@ -149,6 +157,19 @@ def evaluate(
         if len(set(validation["labels"])) != 2:
             raise ValueError("THRESHOLD_SELECTION_REQUIRES_BOTH_CLASSES")
         choices = sorted(set([*np.linspace(0, 1, 101), frozen_threshold]))
+        # Review demand includes unlabeled events. Outcomes only affect relative cost.
+        all_validation_scores = np.asarray(
+            [score_by_event[event.event_id] for event in validation["events"]], dtype=float
+        )
+        if plan.max_validation_review_fraction is not None:
+            choices = [
+                value
+                for value in choices
+                if np.count_nonzero(all_validation_scores >= value) / len(all_validation_scores)
+                <= plan.max_validation_review_fraction
+            ]
+            if not choices:
+                raise ValueError("NO_THRESHOLD_WITHIN_VALIDATION_REVIEW_CAPACITY")
         y = np.asarray(validation["labels"], dtype=int)
         scores = np.asarray(validation["scores"], dtype=float)
         threshold = float(
@@ -171,6 +192,19 @@ def evaluate(
             label_coverage=len(window["covered"]) / len(window["events"]),
             frozen=measurements(window["labels"], window["scores"], frozen_threshold, plan),
             selected=measurements(window["labels"], window["scores"], threshold, plan),
+            review_load={
+                policy: {
+                    "events": len(window["events"]),
+                    "flagged_events": sum(
+                        score_by_event[event.event_id] >= value for event in window["events"]
+                    ),
+                    "flagged_fraction": sum(
+                        score_by_event[event.event_id] >= value for event in window["events"]
+                    )
+                    / len(window["events"]),
+                }
+                for policy, value in (("frozen", frozen_threshold), ("selected", threshold))
+            },
         )
         reports[name]["event_type_groups"] = {
             group: measurements(
@@ -201,6 +235,7 @@ def evaluate(
         frozen_threshold=frozen_threshold,
         selected_threshold=threshold,
         threshold_policy=plan.threshold_policy,
+        max_validation_review_fraction=plan.max_validation_review_fraction,
         validation_test_customer_overlap=len(customers[0] & customers[1]),
         windows=reports,
         limitations=[
@@ -210,6 +245,8 @@ def evaluate(
             "Relative error costs are operator assumptions, not measured monetary loss.",
             "Historical availability of the model and mappings has not been established.",
             "No ring-level validation, confidence intervals or production approval provided.",
+            "Review fractions count flagged events, not ring cases, analyst minutes "
+            "or future demand.",
         ],
     )
 

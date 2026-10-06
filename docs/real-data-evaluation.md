@@ -76,6 +76,25 @@ This evaluation never changes the production model or threshold. Model/mapping
 availability at historical event times is not established by this retrospective
 command; freeze the evaluation plan before inspecting held-out test outcomes.
 
+For `validation-cost`, an optional `max_validation_review_fraction` from 0 through
+1 restricts threshold candidates to flag at most that fraction of **all** events
+in the validation window, including events with missing or delayed labels. For
+example, `0.05` permits at most 5% of validation events to be flagged. Relative
+error cost still uses only eligible resolved validation labels. The candidate grid,
+inclusive score comparison (`score >= threshold`) and highest-threshold tie rule
+remain unchanged. If no candidate meets the limit, evaluation fails; even threshold
+1 flags scores equal to 1. The frozen policy rejects this optional constraint,
+because a frozen threshold cannot be adjusted to satisfy it.
+
+Each window reports `review_load` for both frozen and selected thresholds: total
+events, flagged events and flagged fraction. Test scores/labels never influence
+selection. A test-window fraction above the validation limit remains visible;
+the tool does not retune on the test window. These event counts do not measure
+deduplicated ring investigations, analyst minutes, per-day staffing or future
+production demand. Agree those operating costs and units before approval. Plans
+without this field preserve unconstrained selection. Reports remain private and
+`production_ready: false`.
+
 Reports record model/payment/label/plan hashes, Python/library versions, feature
 names and a Python-package source-tree fingerprint, window label coverage, confusion
 counts, precision/recall/FPR, average precision, raw-score Brier error, reliability

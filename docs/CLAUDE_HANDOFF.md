@@ -5,6 +5,35 @@ the project is already deployed or validated on real financial data.
 
 ## Instructions for Claude at the usage handoff
 
+### Sequential continuation, 6 October 2026
+
+The user asked to work through steps one by one and skip blocked steps when
+independent work can continue. Deployment recheck still returns403 for the target
+workspace. The same-endpoint CLI fallback could not run because `vercel` is not
+installed on PATH; no alternate login or rejected auth route was attempted.
+Live deployment, database/issuer provisioning and hosted checks remain blocked.
+Authorized provider exports/matured labels are still unavailable, so observed
+validation is also skipped rather than replaced with synthetic accuracy claims.
+
+Independent model tooling now adds optional `max_validation_review_fraction` to
+`validation-cost` evaluation. Admission is based on all validation events, including
+missing/delayed labels; relative error cost uses only eligible resolved labels.
+The fixed candidate grid and inclusive comparisons/tie rule are preserved. No
+feasible threshold fails explicitly; score1 cannot be suppressed by threshold1.
+Frozen plans reject the constraint. Both windows report complete event review
+demand; held-out test demand never changes threshold selection. These counts are
+not case deduplication, analyst time, daily staffing or future demand guarantees.
+See docs/real-data-evaluation.md. Existing frozen model/production threshold and
+private cases remain unchanged; reports still explicitly deny production approval.
+
+Focused local evaluation controls pass22 tests, including missing-label workload,
+test-score independence, strict constraint values, infeasible score-one ties and
+an exact capacity boundary. Ruff passes. New-source remote CI must be checked
+after this checkpoint is pushed; do not attribute the prior319-test result to it.
+Prior checkpoint1c9b530 push37331930468/PR37331939768 both completed successfully.
+Next: verify this source CI, then continue independent operations/capacity work
+while access/data questions remain pending. Preserve the full production goal.
+
 ### Current continuation checkpoint: 2% remaining
 
 At 2026-10-05 15:17 UTC, the current usage window is 98% used (2% remaining),

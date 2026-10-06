@@ -115,6 +115,112 @@ def test_future_validation_resolution_cannot_tune_historical_threshold(control):
         evaluate(data, delayed, plan, scores, 0.5)
 
 
+def test_review_capacity_counts_unlabeled_events_and_does_not_tune_on_test(control):
+    data, original_plan, labels, original_scores = control
+    validation_ids = {
+        event.event_id
+        for event in data.events
+        if original_plan.validation_start <= event.timestamp < original_plan.test_start
+    }
+    retained = [
+        next(
+            label
+            for label in labels.labels
+            if label.event_id in validation_ids and label.is_fraud == fraud
+        )
+        for fraud in (False, True)
+    ]
+    partial = labels.model_copy(
+        update={
+            "labels": tuple(
+                label
+                for label in labels.labels
+                if label.event_id not in validation_ids or label in retained
+            )
+        }
+    )
+    scores = {**original_scores, **dict.fromkeys(validation_ids, 0.95)}
+    scores[retained[0].event_id] = 0.1
+    scores[retained[1].event_id] = 0.6
+    plan = EvaluationPlan.model_validate(
+        {
+            **original_plan.model_dump(),
+            "threshold_policy": "validation-cost",
+        }
+    )
+    unconstrained = evaluate(data, partial, plan, scores, 0.4)
+    assert unconstrained["selected_threshold"] == 0.6
+    assert unconstrained["windows"]["validation"]["selected"]["count"] == 2
+    assert (
+        unconstrained["windows"]["validation"]["review_load"]["selected"]["flagged_events"]
+        == len(validation_ids) - 1
+    )
+    constrained = EvaluationPlan.model_validate(
+        {
+            **plan.model_dump(),
+            "max_validation_review_fraction": 1 / len(validation_ids),
+        }
+    )
+    report = evaluate(data, partial, constrained, scores, 0.4)
+    assert report["selected_threshold"] == 1
+    assert report["windows"]["validation"]["review_load"]["selected"]["flagged_events"] == 0
+    changed = {
+        event_id: value if event_id in validation_ids else 1 for event_id, value in scores.items()
+    }
+    shifted = evaluate(data, partial, constrained, changed, 0.4)
+    assert shifted["selected_threshold"] == report["selected_threshold"]
+    assert shifted["windows"]["validation"] == report["windows"]["validation"]
+    assert shifted["windows"]["test"]["review_load"]["selected"]["flagged_fraction"] == 1
+    assert report["production_ready"] is False
+    unlimited = constrained.model_copy(update={"max_validation_review_fraction": 1.0})
+    assert evaluate(data, partial, unlimited, scores, 0.4)["selected_threshold"] == 0.6
+    # An exact boundary is admissible; score=1 still counts with threshold=1.
+    at_boundary = {**scores, retained[1].event_id: 1.0}
+    boundary = evaluate(data, partial, constrained, at_boundary, 0.4)
+    assert boundary["windows"]["validation"]["selected"]["true_positives"] == 1
+    load = boundary["windows"]["validation"]["review_load"]["selected"]
+    assert load["flagged_events"] == 1
+    assert load["flagged_fraction"] == constrained.max_validation_review_fraction
+
+
+def test_review_capacity_rejects_infeasible_score_one_ties(control):
+    data, plan, labels, scores = control
+    plan = EvaluationPlan.model_validate(
+        {
+            **plan.model_dump(),
+            "threshold_policy": "validation-cost",
+            "max_validation_review_fraction": 0.0,
+        }
+    )
+    scores = dict.fromkeys(scores, 1.0)
+    with pytest.raises(ValueError, match="NO_THRESHOLD_WITHIN_VALIDATION_REVIEW_CAPACITY"):
+        evaluate(data, labels, plan, scores, 0.5)
+
+
+@pytest.mark.parametrize("value", [-0.1, 1.1, "0.5", True, float("nan"), float("inf")])
+def test_review_capacity_contract_is_strict(control, value):
+    _, plan, _, _ = control
+    with pytest.raises(ValidationError):
+        EvaluationPlan.model_validate(
+            {
+                **plan.model_dump(),
+                "threshold_policy": "validation-cost",
+                "max_validation_review_fraction": value,
+            }
+        )
+
+
+def test_frozen_policy_cannot_claim_review_constraint(control):
+    _, plan, _, _ = control
+    with pytest.raises(ValidationError):
+        EvaluationPlan.model_validate(
+            {
+                **plan.model_dump(),
+                "max_validation_review_fraction": 0.5,
+            }
+        )
+
+
 @pytest.mark.parametrize("defect", ["duplicate", "unknown", "preceding", "nan", "missing-score"])
 def test_label_identity_and_score_failures_are_rejected(control, defect):
     data, plan, labels, scores = control
