@@ -474,6 +474,7 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path, e
         pytest.skip("Linux child peak RSS measurement is configured in CI")
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     model = build(tmp_path)
+    worker_timeout = 240 if execution_mode == "request" else 300
     settings = Settings(
         environment="test",
         database_url=databases[0],
@@ -481,6 +482,7 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path, e
         storage_root=tmp_path / "objects",
         jobs_enabled=False,
         execution_mode=execution_mode,
+        analysis_timeout_seconds=worker_timeout,
         model_artifact_path=tmp_path / MODEL_DIRECTORY / "network-hgb.joblib",
         model_artifact_sha256=model["sha256"],
         build_commit=source,
@@ -526,7 +528,7 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path, e
         RINGSENTINEL_MODEL_ARTIFACT_PATH=str(settings.model_artifact_path),
         RINGSENTINEL_MODEL_ARTIFACT_SHA256=model["sha256"],
         RINGSENTINEL_BUILD_COMMIT=source,
-        RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS="300",
+        RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS=str(worker_timeout),
         OMP_NUM_THREADS="1",
     )
     database = Database(databases[0])
@@ -609,7 +611,7 @@ def test_repeated_mixed_worker_capacity_on_linux_postgres(databases, tmp_path, e
                 env=environment,
                 capture_output=True,
                 text=True,
-                timeout=320,
+                timeout=worker_timeout + 20,
             )
             wall = time.perf_counter() - started
             assert child.returncode == 0, (

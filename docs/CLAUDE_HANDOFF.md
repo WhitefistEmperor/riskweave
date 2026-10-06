@@ -7,6 +7,21 @@ the project is already deployed or validated on real financial data.
 
 ### Concurrent request capacity control, 6 October 2026
 
+Requirements access is now resolved: the supported in-app browser can read the
+original Instinct page. See docs/instinct-requirements-audit.md for all26 mapped
+items, verified code/CI evidence and gaps. No page checkbox was changed. The
+owner-scoped immutable evidence cache/Redis controls are absent; feature density
+reuse and JWKS caching do not satisfy them. Add safe cache work as the next
+independent source-plan step. Hosted delivery and the optional agent loop remain
+separate. Container documentation now describes the actual Next.js standalone
+image. Never save temporary private lease URLs from the page.
+
+Initial capacity source97bdc5a failed the request parameter on backend runs
+37470632191/37470638259: Settings correctly rejects a request timeout above240s.
+The fixture now uses240s for request and300s for local mode, with matching child
+budgets. The production guard was not relaxed. Retain this initial failure and
+require corrected-source actual PostgreSQL execution.
+
 The user asked whether steps3–6 can move forward. Step4 now has a new actual
 PostgreSQL request-mode burst control awaiting remote execution: three generated
 10207-event mixed investigations from three owners are queued before inference.
@@ -29,8 +44,9 @@ and both canonical artifacts must be inspected before claiming the new control.
 Step3 still needs authorized observed exports/matured fraud labels; the review
 capacity tooling above is implemented and verified. Step5 needs deployed resources
 and operator destinations/recovery ownership to install actual monitoring and
-scheduled off-host backups. Step6 original Instinct link recheck is still inaccessible
-through the web tool; do not invent requirements or bypass authentication/terms.
+scheduled off-host backups. Step6's web-tool fetch remains inaccessible, but the
+supported browser now reads the source. Reading/audit is complete; cache/hosted/
+optional-agent items have separate acceptance status in the new audit.
 Continue the complete goal and skip only genuinely dependent work.
 
 ### Sequential continuation, 6 October 2026
