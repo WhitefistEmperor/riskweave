@@ -4,6 +4,10 @@ import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 
 const authority = process.env.NEXT_PUBLIC_RISKWEAVE_OIDC_AUTHORITY;
 const clientId = process.env.NEXT_PUBLIC_RISKWEAVE_OIDC_CLIENT_ID;
+// Providers without custom scopes (Supabase Auth) grant the API scope via a token hook.
+const scope =
+  process.env.NEXT_PUBLIC_RISKWEAVE_OIDC_SCOPE ||
+  'openid profile ringsentinel:analyst';
 export const authenticationEnabled = Boolean(authority && clientId);
 let manager: UserManager | undefined;
 
@@ -16,7 +20,7 @@ export function authManager(): UserManager {
     redirect_uri: `${window.location.origin}/auth/callback`,
     post_logout_redirect_uri: `${window.location.origin}/sign-in`,
     response_type: 'code',
-    scope: 'openid profile ringsentinel:analyst',
+    scope,
     automaticSilentRenew: false,
     loadUserInfo: false,
     userStore: new WebStorageStateStore({ store: window.sessionStorage }),

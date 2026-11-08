@@ -7,6 +7,7 @@ The internal `ringsentinel` package, commands, environment variables, and API pa
 ## Start here
 
 - [Local setup and troubleshooting](quick-start.md)
+- [Hosting on Vercel with Supabase](supabase-hosting.md)
 - [Submission screenshots](assets/screenshots/README.md)
 - [Published demo video](https://youtu.be/CaeExe9ePls)
 - [Three-minute demo script](demo-script.md)

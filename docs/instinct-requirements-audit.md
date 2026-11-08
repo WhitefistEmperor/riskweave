@@ -19,7 +19,7 @@ IDs refer to the source plan, not the user's separate six remaining-work steps.
 | 2.4 Durable queue | Actual Vercel Workflow SDK locally exercised instead of adding another queue library. Hosted generated routes/delivery open. |
 | 2.5 Job recovery | SQL dispatch, leases, retries, deadlines, model fencing and reconciliation have local/CI controls. Hosted recovery unverified. |
 | 2.6 Shared durable bytes | Request mode uses PostgreSQL objects with atomic integrity/ownership. Hosted database remains unavailable. |
-| 3.1 Hosting selection | User selected free Vercel; workspace returns403. Account allowances/database/identity still need verification. |
+| 3.1 Hosting selection | Free Vercel Hobby workspace confirmed reachable on 8 Nov 2026 (the earlier 403 was the `/dashboard` route only). Supabase free plan selected for PostgreSQL and analyst identity; see [Supabase hosting](supabase-hosting.md). Supabase project not yet created. |
 | 3.2 Backend deployment | Source packaging exists; no verified live backend/Workflow/database release. |
 | 3.3 Frontend deployment | Native Next.js replaces old Vinext. Hosted issuer/proxy/origin/build checks still depend on access. |
 | 3.4 Demo safeguards | Bounded uploads, quotas, rate limits, production authentication admission and synthetic controls exist; hosted configuration unverified. |
