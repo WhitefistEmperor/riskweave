@@ -29,6 +29,9 @@ class Principal:
 class InvestigationService:
     def __init__(self, database: Database, storage: StorageBackend, settings: Settings):
         self.database, self.storage, self.settings = database, storage, settings
+        from ringsentinel.platform.evidence_cache import evidence_cache_from_settings
+
+        self.evidence_cache = evidence_cache_from_settings(settings)
 
     def _write(self):
         return self.database.write()

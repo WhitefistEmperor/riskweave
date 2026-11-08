@@ -227,6 +227,9 @@ def test_targeted_large_evidence_uses_bounded_ranges_and_rejects_byte_corruption
         return bytes(part)
 
     monkeypatch.setattr(service.storage, "read_range", corrupt)
+    # A previously verified immutable section may be served from the evidence cache
+    # until TTL; clear it so this exercises the storage verification path itself.
+    service.evidence_cache.invalidate_runs([run_id])
     with pytest.raises(ProductError) as failure:
         result_sections.value(service, owner, run_id, "second", "evidence")
     assert failure.value.code == "INTERNAL_ERROR"

@@ -61,6 +61,13 @@ class Settings(BaseSettings):
     llm_retry_count: int = Field(default=0, ge=0, le=2)
     llm_max_output_tokens: int = Field(default=1200, ge=100, le=4000)
     build_commit: str = Field(default="unknown", pattern=r"^(unknown|[a-f0-9]{7,40})$")
+    evidence_cache_backend: Literal["memory", "redis", "disabled"] = "memory"
+    evidence_cache_url: SecretStr = Field(default=SecretStr(""), repr=False)
+    evidence_cache_ttl_seconds: int = Field(default=300, ge=10, le=3600)
+    evidence_cache_max_entries: int = Field(default=512, ge=1, le=100_000)
+    evidence_cache_max_bytes: int = Field(default=64_000_000, ge=1024, le=1_000_000_000)
+    evidence_cache_max_value_bytes: int = Field(default=4_000_000, ge=1024, le=50_000_000)
+    evidence_cache_timeout_seconds: float = Field(default=0.25, gt=0, le=5)
 
     @model_validator(mode="after")
     def deployment_boundary(self) -> "Settings":
@@ -94,6 +101,12 @@ class Settings(BaseSettings):
                     "Production request execution requires PostgreSQL, JWT, a pinned model, "
                     "enabled jobs and explicit storage budget"
                 )
+        if self.evidence_cache_backend == "redis":
+            cache = urlsplit(self.evidence_cache_url.get_secret_value())
+            if cache.scheme not in {"redis", "rediss"} or not cache.hostname:
+                raise ValueError("Redis evidence cache requires an explicit redis:// URL")
+            if self.environment == "production" and cache.scheme != "rediss":
+                raise ValueError("Production Redis evidence cache requires TLS (rediss://)")
         if bool(self.model_artifact_path) != bool(self.model_artifact_sha256):
             raise ValueError("Model artifact path and pinned SHA-256 must be configured together")
         if any(not host or any(c in host for c in "/*:@ ") for host in self.trusted_hosts):

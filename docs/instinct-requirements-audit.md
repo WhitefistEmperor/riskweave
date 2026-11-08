@@ -13,9 +13,9 @@ IDs refer to the source plan, not the user's separate six remaining-work steps.
 | 1.3 PostgreSQL migrations | CI explicitly migrates fresh PostgreSQL; Compose waits for one-shot migration before API startup. |
 | 1.4 Investigation smoke | Container CI runs persisted analysis, checks ownership and hashes; browser workflows exercise evidence/investigator/reload. Hosted repeat open. |
 | 1.5 Restart persistence | Durable objects and restore verified; retain a case across an explicit container restart and inspect it before cleanup. |
-| 2.1 Cache target | No backend immutable evidence/answer cache found. Feature-density and JWKS caches do not close this gap. |
-| 2.2 Cache scoping | Owner/result/query/version keys, TTL and lifecycle behavior for that evidence cache remain to implement. |
-| 2.3 Cache resilience | Hits/expiry/concurrent owner checks and Redis outage fallback remain to implement and measure. |
+| 2.1 Cache target | Implemented 8 Nov 2026: `platform/evidence_cache.py` caches candidate, evidence and currency sections plus grounded investigator answers. Stored bytes stay authoritative. |
+| 2.2 Cache scoping | Keys bind cache version, owner, run, result SHA-256, kind, candidate and (for answers) provider/model/question. Ownership is re-checked before every lookup; TTL, entry/byte bounds; deletion purges a run's entries; provider-fallback answers are not cached. |
+| 2.3 Cache resilience | Tests measure hits (80% on repeat reads, storage reads skipped), expiry, cross-owner denial, integrity discard of tampered entries, and Redis outage fallback with a 30s circuit breaker. Live Redis instance not exercised; optional `redis` package not in the lock file. |
 | 2.4 Durable queue | Actual Vercel Workflow SDK locally exercised instead of adding another queue library. Hosted generated routes/delivery open. |
 | 2.5 Job recovery | SQL dispatch, leases, retries, deadlines, model fencing and reconciliation have local/CI controls. Hosted recovery unverified. |
 | 2.6 Shared durable bytes | Request mode uses PostgreSQL objects with atomic integrity/ownership. Hosted database remains unavailable. |
@@ -35,11 +35,10 @@ IDs refer to the source plan, not the user's separate six remaining-work steps.
 | 5.3 Release materials | Local screenshots/benchmarks exist; live demo and hosted walkthrough absent. |
 | 5.4 Retrieval terminology | README describes cited computed facts. No vector-retrieval claim or embedding dependency introduced. |
 
-Next independent source-plan work is an owner-scoped immutable evidence cache with
-bounded entries, failure fallback and measured hits. Keep database bytes authoritative,
-preserve ownership checks on every hit, and verify erase/invalidation. Redis must
-not become required for inference or a hidden paid resource. Review existing
-response/fragment budgets before adding it.
+The evidence cache is implemented with an in-memory default and an optional Redis
+backend; Redis is never required for inference. Remaining source-plan work is hosted
+delivery (section 3, Vercel or a Supabase-backed alternative) and the deferred optional
+agent loop (section 4).
 
 Capacity and observed-data approval remain separate gates in
 [RELEASE_GATES.md](RELEASE_GATES.md). Reading does not supply payment records,

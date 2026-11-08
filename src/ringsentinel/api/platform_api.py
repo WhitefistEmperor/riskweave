@@ -1,7 +1,9 @@
 """Versioned investigation APIs and owner-scoped execution dispatch."""
 
 import asyncio
+import hashlib
 import hmac
+import json
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Request
@@ -488,7 +490,28 @@ def investigate(
     service: Service,
 ):
     from ringsentinel.platform.analysis import PersistedEvidence
+    from ringsentinel.platform.evidence_cache import cache_key
 
+    provider = request.app.state.summary_provider
+    # Ownership/status and candidate existence are re-checked before any cached answer.
+    run = result_sections.require_candidate(service, principal, run_id, candidate_id)
+    cache = service.evidence_cache
+    key = None
+    if cache.enabled and run.result_checksum:
+        identity = json.dumps(
+            [provider.name, getattr(provider, "model", ""), body.question], separators=(",", ":")
+        )
+        key = cache_key(
+            principal.user_id,
+            run.id,
+            run.result_checksum,
+            "investigator_answer",
+            candidate_id,
+            hashlib.sha256(identity.encode()).hexdigest(),
+        )
+        hit, cached_answer = cache.get_json(key)
+        if hit:
+            return cached_answer
     result = {
         "currency": result_sections.currency(service, principal, run_id),
         "rings": [
@@ -500,6 +523,10 @@ def investigate(
             }
         ],
     }
-    return InvestigatorService(
-        PersistedEvidence(result), request.app.state.summary_provider
-    ).answer(candidate_id, body.question)
+    answer = InvestigatorService(PersistedEvidence(result), provider).answer(
+        candidate_id, body.question
+    )
+    # Provider fallbacks are not cached, so a recovered provider is retried next time.
+    if key is not None and answer.get("warning") is None:
+        cache.set_json(key, answer)
+    return answer

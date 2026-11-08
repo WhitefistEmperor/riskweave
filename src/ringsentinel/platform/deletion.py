@@ -107,6 +107,7 @@ class DeletionService:
             )
             keys = {artifact.storage_key for artifact in artifacts}
             keys.update(run.result_reference for run in runs if run.result_reference)
+            deleted_run_ids = [run.id for run in runs]
             if any(not re.fullmatch(r"[a-f0-9]{32}\.json", key) for key in keys):
                 raise ProductError("INTERNAL_ERROR")
             # A corrupt shared reference must never erase another investigation's bytes.
@@ -141,6 +142,10 @@ class DeletionService:
             session.execute(delete(AnalysisRun).where(AnalysisRun.investigation_id == item.id))
             session.execute(delete(Artifact).where(Artifact.investigation_id == item.id))
             session.execute(delete(Investigation).where(Investigation.id == item.id))
+        # Erased evidence must not outlive the case in any cache (failures are non-fatal).
+        cache = getattr(self.service, "evidence_cache", None)
+        if cache is not None:
+            cache.invalidate_runs(deleted_run_ids)
         # Database commit precedes file removal. Failure/crash leaves retryable work.
         try:
             self.cleanup(keys=keys)

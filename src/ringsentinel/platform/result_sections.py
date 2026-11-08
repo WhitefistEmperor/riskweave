@@ -173,6 +173,38 @@ def row_for(service, run, kind, candidate_id):
         return session.get(ResultSection, (run.id, kind, candidate_id))
 
 
+_MISSING = object()
+
+
+def cached(service, principal, run, kind, candidate_id, load):
+    """Read one immutable section through the owner-scoped evidence cache.
+
+    Callers must already have authorized ``run`` for ``principal``. ``load`` returns
+    ``_MISSING`` for an absent section, which is never cached.
+    """
+    cache = getattr(service, "evidence_cache", None)
+    if cache is None or not cache.enabled or not run.result_checksum:
+        return load()
+    from ringsentinel.platform.evidence_cache import cache_key
+
+    key = cache_key(principal.user_id, run.id, run.result_checksum, kind, candidate_id)
+    hit, found = cache.get_json(key)
+    if hit:
+        return found
+    found = load()
+    if found is not _MISSING:
+        cache.set_json(key, found)
+    return found
+
+
+def _indexed_section(service, principal, run, kind, candidate_id):
+    def load():
+        row = row_for(service, run, kind, candidate_id)
+        return _MISSING if row is None else read(service, run, row)
+
+    return cached(service, principal, run, kind, candidate_id, load)
+
+
 def require_candidate(service, principal, run_id, candidate_id):
     run = authorized(service, principal, run_id)
     if run.candidate_index is None:
@@ -182,10 +214,10 @@ def require_candidate(service, principal, run_id, candidate_id):
         ):
             raise ProductError("NOT_FOUND")
     else:
-        row = row_for(service, run, "candidate", candidate_id)
-        if row is None:
+        candidate = _indexed_section(service, principal, run, "candidate", candidate_id)
+        if candidate is _MISSING:
             raise ProductError("NOT_FOUND")
-        if read(service, run, row).get("candidate_id") != candidate_id:
+        if candidate.get("candidate_id") != candidate_id:
             raise ProductError("INTERNAL_ERROR")
     return run
 
@@ -199,10 +231,9 @@ def value(service, principal, run_id, candidate_id, kind):
             if r["candidate"]["candidate_id"] == candidate_id
         )
         return ring["candidate" if kind == "candidate" else "queries"]
-    row = row_for(service, run, kind, candidate_id)
-    if row is None:
+    result = _indexed_section(service, principal, run, kind, candidate_id)
+    if result is _MISSING:
         raise ProductError("INTERNAL_ERROR")
-    result = read(service, run, row)
     if kind == "candidate" and result.get("candidate_id") != candidate_id:
         raise ProductError("INTERNAL_ERROR")
     return result
@@ -235,10 +266,10 @@ def currency(service, principal, run_id):
         return service.result(principal, run_id).get("currency")
     if not run.candidate_index["currency_present"]:
         return None
-    row = row_for(service, run, "currency", "")
-    if row is None:
+    found = _indexed_section(service, principal, run, "currency", "")
+    if found is _MISSING:
         raise ProductError("INTERNAL_ERROR")
-    return read(service, run, row)
+    return found
 
 
 def index_existing(service, *, writers_stopped=False, limit=100, upgrade_queue=False):
