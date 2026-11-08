@@ -94,7 +94,27 @@ class Database:
             yield session
 
 
-def main() -> None:
+def migration_sql() -> str:
+    """Render every migration as one PostgreSQL script, without any connection."""
+    import io
+
+    output = io.StringIO()
+    config = Config(output_buffer=output, stdout=io.StringIO())
+    config.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
+    command.upgrade(config, "head", sql=True)
+    return output.getvalue()
+
+
+def main(argv: list[str] | None = None) -> None:
+    import sys
+
+    args = sys.argv[1:] if argv is None else argv
+    if args == ["--sql"]:
+        # For SQL consoles (e.g. Supabase): paste the output; no credentials needed.
+        sys.stdout.write(migration_sql())
+        return
+    if args:
+        raise SystemExit("usage: ringsentinel-migrate [--sql]")
     settings = Settings()
     # The documented default database parent is work/; no runtime schema creation.
     Path("work").mkdir(exist_ok=True)

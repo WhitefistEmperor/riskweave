@@ -30,14 +30,21 @@ no client-side pool, statement/lock timeouts applied per transaction, and (port
 | API at runtime (transaction pooler) | `postgresql+psycopg://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require` |
 | Migrations, backup, maintenance (session pooler) | same host, port `5432` |
 
-Run migrations from your machine with the **session** pooler, then lock down:
+Create the tables in **one** of two ways:
 
-```sh
-RINGSENTINEL_DATABASE_URL='<session pooler URL>' uv run --locked ringsentinel-migrate
-```
+- **Easiest (no password on your machine):** open SQL Editor → New query, paste all
+  of [`deploy/supabase/riskweave_schema.sql`](../deploy/supabase/riskweave_schema.sql),
+  and run it once on the empty project.
+- **From your machine** with the **session** pooler:
 
-Then paste `deploy/supabase/riskweave_lockdown.sql` into the SQL editor and run it;
-its final query must return no rows. Repeat both after any future migration.
+  ```sh
+  RINGSENTINEL_DATABASE_URL='<session pooler URL>' uv run --locked ringsentinel-migrate
+  ```
+
+Then paste [`deploy/supabase/riskweave_lockdown.sql`](../deploy/supabase/riskweave_lockdown.sql)
+into the SQL editor and run it; its final query must return no rows. After a
+future migration, apply only the new migration (`ringsentinel-migrate`, or the new
+part of a regenerated `ringsentinel-migrate --sql`) and run the lock-down again.
 
 Local execution mode, backups and other commands that hold the single-executor
 lock refuse the transaction pooler with a clear error; point them at port 5432.
