@@ -3,9 +3,20 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    PlainSerializer,
+    field_validator,
+)
 
-from ringsentinel.platform.models import Status
+from ringsentinel.platform.models import ReviewDisposition, Status
+
+# Serialize financial integers as canonical decimal strings, including nested responses.
+MinorAmount = Annotated[int, Field(ge=0), PlainSerializer(str, return_type=str, when_used="json")]
 
 
 class Contract(BaseModel):
@@ -70,6 +81,25 @@ class InvestigationResponse(Record):
     analysis_metadata: dict[str, JsonValue]
 
 
+class WorklistReviewSummary(Contract):
+    run_id: str
+    candidate_count: int | None
+    assessed: int
+    unreviewed: int | None
+    investigating: int
+    escalated: int
+    dismissed: int
+
+
+class InvestigationPage(Contract):
+    items: list[InvestigationResponse]
+    review_summaries: dict[str, WorklistReviewSummary | None]
+    total: int
+    matched: int
+    offset: int
+    limit: int
+
+
 class ArtifactResponse(Record):
     investigation_id: str
     original_name: str
@@ -78,11 +108,58 @@ class ArtifactResponse(Record):
     checksum: str
 
 
+class UploadBegin(Contract):
+    name: Annotated[str, Field(min_length=1, max_length=200)]
+    size_bytes: Annotated[int, Field(ge=1, le=100_000_000, strict=True)]
+    checksum: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+
+
+class UploadProgress(Contract):
+    id: str
+    investigation_id: str
+    name: str
+    status: Literal["pending", "completed"]
+    size_bytes: int
+    checksum: str
+    chunk_bytes: Literal[2_000_000]
+    chunk_count: int
+    received: list[int]
+    artifact_id: str | None
+
+
+class UploadCancelResponse(Contract):
+    id: str
+    status: Literal["aborted", "expired"]
+
+
 class RunCreate(Contract):
     artifact_id: Annotated[str, Field(pattern=r"^[a-f0-9-]{36}$")]
 
 
+class ResultManifestResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    investigation_id: str
+    encoding: Literal["base64"]
+    content_type: Literal["application/json"]
+    size_bytes: Annotated[int, Field(ge=1, le=500_000_000)]
+    sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    chunk_bytes: Literal[2_000_000]
+    chunk_count: Annotated[int, Field(ge=1, le=250)]
+
+
+class ResultChunkResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    index: Annotated[int, Field(ge=0, le=249)]
+    size_bytes: Annotated[int, Field(ge=1, le=2_000_000)]
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    data: Annotated[str, Field(max_length=2_666_668)]
+
+
 class RunResponse(Record):
+    dispatch_state: Literal["pending", "accepted", "failed"] | None = None
     investigation_id: str
     artifact_id: str
     status: Status
@@ -104,11 +181,54 @@ class CandidateResponse(Contract):
     candidate_id: str
     risk_score: float
     first_suspicious_timestamp: datetime
-    estimated_exposure_minor: int
+    estimated_exposure_minor: MinorAmount
     suspicious_relationships: list[str]
     evidence: dict[str, int | float]
     member_entity_ids: list[str]
     related_event_ids: list[str]
+
+
+class CandidatePageResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    offset: Annotated[int, Field(ge=0, le=500_000_000)]
+    limit: Annotated[int, Field(ge=1, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    next_offset: int | None
+    items: Annotated[list[CandidateResponse], Field(max_length=100)]
+
+
+class QueueSummaryResponse(Contract):
+    candidate_id: Annotated[str, Field(min_length=1, max_length=100)]
+    risk_score: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+    estimated_exposure_minor: MinorAmount
+    member_count: Annotated[int, Field(ge=0, le=500_000_000)]
+    event_count: Annotated[int, Field(ge=0, le=500_000_000)]
+
+
+class QueuePageResponse(CandidatePageResponse):
+    items: Annotated[list[QueueSummaryResponse], Field(max_length=100)]
+
+
+class SectionManifestResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    candidate_id: str
+    section: Literal["candidate", "evidence"]
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    encoding: Literal["base64"]
+    content_type: Literal["application/json"]
+    size_bytes: Annotated[int, Field(ge=1, le=500_000_000)]
+    chunk_bytes: Literal[2_000_000]
+    chunk_count: Annotated[int, Field(ge=1, le=250)]
+
+
+class SectionChunkResponse(ResultChunkResponse):
+    candidate_id: str
+    section: Literal["candidate", "evidence"]
+    section_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
 
 
 class RingMember(Contract):
@@ -136,7 +256,7 @@ class TimelineEvent(Contract):
     event_type: str
     transaction_id: str
     timestamp: datetime
-    amount_minor: int
+    amount_minor: MinorAmount
     status: str
     customer_id: str
     merchant_id: str
@@ -147,14 +267,14 @@ class Refund(Contract):
     refund_event_id: str
     original_transaction_id: str | None
     timestamp: datetime
-    amount_minor: int
+    amount_minor: MinorAmount
     refund_fraction: float | None
     delay_hours: float | None
 
 
 class RefundPatterns(Contract):
     refund_count: int
-    refund_amount_minor: int
+    refund_amount_minor: MinorAmount
     refunds: list[Refund]
 
 
@@ -171,13 +291,13 @@ class TemporalActivity(Contract):
     event_count: int
     payment_count: int
     refund_count: int
-    amount_minor: int
+    amount_minor: MinorAmount
     unique_customers: int
 
 
 class Exposure(Contract):
     candidate_id: str
-    estimated_exposure_minor: int
+    estimated_exposure_minor: MinorAmount
     definition: str
 
 
@@ -186,7 +306,7 @@ class MemberBehavior(Contract):
     event_count: int
     payment_count: int
     refund_count: int
-    total_amount_minor: int
+    total_amount_minor: MinorAmount
     mean_amount_minor: float
     merchant_count: int
     device_count: int
@@ -222,7 +342,19 @@ class ResultsResponse(Contract):
     event_count: int
     entity_count: int
     model_scope: str
+    currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")] | None = None
     rings: list[PersistedRing]
+
+
+class InvestigationDeleteRequest(Contract):
+    confirm_name: Annotated[str, Field(min_length=1, max_length=120)]
+    expected_updated_at: AwareDatetime
+
+
+class InvestigationDeleteResponse(Contract):
+    investigation_id: str
+    status: Literal["deleted"]
+    storage_cleanup: Literal["complete", "pending"]
 
 
 class InvestigatorRequest(Contract):
@@ -234,6 +366,48 @@ class InvestigatorRequest(Contract):
         if not value.strip():
             raise ValueError("Supply a question")
         return value
+
+
+class ReviewRequest(Contract):
+    disposition: ReviewDisposition
+    note: Annotated[str, Field(min_length=1, max_length=2000)]
+    expected_version: Annotated[int, Field(ge=0, strict=True)]
+
+    @field_validator("note")
+    @classmethod
+    def meaningful_note(cls, value: str) -> str:
+        if not value.strip() or any(ord(char) < 32 and char not in "\n\t\r" for char in value):
+            raise ValueError("Supply a review note without control characters")
+        return value.strip()
+
+
+class ReviewAuditResponse(Contract):
+    id: str
+    actor_id: str
+    previous_disposition: ReviewDisposition
+    disposition: ReviewDisposition
+    version: int
+    note: str
+    created_at: datetime
+
+    @field_validator("created_at", mode="after")
+    @classmethod
+    def utc_timestamp(cls, value: datetime) -> datetime:
+        return Record.utc_timestamps(value)
+
+
+class ReviewResponse(Contract):
+    run_id: str
+    candidate_id: str
+    disposition: ReviewDisposition
+    version: int
+    updated_at: datetime | None
+    history: list[ReviewAuditResponse]
+
+    @field_validator("updated_at", mode="after")
+    @classmethod
+    def utc_timestamp(cls, value: datetime | None) -> datetime | None:
+        return Record.utc_timestamps(value) if value else None
 
 
 class Fact(Contract):
@@ -257,3 +431,15 @@ class InvestigatorResponse(Contract):
     sources: list[EvidenceSource]
     limitations: list[str]
     warning: str | None
+
+
+class ResultOverviewResponse(Contract):
+    schema_version: Literal["1"]
+    run_id: str
+    result_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+    threshold: float
+    event_count: Annotated[int, Field(ge=0)]
+    entity_count: Annotated[int, Field(ge=0)]
+    model_scope: str
+    currency: str | None
+    candidate_count: Annotated[int, Field(ge=0)]

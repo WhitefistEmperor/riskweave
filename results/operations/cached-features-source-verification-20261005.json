@@ -1,0 +1,108 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "83e4bb190679173d1d33031f6b803b72ec25b307",
+  "production_ready": false,
+  "runs": [
+    {
+      "id": 37325896012,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37325896012",
+      "event": "push",
+      "source": "83e4bb190679173d1d33031f6b803b72ec25b307",
+      "jobs": [
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 318,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0
+    },
+    {
+      "id": 37325905806,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37325905806",
+      "event": "pull_request",
+      "source": "83e4bb190679173d1d33031f6b803b72ec25b307",
+      "jobs": [
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 318,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0
+    }
+  ],
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "feature_source_sha256": "073855773c7a9880cdb745a503a7260cb92e450dcf63fffb341cf937e2cf31b1",
+  "large_causal_feature_equivalence": {
+    "data_origin": "synthetic-control",
+    "production_ready": false,
+    "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+    "events": 10207,
+    "feature_values": 336831,
+    "all_causal_values_identical": true,
+    "baseline_source": "d37da814bd0e0845a129e90235dd3a20d46bb58d",
+    "feature_source_sha256": "073855773c7a9880cdb745a503a7260cb92e450dcf63fffb341cf937e2cf31b1"
+  },
+  "prior_feature_controls_identical": 5,
+  "prior_worker_input_result_controls_identical": 9,
+  "large_worker_repetitions_identical": 3,
+  "diagnostic_profile": {
+    "baseline_source": "3e0487b054d3811cb40c685bdf6104153b77b863",
+    "profiled_extraction_seconds": 67.0333079,
+    "functions": [
+      {
+        "source_file": "extractor.py",
+        "line": 154,
+        "function": "density",
+        "calls": 10207,
+        "self_seconds": 26.631333700000003,
+        "cumulative_seconds": 39.3459061
+      },
+      {
+        "source_file": "extractor.py",
+        "line": 137,
+        "function": "share",
+        "calls": 12480,
+        "self_seconds": 9.0978227,
+        "cumulative_seconds": 10.6863623
+      },
+      {
+        "source_file": "extractor.py",
+        "line": 274,
+        "function": "<genexpr>",
+        "calls": 3464054,
+        "self_seconds": 11.991141500000001,
+        "cumulative_seconds": 11.991141500000001
+      }
+    ],
+    "capacity_measurement": false
+  },
+  "inventory_bytes": 440911166,
+  "inventory_budget_bytes": 450000000,
+  "limitations": [
+    "Ambient Windows/SQLite child-worker controls; not observed model validity or hosted admission.",
+    "Cache holds one entry per customer; projected adjacency remains quadratic in bits and invalidation is conservative.",
+    "Profiling overhead excluded from before/after unprofiled worker comparisons."
+  ]
+}

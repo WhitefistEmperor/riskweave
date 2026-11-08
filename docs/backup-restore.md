@@ -1,11 +1,19 @@
-# Offline backup and restore
+# Backup and offline restore
 
 Use a private operator shell with existing environment configuration. Snapshots contain sensitive
 data: restrict filesystem permissions, encrypt off-host copies with standard platform tooling,
 keep encryption keys separately, and test restoration regularly. No encryption key or DB password
-belongs in Git or a command argument. This tool does not implement encryption, PITR or scheduling.
+belongs in Git or a command argument. The snapshot command produces plaintext. The separate [age envelope tool](snapshot-encryption.md)
+adds standard encryption; PITR and hosted scheduling remain unimplemented.
 
-## Consistency and backup
+## Default offline backup
+
+For database object storage, case bytes are inside the database backup. Manifests
+record `storage_backend`; restore requires the same backend (older manifests mean
+local storage). The snapshot mutation lock also blocks request-mode claims/writes.
+All replicas must still be stopped. Recover expired request-mode runs through
+authorized status reads rather than starting a local scheduler on that database.
+See [request execution and import](request-execution.md).
 
 1. Block new traffic at the gateway. Stop **all** API replicas, including jobs-disabled writers.
    Graceful shutdown terminates analysis; queued runs remain queued. Inspect safe shutdown logs.
@@ -30,6 +38,39 @@ for PostgreSQL (SQLite's backup API locally), copies opaque JSON objects includi
 and writes `manifest.json` last with sizes and SHA-256 hashes. Database credentials are passed through
 private process environment, never argv or logs. Missing manifest means incomplete: do not restore.
 No existing snapshot is overwritten and failed snapshot data is left for operator inspection.
+
+## Opt-in online PostgreSQL backup
+
+With `RINGSENTINEL_STORAGE_BACKEND=database` and PostgreSQL only, use:
+
+```text
+uv run --locked python -m ringsentinel.platform.backup backup --directory work/backups/online-001 --online-database
+```
+
+Supply the existing private database configuration through the environment. Install matching
+PostgreSQL clients and choose a new private destination outside live storage. Do not combine
+this flag with `--writers-stopped` or use it for restore. SQLite and filesystem storage reject it
+before connecting or creating a destination.
+
+The exporter holds a read-only REPEATABLE READ transaction. It checks the current migration
+and referenced input/completed-result hashes using database object reads in that same transaction,
+exports its PostgreSQL snapshot and passes it to `pg_dump --snapshot`. The exporting transaction
+stays open until the dump completes. Ordinary case/object writes may continue; all metadata and
+object bytes in the dump reflect the same database view. Coordinate schema migrations separately.
+See PostgreSQL's [snapshot lifetime and synchronization](https://www.postgresql.org/docs/17/functions-admin.html#FUNCTIONS-SNAPSHOT-SYNCHRONIZATION)
+and [pg_dump snapshot option](https://www.postgresql.org/docs/17/app-pgdump.html).
+
+The manifest records `consistency=postgres-exported-snapshot` and is written last. `created_at`
+is completion time, not a measured recovery point. Integrity verification reads each referenced
+object in full; this is not a bounded-memory or hosted-capacity claim. Failed dumps leave no
+completion manifest. Existing destinations are never overwritten. Encryption/off-host transfer
+remain separate steps, and no schedule or hosted recovery objective is established by this CLI.
+
+Online backups can contain in-flight runs, upload sessions, leases and dispatch rows. Restore
+requires stopped writers and a new empty target, followed by expiry/lease/deadline reconciliation
+for the configured execution mode. Do not blindly resume old external workflow deliveries or
+claim exactly-once recovery. Review erasures/retention that committed after the snapshot before
+cutover: an older snapshot can contain cases removed from the current database.
 
 ## Restore order
 
@@ -73,7 +114,19 @@ SQLite round-trip tests restored actual generated input, completed result, owner
 checksums and migration state into a new database/storage directory. Tests reject active executor,
 missing acknowledgement, overwrite, checksum corruption and traversal without damaging source data.
 The test result payload is explicitly a small lifecycle fixture, not a new detector benchmark.
-PostgreSQL executable paths are implemented but **not live tested on this host**: Docker, Podman,
-psql, pg_dump and pg_restore are absent. Do not treat the SQLite test as PostgreSQL verification.
+PostgreSQL executable paths are **not live tested on this Windows host**: Docker,
+Podman, psql, pg_dump and pg_restore are absent. Linux CI now runs the actual
+snapshot and restore code against PostgreSQL 17 with matching clients in ephemeral
+containers, for both local and database object storage. The drill creates unique
+test databases under a fixed loopback-only CI role and removes only those databases.
+It verifies input bytes, result checksum, owner isolation, repeated migration and
+existing-target rejection. Consult the exact source commit's backend CI result
+before claiming that drill passed. Its small result is a generated lifecycle
+fixture, not a new detector evaluation or a hosted production restore drill.
+
+The online PostgreSQL control commits case/object erasure and a new case/upload through another
+connection after snapshot export but before `pg_dump`. The fresh restored database must retain
+the original case, exact input/result bytes and owner isolation, while the live source contains
+only the new case. It is skipped on this Windows host; exact-source Linux CI is required.
 
 Reference: [PostgreSQL SQL dump consistency](https://www.postgresql.org/docs/17/backup-dump.html).

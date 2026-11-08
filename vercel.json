@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "functions": {
+    "**/*.py": {
+      "maxDuration": 300,
+      "excludeFiles": "{frontend/**,tests/**,docs/**,work/**,outputs/**,data/**,dist/**,.git/**,.github/**,.venv/**,scripts/**,**/__pycache__/**}"
+    }
+  },
+  "crons": [
+    { "path": "/api/v1/operations/reconcile-delivery", "schedule": "0 0 * * *" }
+  ]
+}

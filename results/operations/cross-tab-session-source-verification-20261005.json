@@ -1,0 +1,67 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "f36eb3184936867171fd6ac58bca10938ec483f2",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37318693372,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37318693372",
+      "source": "f36eb3184936867171fd6ac58bca10938ec483f2",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 306,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0
+    },
+    {
+      "event": "pr",
+      "id": 37318701787,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37318701787",
+      "source": "f36eb3184936867171fd6ac58bca10938ec483f2",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 306,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0
+    }
+  ],
+  "scope": "Actual BroadcastChannel across two same-origin tabs and actual oidc-client-ts per-tab user storage on an isolated production frontend, synthetic tokens/fixture private API responses. Both private subtrees/user stores clear before paused provider discovery completes; provider failure keeps both hidden. Late initial user completion cannot reactivate an invalidated boundary.",
+  "limitations": [
+    "Browser policy can disable channels; synchronization is not claimed there.",
+    "Closed/suspended tabs and real issuer/JWT/server-token revocation/HTTPS deployment remain unverified."
+  ],
+  "local": {
+    "lint": "passed",
+    "typecheck": "passed",
+    "production_browser": "Not attempted after previous local production server launch was rejected by automatic review; CI provides exact-source proof."
+  },
+  "inventory_bytes": 440875932,
+  "inventory_budget_bytes": 450000000
+}

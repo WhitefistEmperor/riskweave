@@ -1,0 +1,54 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "b97cde2427ca37dba13ce626f2882767d29b38f8",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37298832782,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37298832782",
+      "source": "b97cde2427ca37dba13ce626f2882767d29b38f8",
+      "jobs": [
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 304,
+      "browser_tests_passed": 80,
+      "audit_vulnerabilities": 0
+    },
+    {
+      "event": "pr",
+      "id": 37298839105,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37298839105",
+      "source": "b97cde2427ca37dba13ce626f2882767d29b38f8",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 304,
+      "browser_tests_passed": 80,
+      "audit_vulnerabilities": 0
+    }
+  ],
+  "scope": "Driver-only change; actual generated strict-ingestion/worker/native-fragment/selected-evidence and local real API browser controls pass. Hosted deployment/model validation remains incomplete."
+}

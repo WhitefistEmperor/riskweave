@@ -1,0 +1,62 @@
+{
+  "data_origin": "synthetic-control",
+  "production_ready": false,
+  "before_feature_source_sha256": "726f622c8b8f136c9edd0b11e5a8a5f6828239d09355fd4bf23a0fa6597d8877",
+  "after_feature_source_sha256": "ccfd766d6659e7a601684a76c84256a4b1b56a89c520efac15a4019ab7ab0972",
+  "driver_sha256": "ebcfe7cc6f4a30ae2942286df42832bf81fdaeb4bca9c169654323da93001fdb",
+  "all_feature_vectors_identical": true,
+  "model_artifact": "unchanged",
+  "scope": "Single local extraction per size/shape; not hosted capacity or observed accuracy",
+  "controls": [
+    {
+      "requested_payments": 1000,
+      "dense": false,
+      "mixed": false,
+      "events": 1021,
+      "input_sha256": "cda130dbde94f575ca77e35b75b50077631542d6453918c0b5f29d635740f17c",
+      "feature_sha256": "9aab8faef2b1f1b78af0512bb534779abc898f6f210257cbd8253d9becd06384",
+      "before_seconds": 0.11329060001298785,
+      "after_seconds": 0.09729279996827245
+    },
+    {
+      "requested_payments": 250,
+      "dense": true,
+      "mixed": false,
+      "events": 257,
+      "input_sha256": "eb178fd6f3734cbdc5b1a441be8df6541cb854424908154101bdfe532cb376e6",
+      "feature_sha256": "3e71f6b62e824cdf4fa0a01a8b5ae7b3a58af8bb39006ba7fca2ed0d7d744892",
+      "before_seconds": 0.1209092999342829,
+      "after_seconds": 0.03498229989781976
+    },
+    {
+      "requested_payments": 500,
+      "dense": true,
+      "mixed": false,
+      "events": 512,
+      "input_sha256": "f32cbe32d618090d48d6272f52f4798b435971daba46adebc09c5734f0ecf45a",
+      "feature_sha256": "245374cbb2779ac0f5917d9cfc49bd2e40bbd18f71274a4145bea68b25bb1915",
+      "before_seconds": 0.47514250013045967,
+      "after_seconds": 0.09945390000939369
+    },
+    {
+      "requested_payments": 250,
+      "dense": false,
+      "mixed": true,
+      "events": 257,
+      "input_sha256": "136a0a7a4f5e23fff27c67ded0359ba8e528313252524ebb1402f22654e5d552",
+      "feature_sha256": "f1f3ab13a1f77b45a376e871a63e8f0eb421383f44102f87e25fe5da4a3b3f68",
+      "before_seconds": 1.2460660000797361,
+      "after_seconds": 0.046185199869796634
+    },
+    {
+      "requested_payments": 500,
+      "dense": false,
+      "mixed": true,
+      "events": 512,
+      "input_sha256": "d2bdfe3ea33a2b44e9194daa1ace022d8b4dedea2c3ff8f6fcc9f7412edac900",
+      "feature_sha256": "78850c4bd73fb6e6d00b49f94edd831f30458c416ed97c11ac38fcb313f258ad",
+      "before_seconds": 8.106216500047594,
+      "after_seconds": 0.1384533999953419
+    }
+  ]
+}

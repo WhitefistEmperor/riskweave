@@ -1,27 +1,68 @@
 """Explicit migration entrypoint and short-lived transaction factory."""
 
+from contextlib import contextmanager
 from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, make_url, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from ringsentinel.platform.settings import Settings
+
+SESSION_TIMEOUTS = "-c statement_timeout=5000 -c lock_timeout=5000"
+
+
+def pooler_mode(url: str) -> str | None:
+    """Detect an external Supabase (Supavisor) pooler from the connection URL.
+
+    Supabase's direct database host is IPv6-only, so serverless hosts such as Vercel
+    connect through the pooler: port 6543 is transaction mode, 5432 session mode.
+    """
+    if not url.startswith("postgresql"):
+        return None
+    parsed = make_url(url)
+    if not (parsed.host or "").endswith(".pooler.supabase.com"):
+        return None
+    return "transaction" if parsed.port == 6543 else "session"
 
 
 def make_engine(url: str):
     connect_args = {}
+    options: dict = {"pool_pre_ping": True}
+    mode = pooler_mode(url)
     if url.startswith("postgresql"):
-        connect_args = {
-            "connect_timeout": 5,
-            "options": "-c statement_timeout=5000 -c lock_timeout=5000",
-        }
-    engine = create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+        connect_args = {"connect_timeout": 5, "options": SESSION_TIMEOUTS}
+    if mode is not None:
+        # The external pooler owns pooling; holding idle connections per serverless
+        # instance would exhaust its small client allowance.
+        options = {"poolclass": NullPool}
+        # Poolers may reject startup options; apply the same limits per transaction.
+        connect_args = {"connect_timeout": 5}
+    if mode == "transaction":
+        # Transaction pooling shares server connections between clients, so
+        # server-side prepared statements are unsafe.
+        connect_args["prepare_threshold"] = None
+    engine = create_engine(url, connect_args=connect_args, **options)
+    if mode is not None:
+
+        @event.listens_for(engine, "begin")
+        def transaction_timeouts(connection):
+            # Scoped to this transaction, so nothing leaks to another pooled client.
+            connection.exec_driver_sql("SET LOCAL statement_timeout = 5000")
+            connection.exec_driver_sql("SET LOCAL lock_timeout = 5000")
+
     if engine.dialect.name == "sqlite":
 
         @event.listens_for(engine, "connect")
         def sqlite_constraints(connection, _):
+            connection.create_function(
+                "riskweave_lower",
+                1,
+                lambda value: value.lower() if isinstance(value, str) else value,
+                deterministic=True,
+            )
             connection.execute("PRAGMA foreign_keys=ON")
             connection.execute("PRAGMA busy_timeout=10000")
 
@@ -29,6 +70,8 @@ def make_engine(url: str):
 
 
 class Database:
+    revision = "0010"
+
     def __init__(self, url: str):
         self.engine = make_engine(url)
         self.session = sessionmaker(self.engine, expire_on_commit=False)
@@ -40,8 +83,38 @@ class Database:
             config.attributes["connection"] = connection
             command.upgrade(config, "head")
 
+    @contextmanager
+    def write(self):
+        """Serialize admission and mutations across processes and hosts."""
+        with self.session.begin() as session:
+            if self.engine.dialect.name == "sqlite":
+                session.connection().exec_driver_sql("BEGIN IMMEDIATE")
+            else:
+                session.execute(text("SELECT pg_advisory_xact_lock(593002)"))
+            yield session
 
-def main() -> None:
+
+def migration_sql() -> str:
+    """Render every migration as one PostgreSQL script, without any connection."""
+    import io
+
+    output = io.StringIO()
+    config = Config(output_buffer=output, stdout=io.StringIO())
+    config.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
+    command.upgrade(config, "head", sql=True)
+    return output.getvalue()
+
+
+def main(argv: list[str] | None = None) -> None:
+    import sys
+
+    args = sys.argv[1:] if argv is None else argv
+    if args == ["--sql"]:
+        # For SQL consoles (e.g. Supabase): paste the output; no credentials needed.
+        sys.stdout.write(migration_sql())
+        return
+    if args:
+        raise SystemExit("usage: ringsentinel-migrate [--sql]")
     settings = Settings()
     # The documented default database parent is work/; no runtime schema creation.
     Path("work").mkdir(exist_ok=True)

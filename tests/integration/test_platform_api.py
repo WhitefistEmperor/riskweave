@@ -292,7 +292,19 @@ def test_production_fails_closed_and_cors_is_restricted(settings):
         assert "Access-Control-Allow-Origin" not in denied.headers
 
 
-def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_bytes):
+@pytest.mark.parametrize("unlabeled", [False, True])
+def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_bytes, unlabeled):
+    if unlabeled:
+        original = json.loads(dataset_bytes)
+        for event in original["events"]:
+            event["currency"] = "JPY"
+        dataset_bytes = json.dumps(
+            {
+                "schema_version": "payments-v1",
+                "entities": original["entities"],
+                "events": original["events"],
+            }
+        ).encode()
     settings.jobs_enabled = True
     application = create_app(settings=settings)
     with TestClient(application) as client:
@@ -318,6 +330,9 @@ def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_by
         assert run["started_at"].endswith("Z") and run["completed_at"].endswith("Z")
         result = client.get(f"/api/v1/runs/{run_id}/results")
         assert result.status_code == 200, result.text
+        assert result.json()["currency"] == ("JPY" if unlabeled else "INR")
+        if unlabeled:
+            assert "non-INR" in result.json()["model_scope"]
         rings = client.get(f"/api/v1/runs/{run_id}/rings").json()
         assert rings, "The generated known scenario sample should yield measured candidates"
         candidate_id = rings[0]["candidate_id"]
@@ -330,6 +345,17 @@ def test_real_http_scheduler_completion_evidence_and_reopen(settings, dataset_by
         assert answer.status_code == 200, answer.text
         assert answer.json()["statements"]
         assert answer.json()["provider"] == "deterministic_evidence_fallback"
+        exposure_answer = client.post(
+            f"{prefix}/investigate", json={"question": "How much exposure?"}
+        )
+        assert exposure_answer.status_code == 200
+        amount_facts = [
+            fact["text"]
+            for fact in exposure_answer.json()["statements"]
+            if fact["query"] in {"calculate_exposure", "get_refund_patterns"}
+        ]
+        assert len(amount_facts) == 2
+        assert all(f"{'JPY' if unlabeled else 'INR'} minor units" in fact for fact in amount_facts)
         assert_error(client.get(f"/api/v1/runs/{run_id}/rings/missing"), "NOT_FOUND", 404)
         original_result = result.json()
     settings.jobs_enabled = False
@@ -363,3 +389,47 @@ def test_real_http_scheduler_failure_is_pollable(settings, dataset_bytes):
         assert run["error_message_safe"] == "Analysis exceeded its execution time limit."
         assert client.get(f"/api/v1/investigations/{inv}").json()["status"] == "failed"
         assert_error(client.get(f"/api/v1/runs/{run_id}/results"), "CONFLICT", 409)
+
+
+def test_worklist_page_bounds_search_and_owner_isolation(client):
+    from ringsentinel.platform.models import Investigation, Status
+
+    names = ["Other case " + str(i) for i in range(11)] + ["Needle %_ Case", "needle final"]
+    names[0] = "\u00c9vidence review"
+    ids = []
+    for name in names:
+        response = client.post("/api/v1/investigations", json={"name": name})
+        ids.append(response.json()["id"])
+    client.post(
+        "/api/v1/investigations",
+        json={"name": "Needle hidden"},
+        headers={"X-Development-User": "other-owner"},
+    )
+    with client.app.state.platform.database.write() as session:
+        session.get(Investigation, ids[-1]).status = Status.FAILED
+    first = client.get("/api/v1/investigations/page").json()
+    second = client.get("/api/v1/investigations/page?offset=10").json()
+    assert first["total"] == first["matched"] == 13
+    assert len(first["items"]) == 10 and len(second["items"]) == 3
+    assert len({item["id"] for item in first["items"] + second["items"]}) == 13
+    filtered = client.get(
+        "/api/v1/investigations/page", params={"search": " NEEDLE ", "status": "failed"}
+    ).json()
+    assert filtered["total"] == 13 and filtered["matched"] == 1
+    assert [item["id"] for item in filtered["items"]] == [ids[-1]]
+    literal = client.get("/api/v1/investigations/page", params={"search": "%_"}).json()
+    assert literal["matched"] == 1 and literal["items"][0]["id"] == ids[-2]
+    assert (
+        client.get("/api/v1/investigations/page", params={"search": ids[-1]}).json()["matched"] == 1
+    )
+    unicode_match = client.get(
+        "/api/v1/investigations/page", params={"search": "\u00e9VIDENCE"}
+    ).json()
+    assert unicode_match["matched"] == 1 and unicode_match["items"][0]["id"] == ids[0]
+    combined = first["items"] + second["items"]
+    assert combined == sorted(
+        combined, key=lambda item: (item["updated_at"], item["id"]), reverse=True
+    )
+    assert client.get("/api/v1/investigations/page?offset=100").json()["items"] == []
+    for params in ({"limit": 101}, {"offset": -1}, {"search": "x" * 121}, {"status": "unknown"}):
+        assert client.get("/api/v1/investigations/page", params=params).status_code == 422

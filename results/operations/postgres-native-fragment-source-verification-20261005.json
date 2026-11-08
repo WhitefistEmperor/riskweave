@@ -1,0 +1,54 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "bbfa9a933e25ab04fea298388184cb072defc923",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37299858449,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37299858449",
+      "source": "bbfa9a933e25ab04fea298388184cb072defc923",
+      "jobs": [
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 306,
+      "browser_tests_passed": 80,
+      "audit_vulnerabilities": 0
+    },
+    {
+      "event": "pr",
+      "id": 37299863805,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37299863805",
+      "source": "bbfa9a933e25ab04fea298388184cb072defc923",
+      "jobs": [
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 306,
+      "browser_tests_passed": 80,
+      "audit_vulnerabilities": 0
+    }
+  ],
+  "scope": "Actual PostgreSQL17 generated two-fragment full-result/evidence integrity in both local-object and database-object storage; cached normal release model/actual analysis engine and strict ingestion. Individual reads bounded, whole reads forbidden, another owner denied before storage access. Functional proof, not database timing/peak memory/concurrency/hosted admission."
+}

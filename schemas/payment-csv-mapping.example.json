@@ -1,0 +1,32 @@
+{
+  "schema_version": "payment-csv-mapping-v1",
+  "mapping_version": "synthetic-control.1",
+  "data_origin": "synthetic-control",
+  "authorization_confirmed": true,
+  "delimiter": ",",
+  "entity_columns": {
+    "created_at": "created_at",
+    "entity_id": "entity_id",
+    "entity_type": "entity_type"
+  },
+  "event_columns": {
+    "address_id": "address_id",
+    "amount_minor": "amount_minor",
+    "card_id": "card_id",
+    "channel": "channel",
+    "currency": "currency",
+    "customer_id": "customer_id",
+    "device_id": "device_id",
+    "event_id": "event_id",
+    "event_type": "event_type",
+    "ip_id": "ip_id",
+    "merchant_bank_account_id": "merchant_bank_account_id",
+    "merchant_id": "merchant_id",
+    "original_transaction_id": "original_transaction_id",
+    "payment_method": "payment_method",
+    "retry_count": "retry_count",
+    "status": "status",
+    "timestamp": "timestamp",
+    "transaction_id": "transaction_id"
+  }
+}

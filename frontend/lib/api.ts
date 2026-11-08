@@ -1,3 +1,4 @@
+import type { MinorAmount } from '@/lib/exact-money';
 import { apiRequest } from '@/lib/client';
 
 export type Metric = { mean: number; std: number };
@@ -134,12 +135,74 @@ export async function loadConsoleData(): Promise<ConsoleData> {
   ]);
   return { overview, benchmark, simulation, candidates };
 }
-export const money = (minor: number) =>
-  new Intl.NumberFormat('en-IN', {
+const currencies = new Set(Intl.supportedValuesOf('currency'));
+// SIX ISO 4217 List One, published 2026-09-17: these codes have no minor unit.
+const unscaledCurrencies = new Set([
+  'XAG',
+  'XAU',
+  'XBA',
+  'XBB',
+  'XBC',
+  'XBD',
+  'XDR',
+  'XPD',
+  'XPT',
+  'XSU',
+  'XTS',
+  'XUA',
+  'XXX',
+]);
+export const money = (minor: MinorAmount, currency: string | null = 'INR') => {
+  if (typeof minor === 'number' && !Number.isSafeInteger(minor))
+    throw new RangeError('Money requires an exact integer amount.');
+  if (typeof minor === 'string' && !/^-?(0|[1-9][0-9]*)$/.test(minor))
+    throw new RangeError('Money requires a canonical decimal integer.');
+  const amount = BigInt(minor);
+  if (
+    !currency ||
+    !currencies.has(currency) ||
+    unscaledCurrencies.has(currency)
+  )
+    return `${amount.toLocaleString('en-GB')} ${currency ?? 'unknown-currency'} minor units`;
+  const format = new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-GB', {
     style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(minor / 100);
+    currency,
+    currencyDisplay: 'code',
+  });
+  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
+  const scale = BigInt(10) ** BigInt(digits);
+  const magnitude = amount < BigInt(0) ? -amount : amount;
+  const whole = magnitude / scale;
+  // -0 preserves the sign for negative amounts smaller than one major unit.
+  const signedWhole =
+    amount < BigInt(0) ? (whole === BigInt(0) ? -0 : -whole) : whole;
+  const fraction = (magnitude % scale).toString().padStart(digits, '0');
+  return format
+    .formatToParts(signedWhole)
+    .map((part) => (part.type === 'fraction' ? fraction : part.value))
+    .join('');
+};
+/** Statistical estimates may be fractional; never use for recorded payments. */
+export const approximateMoney = (
+  minor: number,
+  currency: string | null = 'INR',
+) => {
+  if (!Number.isFinite(minor))
+    throw new RangeError('A finite estimate is required.');
+  if (
+    !currency ||
+    !currencies.has(currency) ||
+    unscaledCurrencies.has(currency)
+  )
+    return `Approx. ${minor.toLocaleString('en-GB')} ${currency ?? 'unknown-currency'} minor units`;
+  const format = new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-GB', {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'code',
+  });
+  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
+  return `Approx. ${format.format(minor / 10 ** digits)}`;
+};
 export const clock = (value: string) =>
   new Date(value).toLocaleTimeString('en-GB', {
     timeZone: 'UTC',

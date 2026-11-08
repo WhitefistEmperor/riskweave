@@ -59,6 +59,9 @@ class LocalJobExecutor:
             self.owns_lease = False
 
     def _loop(self):
+        from ringsentinel.platform.deletion import DeletionService
+
+        next_cleanup = 0.0
         while not self.stopping.wait(0.25):
             try:
                 self.lease.check()
@@ -67,6 +70,12 @@ class LocalJobExecutor:
                 self.stopping.set()
                 return
             try:
+                if time.monotonic() >= next_cleanup:
+                    next_cleanup = time.monotonic() + 60
+                    try:
+                        DeletionService(self.service).cleanup()
+                    except Exception:
+                        logger.error(json.dumps({"event": "storage_cleanup_unavailable"}))
                 run_id = self.service.claim()
                 if run_id:
                     self.execute(run_id)
@@ -80,8 +89,18 @@ class LocalJobExecutor:
         environment = dict(os.environ)
         environment["RINGSENTINEL_DATABASE_URL"] = settings.database_url.get_secret_value()
         environment["RINGSENTINEL_STORAGE_ROOT"] = str(settings.storage_root.resolve())
+        environment["RINGSENTINEL_STORAGE_BACKEND"] = settings.storage_backend
+        environment["RINGSENTINEL_EXECUTION_MODE"] = settings.execution_mode
         environment["RINGSENTINEL_ENVIRONMENT"] = "test"
         environment["RINGSENTINEL_AUTH_MODE"] = "disabled"
+        if settings.model_artifact_path:
+            environment["RINGSENTINEL_MODEL_ARTIFACT_PATH"] = str(
+                settings.model_artifact_path.resolve()
+            )
+            environment["RINGSENTINEL_MODEL_ARTIFACT_SHA256"] = settings.model_artifact_sha256
+        else:
+            environment.pop("RINGSENTINEL_MODEL_ARTIFACT_PATH", None)
+            environment.pop("RINGSENTINEL_MODEL_ARTIFACT_SHA256", None)
         environment["RINGSENTINEL_STORAGE_LIMIT_BYTES"] = str(settings.storage_limit_bytes)
         environment["RINGSENTINEL_RESULT_LIMIT_BYTES"] = str(settings.result_limit_bytes)
         environment["RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS"] = str(
@@ -143,3 +162,30 @@ class LocalJobExecutor:
                 }
             )
         )
+
+
+class RequestJobExecutor(LocalJobExecutor):
+    """A caller executes one persisted claim; no scheduler survives the response."""
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def execute_owned(self, principal, run_id: str):
+        from ringsentinel.platform.models import Status
+
+        if not self.service.settings.jobs_enabled:
+            from ringsentinel.platform.errors import ProductError
+
+            raise ProductError("NOT_READY")
+        self.service.run(principal, run_id)  # Authorize before recovery/claim/execution.
+        self.service.expire_deadlines()
+        claimed = self.service.claim(run_id, principal)
+        if claimed:
+            self.execute(claimed)
+        run = self.service.run(principal, run_id)
+        if run.status not in {Status.QUEUED, Status.RUNNING, Status.COMPLETED, Status.FAILED}:
+            raise RuntimeError("Invalid execution state")
+        return run

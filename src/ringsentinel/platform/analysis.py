@@ -3,10 +3,13 @@
 from typing import Protocol
 
 from ringsentinel.api.runtime import DemoRuntime
+from ringsentinel.data.ingestion import PaymentDataset, single_currency
 from ringsentinel.data.schema import DatasetBundle
 from ringsentinel.detection.candidates import generate_ring_candidates
 from ringsentinel.features.extractor import extract_event_features
 from ringsentinel.investigation.evidence import RingEvidenceService
+from ringsentinel.models.artifact import load_artifact
+from ringsentinel.platform.settings import Settings
 
 EVIDENCE_QUERIES = (
     "get_candidate_ring",
@@ -26,7 +29,7 @@ EVIDENCE_QUERIES = (
 
 
 class AnalysisEngine(Protocol):
-    def analyze(self, bundle: DatasetBundle) -> dict: ...
+    def analyze(self, bundle: DatasetBundle | PaymentDataset) -> dict: ...
 
 
 class Phase3AnalysisEngine:
@@ -36,9 +39,15 @@ class Phase3AnalysisEngine:
     This is a synthetic-trained detector, NOT a calibrated real-payment risk model.
     """
 
-    def analyze(self, bundle: DatasetBundle) -> dict:
-        runtime = DemoRuntime()
-        model, threshold = runtime.model_and_threshold
+    def analyze(self, bundle: DatasetBundle | PaymentDataset) -> dict:
+        currency = single_currency(bundle)
+        settings = Settings()
+        if settings.model_artifact_path:
+            model, threshold = load_artifact(
+                settings.model_artifact_path, settings.model_artifact_sha256
+            )
+        else:
+            model, threshold = DemoRuntime().model_and_threshold
         features = extract_event_features(bundle)
         scores = dict(
             zip(features.event_ids, map(float, model.predict_proba(features)), strict=True)
@@ -50,7 +59,9 @@ class Phase3AnalysisEngine:
             "threshold": threshold,
             "event_count": len(bundle.events),
             "entity_count": len(bundle.entities),
-            "model_scope": "synthetic-trained; uncalibrated; analyst review required",
+            "currency": currency,
+            "model_scope": "synthetic-trained on INR amounts; uncalibrated; analyst review required"
+            + ("; non-INR amount distribution has not been validated" if currency != "INR" else ""),
             "rings": [
                 {
                     "candidate": evidence.get_candidate_ring(candidate.candidate_id),
@@ -68,6 +79,7 @@ class PersistedEvidence:
     """Investigator query facade over already-computed immutable run evidence."""
 
     def __init__(self, result: dict):
+        self.currency = result.get("currency")
         self.rings = {
             ring["candidate"]["candidate_id"]: ring["queries"] for ring in result["rings"]
         }

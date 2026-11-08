@@ -9,6 +9,11 @@ rings, and makes the relationships, timeline, and financial exposure reviewable.
 **Evidence, not verdicts.** This is a working local analyst product with a synthetic-trained
 detector—not a real-payment-validated fraud service. No GNN or paid API key is required.
 
+Product completion work now adds unlabeled `payments-v1` ingestion, a build-owned
+model artifact and configurable OIDC browser sign-in. See [current progress and
+deployment gates](docs/production-progress.md), [payment input](docs/payment-ingestion.md),
+[CSV preparation](docs/csv-payment-mapping.md) and [private temporal evaluation](docs/real-data-evaluation.md).
+
 Previously branded RingSentinel. The internal `ringsentinel` package, CLI commands,
 configuration names, API paths, and historical benchmark artifacts are unchanged.
 
@@ -25,6 +30,8 @@ configuration names, API paths, and historical benchmark artifacts are unchanged
   and revisit saved findings with input/result checksums and run history.
 - **Inspect evidence:** explore explicit network links, shared resources, merchant
   relationships, event timelines, and candidate-associated exposure.
+- **Record analyst decisions:** save run-scoped dispositions and notes with audit
+  history, revision conflicts and safe submission retry. See [analyst review](docs/analyst-review.md).
 - **Ask grounded questions:** the investigator cites computed facts. An optional LLM can
   select/order those facts; it cannot invent evidence or change detection decisions.
 - **Compare simpler approaches:** a separate demo/replay workspace includes measured
@@ -65,14 +72,16 @@ computed graph/event information. The **investigator** explains that evidence us
 server-rendered statements—not free-form model-written findings.
 
 **Stack:** Python, FastAPI, Pydantic, scikit-learn, NetworkX, SQLAlchemy/Alembic;
-React/TypeScript, Vinext, Tailwind/shadcn, Cytoscape; pytest, Playwright, Ruff, Oxlint.
-Local startup uses SQLite and filesystem storage. PostgreSQL support exists, but live
-PostgreSQL/container verification remains outstanding. See [architecture](docs/architecture.md).
+React/TypeScript, Next.js, Tailwind/shadcn, Cytoscape; pytest, Playwright, Ruff, Oxlint.
+Local startup uses SQLite and filesystem storage. Linux CI also verifies PostgreSQL 17,
+container inference and backup/restore. Actual managed hosting, identity and capacity
+still require verification. See [current progress](docs/production-progress.md).
 
 ## Quick start
 
 Prerequisites: a repository checkout, **Python 3.11+**, **uv**, and **Node.js 22.13+ with npm**.
-The latest local verification used Python 3.14.6 and Node.js 24.19. Run from the repository root.
+Current backend verification uses Python 3.13.14; the deployment entry targets Python 3.13.
+Run from the repository root. See the locked dependencies and frontend engine requirements.
 
 **Terminal 1 — install, migrate, and start the backend:**
 
@@ -107,8 +116,9 @@ choose another output filename. First analysis may take tens of seconds on a lap
 No `.env` or API key is needed. Defaults use local development identity, SQLite at
 `work/ringsentinel.db`, and objects at `work/storage`. Keep both servers on loopback.
 `.env.example` documents settings but is **not automatically loaded**; pre-existing shell
-overrides still apply. Ingestion accepts a complete **DatasetBundle JSON**, not arbitrary CSV
-or a single exported table. See [data contract](docs/data-model.md).
+overrides still apply. Ingestion accepts **payments-v1 JSON** for unlabeled observed
+payments or a synthetic **DatasetBundle JSON**. Arbitrary CSV is not supported.
+See [payment input](docs/payment-ingestion.md) and [synthetic data contract](docs/data-model.md).
 
 For build/preview commands, browser dependencies, and troubleshooting, see
 [local setup](docs/quick-start.md). Do not expose development identity to a network.
@@ -174,9 +184,11 @@ to keep your presentation worklist uncluttered. See [setup details](docs/quick-s
   purchase value for the same original payment; synthetic expected-loss rates are assumptions.
 - The investigator cannot establish model causality from an observed link. Default mode is
   visibly deterministic; optional paid-provider integration has not been live-verified.
-- This is a single-host/local-storage foundation, not production approval. JWT verification
-  is implemented, but real identity-gateway/TLS integration and live infrastructure checks
-  remain unverified. Vinext is beta. See [Phase 5C verification and gates](docs/phase5c-final.md).
+- Local and database-backed execution are implemented, including optional managed Workflow
+  delivery. This does not establish production approval. JWT verification is implemented,
+  but real identity-provider/TLS integration and hosted infrastructure checks
+  remain unverified. See [Vercel deployment](docs/vercel-deployment.md) and
+  [Phase 5C verification and gates](docs/phase5c-final.md).
 
 ## Repository guide
 

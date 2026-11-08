@@ -1,0 +1,67 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "00037c46aa89d732bf1d4491ca15450780ee3e24",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37316980603,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37316980603",
+      "source": "00037c46aa89d732bf1d4491ca15450780ee3e24",
+      "jobs": [
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 306,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 3,
+      "audit_vulnerabilities": 0
+    },
+    {
+      "event": "pr",
+      "id": 37316989971,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37316989971",
+      "source": "00037c46aa89d732bf1d4491ca15450780ee3e24",
+      "jobs": [
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 306,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 3,
+      "audit_vulnerabilities": 0
+    }
+  ],
+  "scope": "Private investigation client subtree unmounts on actual oidc-client-ts expiry/user-unloaded and before provider sign-out. Separate production-build browser controls use actual client storage/timers with synthetic tokens/fixture API bodies; no hosted issuer/JWT/revocation/authentication claim.",
+  "local": {
+    "focused_development_browser_passed": 3,
+    "duration_seconds": 24.0,
+    "lint": "passed",
+    "typecheck": "passed",
+    "isolated_production_build": "passed",
+    "production_test_server_launch": "automatic approval review rejected: blocked by policy; not retried through alternate route"
+  },
+  "inventory_bytes": 440873685,
+  "inventory_budget_bytes": 450000000,
+  "inventory_scope": "Repository production dependency/model inventory; actual hosted bundles unverified."
+}

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ApiError } from '@/lib/client';
+import type { UploadProgress } from '@/lib/upload-transport';
 import {
   platformApi,
   pollRun,
@@ -22,9 +24,16 @@ export function useInvestigation(
   const [run, setRun] = useState<AnalysisRun | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<unknown>(null);
-  const [busy, setBusy] = useState<'upload' | 'start' | null>(null);
+  const [busy, setBusy] = useState<'upload' | 'discard' | 'start' | null>(null);
+  const [uploadStage, setUploadStage] = useState<UploadProgress | null>(null);
   const [attempt, setAttempt] = useState(0);
   const pendingStart = useRef<{ artifactId: string; key: string } | null>(null);
+  const pendingUpload = useRef<{
+    name: string;
+    size: number;
+    modified: number;
+    key: string;
+  } | null>(null);
   const inFlight = useRef(false);
   const upsertRun = (value: AnalysisRun) =>
     setRuns((history) =>
@@ -39,10 +48,12 @@ export function useInvestigation(
       platformApi.investigation(investigationId, controller.signal),
       platformApi.artifacts(investigationId, controller.signal),
       platformApi.runs(investigationId, controller.signal),
+      platformApi.pendingUploads(investigationId, controller.signal),
     ])
-      .then(([item, files, history]) => {
+      .then(([item, files, history, uploads]) => {
         if (controller.signal.aborted) return;
         setRecord(item);
+        setUploadStage(uploads[0] ?? null);
         setArtifacts(files);
         setArtifactId((current) => current || files.at(-1)?.id || '');
         const sorted = [...history].sort((a, b) =>
@@ -75,7 +86,11 @@ export function useInvestigation(
       .then(async (terminal) => {
         if (controller.signal.aborted || terminal?.status !== 'completed')
           return;
-        const value = await platformApi.results(runId, controller.signal);
+        const value = await platformApi.results(
+          runId,
+          controller.signal,
+          terminal,
+        );
         if (!controller.signal.aborted) setResult(value);
       })
       .catch((reason) => {
@@ -123,22 +138,93 @@ export function useInvestigation(
     inFlight.current = true;
     setBusy('upload');
     setError(null);
+    let terminalConflict = false;
+    if (
+      !pendingUpload.current ||
+      pendingUpload.current.name !== file.name ||
+      pendingUpload.current.size !== file.size ||
+      pendingUpload.current.modified !== file.lastModified
+    ) {
+      pendingUpload.current = {
+        name: file.name,
+        size: file.size,
+        modified: file.lastModified,
+        key: crypto.randomUUID(),
+      };
+    }
     try {
-      const item = await platformApi.upload(investigationId, file);
+      const item = await platformApi.upload(
+        investigationId,
+        file,
+        pendingUpload.current.key,
+        (progress) =>
+          setUploadStage(progress.status === 'pending' ? progress : null),
+      );
+      pendingUpload.current = null;
+      setUploadStage(null);
       setArtifacts((items) => [
         ...items.filter((value) => value.id !== item.id),
         item,
       ]);
       setArtifactId(item.id);
     } catch (reason) {
+      terminalConflict =
+        reason instanceof ApiError && reason.code === 'CONFLICT';
+      if (
+        reason instanceof ApiError &&
+        ['INVALID_DATASET', 'UPLOAD_TOO_LARGE', 'VALIDATION_ERROR'].includes(
+          reason.code,
+        )
+      )
+        pendingUpload.current = null;
       setError(reason);
     } finally {
+      const remainingStage = await refreshUpload();
+      if (terminalConflict && remainingStage === null)
+        pendingUpload.current = null;
+      inFlight.current = false;
+      setBusy(null);
+    }
+  }
+  async function refreshUpload() {
+    try {
+      const [item, uploads] = await Promise.all([
+        platformApi.investigation(investigationId),
+        platformApi.pendingUploads(investigationId),
+      ]);
+      setRecord(item);
+      setUploadStage(uploads[0] ?? null);
+      return uploads[0] ?? null;
+    } catch (reason) {
+      // Preserve the original upload error; the Retry control reloads server state.
+      setError((current: unknown) => current ?? reason);
+    }
+  }
+  async function discardUpload() {
+    if (!uploadStage || inFlight.current) return;
+    inFlight.current = true;
+    setBusy('discard');
+    setError(null);
+    try {
+      await platformApi.cancelUpload(investigationId, uploadStage.id);
+      pendingUpload.current = null;
+      setUploadStage(null);
+    } catch (reason) {
+      setError(reason);
+    } finally {
+      await refreshUpload();
       inFlight.current = false;
       setBusy(null);
     }
   }
   async function start() {
-    if (!artifactId || inFlight.current) return;
+    if (
+      !artifactId ||
+      inFlight.current ||
+      uploadStage ||
+      record?.status === 'uploading'
+    )
+      return;
     inFlight.current = true;
     setBusy('start');
     setError(null);
@@ -182,6 +268,8 @@ export function useInvestigation(
     activeRun,
     selectRun,
     upload,
+    uploadStage,
+    discardUpload,
     start,
     retry: () => {
       setError(null);

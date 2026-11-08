@@ -1,0 +1,32 @@
+{
+  "source_commit": "bdac888d0b9947e4e7120aca054a662052b01493",
+  "production_ready": false,
+  "source_checks": [
+    {
+      "event": "push",
+      "run": 37289226934,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37289226934",
+      "all_three_jobs": "success",
+      "python_passed": 301,
+      "browser_passed": 79,
+      "inventory_bytes": 440807729,
+      "inventory_budget_bytes": 450000000
+    },
+    {
+      "event": "pr",
+      "run": 37289232195,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37289232195",
+      "all_three_jobs": "success",
+      "python_passed": 301,
+      "browser_passed": 79,
+      "inventory_bytes": 440807729,
+      "inventory_budget_bytes": 450000000
+    }
+  ],
+  "local_focused_browser_passed": 7,
+  "full_local_browser_preceding_source": "a974aa6",
+  "full_local_browser_preceding_source_passed": 79,
+  "grid_report": "results/capacity/dense-browser-grid-20261005.json",
+  "vercel_status": "403 scope access denied on2026-10-05; no deployed release",
+  "limits": "Repository/source/local synthetic controls only; no hosted capacity or observed model accuracy approval"
+}

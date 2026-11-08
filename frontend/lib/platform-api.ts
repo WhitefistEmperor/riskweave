@@ -1,4 +1,12 @@
-import { apiRequest } from '@/lib/client';
+import type { MinorAmount } from '@/lib/exact-money';
+import { apiRequest, ApiError } from '@/lib/client';
+import { loadChunkedResult } from '@/lib/result-transport';
+import { loadOverview, scopedRun } from '@/lib/section-transport';
+import {
+  uploadInChunks,
+  validUploadProgress,
+  type UploadProgress,
+} from '@/lib/upload-transport';
 import type { JsonValue } from '@/lib/api';
 import type { EvidenceQueries } from '@/lib/evidence';
 import {
@@ -8,6 +16,8 @@ import {
   validArtifact,
   validRun,
   validResult,
+  validReview,
+  object,
 } from '@/lib/response-validation';
 
 export type RunStatus =
@@ -17,6 +27,32 @@ export type RunStatus =
   | 'running'
   | 'completed'
   | 'failed';
+export type ReviewDisposition =
+  | 'unreviewed'
+  | 'investigating'
+  | 'escalated'
+  | 'dismissed';
+export type CandidateReview = {
+  run_id: string;
+  candidate_id: string;
+  disposition: ReviewDisposition;
+  version: number;
+  updated_at: string | null;
+  history: Array<{
+    id: string;
+    actor_id: string;
+    previous_disposition: ReviewDisposition;
+    disposition: ReviewDisposition;
+    version: number;
+    note: string;
+    created_at: string;
+  }>;
+};
+export type ReviewUpdate = {
+  disposition: ReviewDisposition;
+  note: string;
+  expected_version: number;
+};
 export type Session = {
   user_id: string;
   authentication_mode: 'development' | 'jwt';
@@ -30,6 +66,63 @@ export type InvestigationRecord = {
   created_at: string;
   updated_at: string;
 };
+export type WorklistReviewSummary = {
+  run_id: string;
+  candidate_count: number | null;
+  assessed: number;
+  unreviewed: number | null;
+  investigating: number;
+  escalated: number;
+  dismissed: number;
+};
+export type InvestigationPage = {
+  review_summaries?: Record<string, WorklistReviewSummary | null>;
+  items: InvestigationRecord[];
+  total: number;
+  matched: number;
+  offset: number;
+  limit: number;
+};
+function validWorklistSummaries(
+  value: unknown,
+  items: { id: string }[],
+): boolean {
+  // Older servers may omit summaries; absence is unavailable, never zero progress.
+  if (value === undefined) return true;
+  if (!object(value) || Object.keys(value).length !== items.length)
+    return false;
+  const count = (v: unknown) => Number.isSafeInteger(v) && Number(v) >= 0;
+  return items.every(({ id }) => {
+    if (!Object.hasOwn(value, id)) return false;
+    const summary = value[id];
+    if (summary === null) return true;
+    if (
+      !object(summary) ||
+      typeof summary.run_id !== 'string' ||
+      !summary.run_id ||
+      !count(summary.assessed) ||
+      !count(summary.investigating) ||
+      !count(summary.escalated) ||
+      !count(summary.dismissed)
+    )
+      return false;
+    if (
+      Number(summary.assessed) !==
+      Number(summary.investigating) +
+        Number(summary.escalated) +
+        Number(summary.dismissed)
+    )
+      return false;
+    if (summary.candidate_count === null) return summary.unreviewed === null;
+    return (
+      count(summary.candidate_count) &&
+      count(summary.unreviewed) &&
+      Number(summary.assessed) + Number(summary.unreviewed) ===
+        summary.candidate_count
+    );
+  });
+}
+
 export type ArtifactRecord = {
   id: string;
   investigation_id: string;
@@ -39,6 +132,7 @@ export type ArtifactRecord = {
   content_type: string;
 };
 export type AnalysisRun = {
+  dispatch_state?: 'pending' | 'accepted' | 'failed' | null;
   id: string;
   investigation_id: string;
   artifact_id: string;
@@ -55,7 +149,7 @@ export type AnalysisRun = {
 export type PersistedCandidate = {
   candidate_id: string;
   risk_score: number;
-  estimated_exposure_minor: number;
+  estimated_exposure_minor: MinorAmount;
   member_entity_ids: string[];
   related_event_ids: string[];
   evidence: Record<string, number>;
@@ -63,11 +157,13 @@ export type PersistedCandidate = {
   suspicious_relationships: string[];
 };
 export type AnalysisResult = {
+  remote_candidate_count?: number;
   schema_version: '1';
   threshold: number;
   event_count: number;
   entity_count: number;
   model_scope: string;
+  currency?: string | null;
   rings: {
     candidate: PersistedCandidate;
     queries: EvidenceQueries;
@@ -80,6 +176,49 @@ const json = (body: unknown) => ({
   body: JSON.stringify(body),
 });
 export const platformApi = {
+  remove: (investigationId: string, confirmName: string, updatedAt: string) =>
+    apiRequest<{
+      investigation_id: string;
+      status: 'deleted';
+      storage_cleanup: 'complete' | 'pending';
+    }>(
+      `/v1/investigations/${id(investigationId)}`,
+      {
+        ...json({ confirm_name: confirmName, expected_updated_at: updatedAt }),
+        method: 'DELETE',
+      },
+      (value) =>
+        object(value) &&
+        value.investigation_id === investigationId &&
+        value.status === 'deleted' &&
+        ['complete', 'pending'].includes(String(value.storage_cleanup)),
+    ),
+  review: (runId: string, candidateId: string, signal?: AbortSignal) =>
+    apiRequest<CandidateReview>(
+      `/v1/runs/${id(runId)}/rings/${id(candidateId)}/review`,
+      { signal },
+      (v) =>
+        validReview(v) &&
+        (v as CandidateReview).run_id === runId &&
+        (v as CandidateReview).candidate_id === candidateId,
+    ),
+  saveReview: (
+    runId: string,
+    candidateId: string,
+    body: ReviewUpdate,
+    key: string,
+  ) =>
+    apiRequest<CandidateReview>(
+      `/v1/runs/${id(runId)}/rings/${id(candidateId)}/review`,
+      {
+        ...json(body),
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+      },
+      (v) =>
+        validReview(v) &&
+        (v as CandidateReview).run_id === runId &&
+        (v as CandidateReview).candidate_id === candidateId,
+    ),
   session: () => apiRequest<Session>('/v1/session', {}, validSession),
   investigations: (signal?: AbortSignal) =>
     apiRequest<InvestigationRecord[]>(
@@ -87,6 +226,38 @@ export const platformApi = {
       { signal },
       list(validInvestigation),
     ),
+  investigationPage: (
+    offset: number,
+    search: string,
+    status: string,
+    signal?: AbortSignal,
+  ) => {
+    const params = new URLSearchParams({
+      offset: String(offset),
+      limit: '10',
+      search,
+    });
+    if (status !== 'all') params.set('status', status);
+    return apiRequest<InvestigationPage>(
+      `/v1/investigations/page?${params}`,
+      { signal },
+      (v) =>
+        object(v) &&
+        list(validInvestigation)(v.items) &&
+        Number.isSafeInteger(v.total) &&
+        Number(v.total) >= 0 &&
+        Number.isSafeInteger(v.matched) &&
+        Number(v.matched) >= 0 &&
+        Number(v.matched) <= Number(v.total) &&
+        v.offset === offset &&
+        v.limit === 10 &&
+        Array.isArray(v.items) &&
+        v.items.length ===
+          Math.min(10, Math.max(0, Number(v.matched) - offset)) &&
+        new Set(v.items.map((x) => x.id)).size === v.items.length &&
+        validWorklistSummaries(v.review_summaries, v.items),
+    );
+  },
   create: (name: string) =>
     apiRequest<InvestigationRecord>(
       '/v1/investigations',
@@ -105,8 +276,47 @@ export const platformApi = {
       { signal },
       list(validArtifact),
     ),
-  upload: (value: string, file: File) =>
-    apiRequest<ArtifactRecord>(
+  pendingUploads: (value: string, signal?: AbortSignal) =>
+    apiRequest<UploadProgress[]>(
+      `/v1/investigations/${id(value)}/uploads`,
+      { signal },
+      (v) =>
+        Array.isArray(v) &&
+        v.every(
+          (item) =>
+            validUploadProgress(item) &&
+            item.investigation_id === value &&
+            item.status === 'pending',
+        ) &&
+        v.length <= 1,
+    ),
+  cancelUpload: (value: string, uploadId: string) =>
+    apiRequest<{ id: string; status: 'aborted' | 'expired' }>(
+      `/v1/investigations/${id(value)}/uploads/${id(uploadId)}`,
+      { method: 'DELETE' },
+      (v) =>
+        object(v) &&
+        v.id === uploadId &&
+        ['aborted', 'expired'].includes(String(v.status)),
+    ),
+  upload: async (
+    value: string,
+    file: File,
+    key = crypto.randomUUID(),
+    onProgress?: (progress: UploadProgress) => void,
+  ) => {
+    if (file.size > 2_000_000) {
+      try {
+        return await uploadInChunks(value, file, key, onProgress);
+      } catch (error) {
+        if (
+          !(error instanceof ApiError) ||
+          error.code !== 'UPLOAD_TRANSPORT_UNAVAILABLE'
+        )
+          throw error;
+      }
+    }
+    return apiRequest<ArtifactRecord>(
       `/v1/investigations/${id(value)}/artifacts`,
       {
         method: 'POST',
@@ -118,7 +328,8 @@ export const platformApi = {
         },
       },
       validArtifact,
-    ),
+    );
+  },
   runs: (value: string, signal?: AbortSignal) =>
     apiRequest<AnalysisRun[]>(
       `/v1/investigations/${id(value)}/runs`,
@@ -135,25 +346,72 @@ export const platformApi = {
       validRun,
     ),
   run: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisRun>(`/v1/runs/${id(value)}`, { signal }, validRun),
-  results: (value: string, signal?: AbortSignal) =>
-    apiRequest<AnalysisResult>(
-      `/v1/runs/${id(value)}/results`,
+    apiRequest<AnalysisRun>(
+      `/v1/runs/${id(value)}`,
       { signal },
-      validResult,
+      (v) => validRun(v) && (v as AnalysisRun).id === value,
     ),
+  execute: (value: string, investigationId: string, signal?: AbortSignal) =>
+    apiRequest<AnalysisRun>(
+      `/v1/runs/${id(value)}/execute`,
+      { method: 'POST', signal },
+      (v) =>
+        validRun(v) &&
+        (v as AnalysisRun).id === value &&
+        (v as AnalysisRun).investigation_id === investigationId,
+    ),
+  results: async (
+    value: string,
+    signal?: AbortSignal,
+    savedRun?: AnalysisRun,
+  ) => {
+    if (savedRun && scopedRun(savedRun)) {
+      try {
+        return await loadOverview(savedRun, signal);
+      } catch (error) {
+        // Explicit older-route compatibility only; corrupt or denied responses fail closed.
+        if (!(error instanceof ApiError) || error.status !== 404) throw error;
+      }
+    }
+    if (savedRun?.configuration_snapshot.execution_mode === 'request')
+      return loadChunkedResult(savedRun, signal);
+    try {
+      return await apiRequest<AnalysisResult>(
+        `/v1/runs/${id(value)}/results`,
+        { signal },
+        validResult,
+      );
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.code === 'RESULT_TRANSPORT_REQUIRED' &&
+        savedRun
+      )
+        return loadChunkedResult(savedRun, signal);
+      throw error;
+    }
+  },
 };
 
-/** Poll persisted state only. Never retry a POST or start a second analysis implicitly. */
+/** Dispatch an existing request-mode claim; never enqueue a second analysis implicitly. */
 export async function pollRun(
   value: string,
   onUpdate: (run: AnalysisRun) => void,
   signal: AbortSignal,
 ) {
   while (!signal.aborted) {
-    const run = await platformApi.run(value, signal);
+    let run = await platformApi.run(value, signal);
     if (signal.aborted) return;
     onUpdate(run);
+    if (
+      run.status === 'queued' &&
+      run.configuration_snapshot.background_dispatch !== 'vercel_workflow' &&
+      run.configuration_snapshot.execution_mode === 'request'
+    ) {
+      run = await platformApi.execute(value, run.investigation_id, signal);
+      if (signal.aborted) return;
+      onUpdate(run);
+    }
     if (run.status === 'completed' || run.status === 'failed') return run;
     await new Promise<void>((resolve) => {
       const done = () => {

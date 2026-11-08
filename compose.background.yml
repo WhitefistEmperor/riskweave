@@ -1,0 +1,14 @@
+# Isolated verification of real SDK delivery with PostgreSQL; not a public deployment.
+# The embedded SDK queue is test-only and is never a production durability claim.
+services:
+  backend:
+    command: ["python", "scripts/serve_background_test.py", "--host", "0.0.0.0"]
+    environment:
+      RINGSENTINEL_STORAGE_BACKEND: database
+      RINGSENTINEL_EXECUTION_MODE: request
+      RINGSENTINEL_ANALYSIS_TIMEOUT_SECONDS: "240"
+      RINGSENTINEL_BACKGROUND_DISPATCH: vercel_workflow
+      RINGSENTINEL_MAX_PENDING_RUNS: "10"
+      RINGSENTINEL_DISPATCH_CRON_SECRET: ci-only-dispatch-secret-not-for-deployment
+      WORKFLOW_TARGET_WORLD: local
+      WORKFLOW_LOCAL_DATA_DIR: /app/work/ci-sdk-events

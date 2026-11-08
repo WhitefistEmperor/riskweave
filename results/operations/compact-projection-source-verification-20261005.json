@@ -1,0 +1,32 @@
+{
+  "source_commit": "198d2dbd43b70935206897032d4440bc4b1d8a94",
+  "production_ready": false,
+  "source_checks": [
+    {
+      "event": "push",
+      "run": 37291647939,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37291647939",
+      "all_jobs": "success",
+      "python_passed": 304,
+      "browser_passed": 79,
+      "inventory_bytes": 440821998,
+      "budget_bytes": 450000000
+    },
+    {
+      "event": "pr",
+      "run": 37291657451,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37291657451",
+      "all_jobs": "success",
+      "python_passed": 304,
+      "browser_passed": 79,
+      "inventory_bytes": 440821998,
+      "budget_bytes": 450000000
+    }
+  ],
+  "local_python_passed": 302,
+  "local_python_postgres_only_skipped": 2,
+  "local_feature_passed": 9,
+  "local_real_workflow_browser_and_states_passed": 3,
+  "all_nine_original_worker_hashes_preserved": true,
+  "scope": "Source/local generated controls; no hosted or observed model approval. Boundary worker timings overlapped one small real-workflow browser run. Frontend source tree unchanged from verified bdac888 build; exact graph/driver bytes captured."
+}

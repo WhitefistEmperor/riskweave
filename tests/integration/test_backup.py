@@ -3,7 +3,12 @@ import json
 import pytest
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
-from ringsentinel.platform.backup import create_snapshot, restore_snapshot, retention_report
+from ringsentinel.platform.backup import (
+    create_online_database_snapshot,
+    create_snapshot,
+    restore_snapshot,
+    retention_report,
+)
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.jobs import LocalJobExecutor
 from ringsentinel.platform.service import InvestigationService, Principal
@@ -36,6 +41,23 @@ def saved(tmp_path):
     service.finish(run.id, {"rings": [], "verification": "unchanged"})
     yield service, owner, inv.id, run.id
     db.engine.dispose()
+
+
+@pytest.mark.parametrize(
+    ("url", "backend"),
+    [("sqlite:///:memory:", "database"), ("postgresql+psycopg://invalid/test", "local")],
+)
+def test_online_backup_rejects_unsupported_storage_without_connecting(url, backend, tmp_path):
+    settings = Settings(
+        environment="test",
+        database_url=url,
+        storage_backend=backend,
+        storage_root=tmp_path / "live",
+    )
+    destination = tmp_path / "snapshot"
+    with pytest.raises(ValueError, match="requires PostgreSQL with database object storage"):
+        create_online_database_snapshot(settings, destination)
+    assert not destination.exists()
 
 
 def test_real_offline_backup_restore_reopens_results_and_ownership(saved, tmp_path):

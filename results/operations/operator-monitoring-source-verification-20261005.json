@@ -1,0 +1,98 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "32af28f7a364940d9397e7dfafa5ebcc75cd1e32",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37322985899,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37322985899",
+      "source": "32af28f7a364940d9397e7dfafa5ebcc75cd1e32",
+      "jobs": [
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 316,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0,
+      "operator_tests_executed": 8,
+      "postgres_backup_monitor_module_cases_executed": 6
+    },
+    {
+      "event": "pull_request",
+      "id": 37322993352,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37322993352",
+      "source": "32af28f7a364940d9397e7dfafa5ebcc75cd1e32",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 316,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0,
+      "operator_tests_executed": 8,
+      "postgres_backup_monitor_module_cases_executed": 6
+    }
+  ],
+  "scope": "Private read-only queue-wait and pending-erasure monitoring, threshold boundary/overrides, legacy deadline-free jobs, real start/finish and failed-delete/cleanup controls. Actual PostgreSQL17 request-mode start with a future deadline and generated pending-deletion row; counts/ages without identifiers or mutations.",
+  "local": {
+    "ruff": "passed",
+    "operator_tests_passed": 8,
+    "postgres_environment_skips": 6,
+    "cli": [
+      {
+        "queue_wait_minutes": 1,
+        "exit_code": 1,
+        "status": "attention",
+        "alerts": [
+          "QUEUE_WAIT_EXCEEDED"
+        ]
+      },
+      {
+        "queue_wait_minutes": 3,
+        "exit_code": 0,
+        "status": "ok",
+        "alerts": []
+      },
+      {
+        "queue_wait_minutes": 0,
+        "exit_code": 2,
+        "status": "unavailable",
+        "alerts": [
+          "OPERATOR_REPORT_UNAVAILABLE"
+        ]
+      }
+    ],
+    "private_records_unchanged": true,
+    "private_identifiers_not_emitted": true
+  },
+  "limitations": [
+    "No external monitor/alert destination or notification schedule installed.",
+    "Thresholds require deployed workload/ownership review; not a hosted SLA/capacity proof.",
+    "PostgreSQL pending-deletion row is a generated lifecycle fixture; actual failed-delete cleanup is covered separately on local storage."
+  ],
+  "inventory_bytes": 440900053,
+  "inventory_budget_bytes": 450000000
+}

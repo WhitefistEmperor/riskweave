@@ -10,6 +10,8 @@ import {
   StatusBadge,
 } from '@/components/workspace-states';
 import { PersistedFindings } from '@/components/persisted-findings';
+import { PagedFindings } from '@/components/paged-findings';
+import { DeleteInvestigation } from '@/components/delete-investigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -42,8 +44,10 @@ export function InvestigationDetail({
     error,
     busy,
     activeRun,
+    uploadStage,
   } = state;
   const [file, setFile] = useState<File | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const artifact = artifacts.find((item) => item.id === artifactId);
   return (
     <ProductShell>
@@ -98,9 +102,17 @@ export function InvestigationDetail({
                   </output>
                   <p className="muted">
                     {run.status === 'queued'
-                      ? 'Waiting for the local analysis worker. You can leave this page and return later.'
+                      ? run.configuration_snapshot.background_dispatch ===
+                        'vercel_workflow'
+                        ? run.dispatch_state === 'accepted'
+                          ? 'Queued for background analysis. You can close this page and return to check the saved outcome.'
+                          : 'Background delivery is pending. This run is saved; delivery recovery will retry it. You can return later.'
+                        : run.configuration_snapshot.execution_mode ===
+                            'request'
+                          ? 'Waiting to start analysis. Keep this page open until processing begins. If you leave now, reopen this investigation to resume.'
+                          : 'Waiting for the analysis worker. You can leave this page and return later.'
                       : run.status === 'running'
-                        ? 'Computing network relationships and evidence. You can return later; no percentage estimate is available.'
+                        ? 'Computing network relationships and evidence. Reopen this investigation to check the saved outcome; no percentage estimate is available.'
                         : run.status === 'completed'
                           ? 'Review the candidate rings below. Findings require analyst assessment.'
                           : 'The run did not produce usable results. Review the error before starting a new run.'}
@@ -135,9 +147,17 @@ export function InvestigationDetail({
           {run?.status === 'completed' && !result && !error && (
             <LoadingState label="Loading completed findings…" />
           )}
-          {result && run && (
-            <PersistedFindings key={run.id} result={result} runId={run.id} />
-          )}
+          {result &&
+            run &&
+            (result.remote_candidate_count !== undefined ? (
+              <PagedFindings
+                key={`${run.id}:${run.result_checksum}`}
+                result={result}
+                run={run}
+              />
+            ) : (
+              <PersistedFindings key={run.id} result={result} runId={run.id} />
+            ))}
           <details
             key={result ? 'review' : activeRun ? 'active' : 'setup'}
             open={!result && !activeRun}
@@ -159,8 +179,8 @@ export function InvestigationDetail({
                     Input dataset
                   </h2>
                   <p className="muted text-sm">
-                    DatasetBundle JSON only. Arbitrary CSV or payment exports
-                    are not supported.
+                    Upload payments-v1 JSON for unlabeled payments, or a
+                    synthetic DatasetBundle. Analyze one currency per upload.
                   </p>
                 </div>
               </div>
@@ -174,16 +194,44 @@ export function InvestigationDetail({
                     onChange={(event) =>
                       setFile(event.target.files?.[0] ?? null)
                     }
-                    disabled={!!busy || activeRun}
+                    disabled={!!busy || activeRun || deleting}
                   />
                   <p className="muted text-xs">
                     Validated and checksummed by the API. Identical uploads
                     reuse the artifact.
                   </p>
+                  {uploadStage && (
+                    <div className="run-state">
+                      <output className="block">
+                        <strong>
+                          {busy === 'upload'
+                            ? 'Upload progress'
+                            : 'Upload incomplete'}
+                        </strong>
+                        <span className="block">
+                          {uploadStage.name} · {uploadStage.received.length} of{' '}
+                          {uploadStage.chunk_count} parts saved
+                        </span>
+                      </output>
+                      <p className="muted text-sm">
+                        Select the same file and upload again to resume.
+                        Incomplete uploads expire after 24 hours.
+                      </p>
+                      <Button
+                        variant="outline"
+                        disabled={!!busy || deleting}
+                        onClick={() => void state.discardUpload()}
+                      >
+                        {busy === 'discard'
+                          ? 'Discarding…'
+                          : 'Discard incomplete upload'}
+                      </Button>
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => file && void state.upload(file)}
-                    disabled={!file || !!busy || activeRun}
+                    disabled={!file || !!busy || activeRun || deleting}
                   >
                     <Upload size={15} />
                     {busy === 'upload'
@@ -202,7 +250,7 @@ export function InvestigationDetail({
                         onValueChange={(value) =>
                           state.setArtifactId(String(value ?? ''))
                         }
-                        disabled={!!busy || activeRun}
+                        disabled={!!busy || activeRun || deleting}
                       >
                         <SelectTrigger
                           id="artifact-select"
@@ -225,7 +273,14 @@ export function InvestigationDetail({
                       </p>
                       <Button
                         onClick={() => void state.start()}
-                        disabled={!artifactId || !!busy || activeRun}
+                        disabled={
+                          !artifactId ||
+                          !!busy ||
+                          activeRun ||
+                          deleting ||
+                          !!uploadStage ||
+                          record.status === 'uploading'
+                        }
                       >
                         {busy === 'start'
                           ? 'Queuing analysis…'
@@ -251,6 +306,12 @@ export function InvestigationDetail({
               </div>
             </Card>
           </details>
+          <DeleteInvestigation
+            key={record.id}
+            record={record}
+            disabled={!!busy || activeRun}
+            onBusy={setDeleting}
+          />
         </>
       )}
     </ProductShell>

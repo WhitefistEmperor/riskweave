@@ -5,20 +5,20 @@ import os
 import sys
 from threading import Timer
 
-from ringsentinel.data.schema import DatasetBundle
+from ringsentinel.data.ingestion import parse_input
 from ringsentinel.platform.analysis import Phase3AnalysisEngine
 from ringsentinel.platform.database import Database
+from ringsentinel.platform.database_storage import storage_for
 from ringsentinel.platform.locking import FileLock
 from ringsentinel.platform.models import AnalysisRun, Artifact, Status
 from ringsentinel.platform.service import InvestigationService
 from ringsentinel.platform.settings import Settings
-from ringsentinel.platform.storage import LocalStorageBackend
 
 
 def main():
     settings = Settings()
     database = Database(settings.database_url.get_secret_value())
-    storage = LocalStorageBackend(settings.storage_root, settings.storage_limit_bytes)
+    storage = storage_for(database, settings)
     service = InvestigationService(database, storage, settings)
     run_id = sys.argv[1]
     # An orphan cannot outlive the configured budget indefinitely if its parent is killed.
@@ -36,7 +36,7 @@ def main():
             content = storage.read(artifact.storage_key)
             if hashlib.sha256(content).hexdigest() != artifact.checksum:
                 raise ValueError("Input checksum mismatch")
-        result = Phase3AnalysisEngine().analyze(DatasetBundle.model_validate_json(content))
+        result = Phase3AnalysisEngine().analyze(parse_input(content))
         service.finish(run_id, result)
     finally:
         watchdog.cancel()
