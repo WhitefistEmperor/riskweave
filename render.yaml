@@ -1,0 +1,57 @@
+# Render Blueprint for the public, READ-ONLY RiskWeave demo.
+#
+# Two free Docker web services:
+#   riskweave-api  the FastAPI backend (Dockerfile)
+#   riskweave      the analyst frontend (Dockerfile.frontend), which proxies /api
+#                  to the backend
+#
+# Why "development" + auth "disabled": production mode deliberately refuses to
+# run without real JWT login, and forbids the public demo. With auth disabled,
+# every persisted-investigation endpoint answers 401 (uploads, runs and saved
+# cases stay locked), while the synthetic /demo replay stays readable. Nothing
+# here enables the development identity, which must never be public.
+#
+# Free instances sleep when idle (slow first request) and their disk is wiped
+# on restart, which is fine for a demo that stores nothing.
+services:
+  - type: web
+    name: riskweave-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Create the (empty) database schema, then start the API.
+    dockerCommand: >-
+      sh -c "ringsentinel-migrate && exec uvicorn ringsentinel.api.app:app
+      --host 0.0.0.0 --port 8000 --workers 1 --timeout-keep-alive 5
+      --timeout-graceful-shutdown 20 --no-access-log"
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: RINGSENTINEL_ENVIRONMENT
+        value: development
+      - key: RINGSENTINEL_AUTH_MODE
+        value: disabled
+      - key: RINGSENTINEL_DEMO_ENABLED
+        value: "true"
+      - key: RINGSENTINEL_LLM_PROVIDER
+        value: deterministic
+      - key: RINGSENTINEL_TRUSTED_HOSTS
+        value: '["riskweave-api.onrender.com","localhost","127.0.0.1"]'
+      - key: RINGSENTINEL_FRONTEND_ORIGINS
+        value: '["https://riskweave.onrender.com"]'
+
+  - type: web
+    name: riskweave
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.frontend
+    dockerContext: .
+    envVars:
+      - key: PORT
+        value: "5173"
+      # Used at build time (the Dockerfile's ARG) and at start.
+      - key: RINGSENTINEL_API_PROXY_TARGET
+        value: https://riskweave-api.onrender.com
+      - key: RINGSENTINEL_PUBLIC_DEMO
+        value: "true"
