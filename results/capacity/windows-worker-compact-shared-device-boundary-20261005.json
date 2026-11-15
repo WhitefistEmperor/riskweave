@@ -1,0 +1,62 @@
+{
+  "schema_version": "windows-worker-baseline-v1",
+  "production_ready": false,
+  "source_commit": "198d2dbd43b70935206897032d4440bc4b1d8a94",
+  "measurement_driver_sha256": "30f1397d20fda31446fea8b07aa01b37c7bf023f1202234e4b43d3a766d574c7",
+  "python_version": "3.13.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "logical_cpus": 16,
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "data_origin": "synthetic-control",
+  "density_control": "all-events-share-one-device",
+  "samples": [
+    {
+      "requested_payments": 3000,
+      "events": 3063,
+      "entities": 8385,
+      "input_bytes": 3024611,
+      "result_bytes": 1631050,
+      "input_sha256": "6083c1a5b218fd37cda1e6a5ba94187e88711af2bb598307b4258ae8227e96a0",
+      "result_sha256": "0b4bc4f7b6ca3b119ed2f6f003001cf9e58aaa745f917bb60cc24c9e62afe76f",
+      "candidates": 1,
+      "distinct_customers": 1709,
+      "distinct_devices": 1,
+      "process_wall_seconds": 12.077761299908161,
+      "worker_main_seconds": 3.854823099914938,
+      "peak_working_set_bytes": 226979840,
+      "peak_commit_bytes": 193966080
+    },
+    {
+      "requested_payments": 3500,
+      "events": 3573,
+      "entities": 9804,
+      "input_bytes": 3531112,
+      "result_bytes": 1697370,
+      "input_sha256": "ce0cb800967efa4a23afccaa28528a954588f089ade0663bbe9a7b893ef001e7",
+      "result_sha256": "cbb46d375ee085c009cc3da376380318d5024f541697c3800f7ddce0a20e9265",
+      "candidates": 1,
+      "distinct_customers": 1995,
+      "distinct_devices": 1,
+      "process_wall_seconds": 13.430257099913433,
+      "worker_main_seconds": 4.997096000006422,
+      "peak_working_set_bytes": 234467328,
+      "peak_commit_bytes": 202190848
+    },
+    {
+      "requested_payments": 4000,
+      "events": 4083,
+      "entities": 11232,
+      "input_bytes": 4039837,
+      "result_bytes": 1790543,
+      "input_sha256": "a360ff96215beb8444668cb2615a3d70a98338d2a5da6cf6e7aee4f6bbd3a320",
+      "result_sha256": "54e16e6025b79bdc7aae10040a3e935be0ef0d9e48bee34fbecb13896be78906",
+      "candidates": 1,
+      "distinct_customers": 2283,
+      "distinct_devices": 1,
+      "process_wall_seconds": 17.028577500022948,
+      "worker_main_seconds": 7.618242899887264,
+      "peak_working_set_bytes": 240676864,
+      "peak_commit_bytes": 208248832
+    }
+  ]
+}

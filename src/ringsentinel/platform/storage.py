@@ -21,6 +21,8 @@ class StoredObject:
 class StorageBackend(Protocol):
     def save(self, content: bytes) -> StoredObject: ...
     def read(self, key: str) -> bytes: ...
+    def size(self, key: str) -> int: ...
+    def read_range(self, key: str, offset: int, length: int) -> bytes: ...
     def exists(self, key: str) -> bool: ...
     def delete(self, key: str) -> None: ...
     def reference(self, key: str) -> str: ...
@@ -68,11 +70,28 @@ class LocalStorageBackend:
     def read(self, key: str) -> bytes:
         return self._path(key).read_bytes()
 
+    def read_range(self, key: str, offset: int, length: int) -> bytes:
+        if (
+            type(offset) is not int
+            or offset < 0
+            or type(length) is not int
+            or not 0 < length <= 2_000_000
+        ):
+            raise ValueError("Invalid storage range")
+        with self._path(key).open("rb") as stream:
+            stream.seek(offset)
+            return stream.read(length)
+
+    def size(self, key: str) -> int:
+        return self._path(key).stat().st_size
+
     def exists(self, key: str) -> bool:
         return self._path(key).is_file()
 
     def delete(self, key: str) -> None:
-        self._path(key).unlink(missing_ok=True)
+        # Serialize removal with byte-budget admission and offline snapshot copying.
+        with FileLock(self.root / ".write.lock"):
+            self._path(key).unlink(missing_ok=True)
 
     def reference(self, key: str) -> str:
         self._path(key)
@@ -80,9 +99,16 @@ class LocalStorageBackend:
 
     def ready(self) -> bool:
         try:
-            obj = self.save(b"{}")
-            valid = self.read(obj.key) == b"{}"
-            self.delete(obj.key)
-            return valid
-        except (OSError, ProductError):
+            # Own one lock through write/read/unlink: readiness must not orphan its
+            # probe or reacquire a contended lock after releasing admission.
+            with FileLock(self.root / ".write.lock"):
+                used = sum(p.stat().st_size for p in self.root.glob("*.json") if p.is_file())
+                if used + 2 > self.limit_bytes:
+                    return False
+                obj = self._save(b"{}")
+                try:
+                    return self.read(obj.key) == b"{}"
+                finally:
+                    self._path(obj.key).unlink(missing_ok=True)
+        except (OSError, RuntimeError, ValueError, ProductError):
             return False

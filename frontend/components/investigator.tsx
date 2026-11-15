@@ -58,10 +58,12 @@ export function Investigator({
   candidateId,
   eventCount,
   runId,
+  currency = 'INR',
 }: {
   candidateId: string;
   eventCount?: number;
   runId?: string;
+  currency?: string | null;
 }) {
   const [question, setQuestion] = useState(suggestions[0]);
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -225,7 +227,7 @@ export function Investigator({
                     Source: {humanize(source.query)}
                   </AccordionTrigger>
                   <AccordionContent>
-                    <EvidenceValue value={source.result} />
+                    <EvidenceValue value={source.result} currency={currency} />
                   </AccordionContent>
                 </AccordionItem>
               ))}

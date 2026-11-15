@@ -1,0 +1,351 @@
+{
+  "schema_version": "indexed-read-baseline-v1",
+  "production_ready": false,
+  "data_origin": "synthetic-control",
+  "source_commit": "b97cde2427ca37dba13ce626f2882767d29b38f8",
+  "read_source_commit": "b97cde2427ca37dba13ce626f2882767d29b38f8",
+  "density_control": "all-events-share-one-device",
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "driver_sha256": "814fd98ea23d7cc0627c18429cd213e782def6e3093c3af996ef0bf295698d37",
+  "scope": "Local SQLite/local storage service calls; excludes HTTP, browser and hosted runtime",
+  "samples": [
+    {
+      "events": 1021,
+      "input_bytes": 1218792,
+      "result_bytes": 1411961,
+      "result_sha256": "6f3c026588749f048c3841dc7972b385a8bd82d0c478031d36eac99bec4fff8d",
+      "native_fragment_count": 1,
+      "native_fragment_sizes": [
+        1411961
+      ],
+      "native_full_reconstruction_verified": true,
+      "index_rows": 12,
+      "candidates": 1,
+      "queue_indexed": true,
+      "largest_candidate_bytes": 136221,
+      "largest_evidence_bytes": 1275521,
+      "overview": {
+        "repetitions": 3,
+        "median_seconds": 0.022878800053149462,
+        "samples": [
+          {
+            "seconds": 0.029831500025466084,
+            "storage_reads": 6,
+            "storage_bytes": 93,
+            "largest_read_bytes": 73
+          },
+          {
+            "seconds": 0.022301900200545788,
+            "storage_reads": 6,
+            "storage_bytes": 93,
+            "largest_read_bytes": 73
+          },
+          {
+            "seconds": 0.022878800053149462,
+            "storage_reads": 6,
+            "storage_bytes": 93,
+            "largest_read_bytes": 73
+          }
+        ]
+      },
+      "first_candidate_page": {
+        "repetitions": 3,
+        "median_seconds": 0.0061790000181645155,
+        "samples": [
+          {
+            "seconds": 0.007450899807736278,
+            "storage_reads": 1,
+            "storage_bytes": 136221,
+            "largest_read_bytes": 136221
+          },
+          {
+            "seconds": 0.0061790000181645155,
+            "storage_reads": 1,
+            "storage_bytes": 136221,
+            "largest_read_bytes": 136221
+          },
+          {
+            "seconds": 0.005880300188437104,
+            "storage_reads": 1,
+            "storage_bytes": 136221,
+            "largest_read_bytes": 136221
+          }
+        ]
+      },
+      "first_queue_page": {
+        "repetitions": 3,
+        "median_seconds": 0.011777899926528335,
+        "samples": [
+          {
+            "seconds": 0.011402799980714917,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          },
+          {
+            "seconds": 0.011777899926528335,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          },
+          {
+            "seconds": 0.011991099920123816,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          }
+        ]
+      },
+      "selected_evidence": {
+        "repetitions": 3,
+        "median_seconds": 0.04099419992417097,
+        "samples": [
+          {
+            "seconds": 0.04099419992417097,
+            "storage_reads": 2,
+            "storage_bytes": 2823922,
+            "largest_read_bytes": 1411961
+          },
+          {
+            "seconds": 0.04028480011038482,
+            "storage_reads": 2,
+            "storage_bytes": 2823922,
+            "largest_read_bytes": 1411961
+          },
+          {
+            "seconds": 0.041136000072583556,
+            "storage_reads": 2,
+            "storage_bytes": 2823922,
+            "largest_read_bytes": 1411961
+          }
+        ]
+      }
+    },
+    {
+      "events": 2552,
+      "input_bytes": 3027857,
+      "result_bytes": 2570587,
+      "result_sha256": "9cc7407d7e9cc04866c007536afa3da8971286c377636d2f339b299a1211fe5d",
+      "native_fragment_count": 2,
+      "native_fragment_sizes": [
+        2000000,
+        570587
+      ],
+      "native_full_reconstruction_verified": true,
+      "index_rows": 12,
+      "candidates": 1,
+      "queue_indexed": true,
+      "largest_candidate_bytes": 260668,
+      "largest_evidence_bytes": 2309700,
+      "overview": {
+        "repetitions": 3,
+        "median_seconds": 0.020352199906483293,
+        "samples": [
+          {
+            "seconds": 0.022864799946546555,
+            "storage_reads": 6,
+            "storage_bytes": 93,
+            "largest_read_bytes": 73
+          },
+          {
+            "seconds": 0.019975100178271532,
+            "storage_reads": 6,
+            "storage_bytes": 93,
+            "largest_read_bytes": 73
+          },
+          {
+            "seconds": 0.020352199906483293,
+            "storage_reads": 6,
+            "storage_bytes": 93,
+            "largest_read_bytes": 73
+          }
+        ]
+      },
+      "first_candidate_page": {
+        "repetitions": 3,
+        "median_seconds": 0.005973499966785312,
+        "samples": [
+          {
+            "seconds": 0.005973499966785312,
+            "storage_reads": 1,
+            "storage_bytes": 260668,
+            "largest_read_bytes": 260668
+          },
+          {
+            "seconds": 0.006208700127899647,
+            "storage_reads": 1,
+            "storage_bytes": 260668,
+            "largest_read_bytes": 260668
+          },
+          {
+            "seconds": 0.0057801001239567995,
+            "storage_reads": 1,
+            "storage_bytes": 260668,
+            "largest_read_bytes": 260668
+          }
+        ]
+      },
+      "first_queue_page": {
+        "repetitions": 3,
+        "median_seconds": 0.010219400050118566,
+        "samples": [
+          {
+            "seconds": 0.010219400050118566,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          },
+          {
+            "seconds": 0.009620600147172809,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          },
+          {
+            "seconds": 0.010884500108659267,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          }
+        ]
+      },
+      "selected_evidence": {
+        "repetitions": 3,
+        "median_seconds": 0.08125230018049479,
+        "samples": [
+          {
+            "seconds": 0.07465379987843335,
+            "storage_reads": 5,
+            "storage_bytes": 5711761,
+            "largest_read_bytes": 2000000
+          },
+          {
+            "seconds": 0.08125230018049479,
+            "storage_reads": 5,
+            "storage_bytes": 5711761,
+            "largest_read_bytes": 2000000
+          },
+          {
+            "seconds": 0.08160170004703104,
+            "storage_reads": 5,
+            "storage_bytes": 5711761,
+            "largest_read_bytes": 2000000
+          }
+        ]
+      }
+    },
+    {
+      "events": 5104,
+      "input_bytes": 6069814,
+      "result_bytes": 3200467,
+      "result_sha256": "f7b21215a4433fd63fc407fbc51484208987f924b2a63319e171567e93e70187",
+      "native_fragment_count": 2,
+      "native_fragment_sizes": [
+        2000000,
+        1200467
+      ],
+      "native_full_reconstruction_verified": true,
+      "index_rows": 12,
+      "candidates": 1,
+      "queue_indexed": true,
+      "largest_candidate_bytes": 337698,
+      "largest_evidence_bytes": 2862549,
+      "overview": {
+        "repetitions": 3,
+        "median_seconds": 0.026863700011745095,
+        "samples": [
+          {
+            "seconds": 0.02623760001733899,
+            "storage_reads": 6,
+            "storage_bytes": 94,
+            "largest_read_bytes": 73
+          },
+          {
+            "seconds": 0.027097899932414293,
+            "storage_reads": 6,
+            "storage_bytes": 94,
+            "largest_read_bytes": 73
+          },
+          {
+            "seconds": 0.026863700011745095,
+            "storage_reads": 6,
+            "storage_bytes": 94,
+            "largest_read_bytes": 73
+          }
+        ]
+      },
+      "first_candidate_page": {
+        "repetitions": 3,
+        "median_seconds": 0.007412999868392944,
+        "samples": [
+          {
+            "seconds": 0.008281099842861295,
+            "storage_reads": 1,
+            "storage_bytes": 337698,
+            "largest_read_bytes": 337698
+          },
+          {
+            "seconds": 0.007412999868392944,
+            "storage_reads": 1,
+            "storage_bytes": 337698,
+            "largest_read_bytes": 337698
+          },
+          {
+            "seconds": 0.007062300108373165,
+            "storage_reads": 1,
+            "storage_bytes": 337698,
+            "largest_read_bytes": 337698
+          }
+        ]
+      },
+      "first_queue_page": {
+        "repetitions": 3,
+        "median_seconds": 0.013262399937957525,
+        "samples": [
+          {
+            "seconds": 0.013262399937957525,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          },
+          {
+            "seconds": 0.013209600001573563,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          },
+          {
+            "seconds": 0.014101200038567185,
+            "storage_reads": 2,
+            "storage_bytes": 27,
+            "largest_read_bytes": 18
+          }
+        ]
+      },
+      "selected_evidence": {
+        "repetitions": 3,
+        "median_seconds": 0.10226009995676577,
+        "samples": [
+          {
+            "seconds": 0.09780879993923008,
+            "storage_reads": 5,
+            "storage_bytes": 7601401,
+            "largest_read_bytes": 2000000
+          },
+          {
+            "seconds": 0.10562539985403419,
+            "storage_reads": 5,
+            "storage_bytes": 7601401,
+            "largest_read_bytes": 2000000
+          },
+          {
+            "seconds": 0.10226009995676577,
+            "storage_reads": 5,
+            "storage_bytes": 7601401,
+            "largest_read_bytes": 2000000
+          }
+        ]
+      }
+    }
+  ]
+}

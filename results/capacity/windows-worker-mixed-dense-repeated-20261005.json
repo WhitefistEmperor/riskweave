@@ -1,0 +1,141 @@
+{
+  "schema_version": "windows-worker-baseline-v1",
+  "production_ready": false,
+  "source_commit": "3e0487b054d3811cb40c685bdf6104153b77b863",
+  "measurement_driver_sha256": "bab67ac98c39e92229c083d1f1e43619658fd81cd0ad83701f848066147e11f5",
+  "python_version": "3.13.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "logical_cpus": 16,
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "data_origin": "synthetic-control",
+  "customer_id_padding": 0,
+  "density_control": "mixed-dense-infrastructure",
+  "samples": [
+    {
+      "requested_payments": 10000,
+      "events": 10207,
+      "entities": 15401,
+      "input_bytes": 8232845,
+      "result_bytes": 1573841,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "candidates": 1,
+      "distinct_customers": 3120,
+      "distinct_devices": 2,
+      "process_wall_seconds": 55.13495089998469,
+      "worker_main_seconds": 44.5761275999248,
+      "peak_working_set_bytes": 286183424,
+      "peak_commit_bytes": 254439424
+    },
+    {
+      "requested_payments": 10000,
+      "events": 10207,
+      "entities": 15401,
+      "input_bytes": 8232845,
+      "result_bytes": 1573841,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "candidates": 1,
+      "distinct_customers": 3120,
+      "distinct_devices": 2,
+      "process_wall_seconds": 51.2426649001427,
+      "worker_main_seconds": 42.788869800046086,
+      "peak_working_set_bytes": 286609408,
+      "peak_commit_bytes": 254836736
+    },
+    {
+      "requested_payments": 10000,
+      "events": 10207,
+      "entities": 15401,
+      "input_bytes": 8232845,
+      "result_bytes": 1573841,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "candidates": 1,
+      "distinct_customers": 3120,
+      "distinct_devices": 2,
+      "process_wall_seconds": 51.56482979981229,
+      "worker_main_seconds": 43.04426630004309,
+      "peak_working_set_bytes": 285954048,
+      "peak_commit_bytes": 254418944
+    }
+  ],
+  "repetition_summary": {
+    "worker_main_seconds": {
+      "sample_min": 42.788869800046086,
+      "sample_median": 43.04426630004309,
+      "sample_max": 44.5761275999248
+    },
+    "process_wall_seconds": {
+      "sample_min": 51.2426649001427,
+      "sample_median": 51.56482979981229,
+      "sample_max": 55.13495089998469
+    },
+    "peak_working_set_bytes": {
+      "sample_min": 285954048,
+      "sample_median": 286183424,
+      "sample_max": 286609408
+    },
+    "peak_commit_bytes": {
+      "sample_min": 254418944,
+      "sample_median": 254439424,
+      "sample_max": 254836736
+    }
+  },
+  "verification": {
+    "all_repeated_input_hashes_equal": true,
+    "all_repeated_saved_result_hashes_equal": true,
+    "trusted_model_pin_unchanged": true,
+    "analysis_worker_detector_features_unchanged_from": "198d2dbd43b70935206897032d4440bc4b1d8a94",
+    "application_and_checks_unchanged_from": "32af28f7a364940d9397e7dfafa5ebcc75cd1e32",
+    "ci_runs": [
+      {
+        "id": 37323791168,
+        "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37323791168",
+        "event": "push",
+        "source": "3e0487b054d3811cb40c685bdf6104153b77b863",
+        "jobs": [
+          {
+            "name": "frontend",
+            "conclusion": "success"
+          },
+          {
+            "name": "containers",
+            "conclusion": "success"
+          },
+          {
+            "name": "backend",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 37323799792,
+        "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37323799792",
+        "event": "pull_request",
+        "source": "3e0487b054d3811cb40c685bdf6104153b77b863",
+        "jobs": [
+          {
+            "name": "frontend",
+            "conclusion": "success"
+          },
+          {
+            "name": "backend",
+            "conclusion": "success"
+          },
+          {
+            "name": "containers",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "Three sequential fresh worker processes on one ambient Windows desktop, one generated dataset/seed, single-thread OMP setting; no reliable percentiles or concurrency/hosted bounds.",
+    "Worker-main time excludes worker module import; process-wall includes child startup and saved-result checks but excludes earlier generation/upload.",
+    "Peak counters cover the worker child, not parent/API/frontend/PostgreSQL; SQLite/local objects were used.",
+    "One saved candidate at this topology; no observed fraud accuracy or higher candidate/fragment extreme claim.",
+    "No model retraining, production limits or hosted approval applied."
+  ]
+}

@@ -52,7 +52,16 @@ for (const width of [1440, 1280, 1024, 768]) {
     await page.getByRole('tab', { name: 'Network', exact: true }).click();
     await page.getByRole('combobox', { name: 'Entity', exact: true }).focus();
     await page.keyboard.press('Enter');
+    await expect(
+      page.getByRole('combobox', { name: 'Entity', exact: true }),
+    ).toHaveAttribute('aria-expanded', 'true');
+    await expect(
+      page.getByRole('listbox').getByRole('option').first(),
+    ).toBeVisible();
     await page.keyboard.press('ArrowDown');
+    await expect(
+      page.getByRole('listbox').getByRole('option').first(),
+    ).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('.selection-details')).toContainText(
       'ui-customer',

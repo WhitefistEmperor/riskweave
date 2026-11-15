@@ -4,7 +4,19 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    LargeBinary,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -89,3 +101,172 @@ class AnalysisRun(Identity, Base):
     configuration_snapshot: Mapped[dict] = mapped_column(JSON)
     result_reference: Mapped[str | None] = mapped_column(String(100))
     result_checksum: Mapped[str | None] = mapped_column(String(64))
+    result_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    candidate_count: Mapped[int | None] = mapped_column(nullable=True)
+    candidate_index: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    execution_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    dispatch_state: Mapped[str | None] = mapped_column(String(16))
+    executor_slot: Mapped[str | None] = mapped_column(String(80), unique=True)
+
+
+class ResultFragment(Base):
+    __tablename__ = "result_fragments"
+    __table_args__ = (
+        CheckConstraint("part_index >= 0 AND part_index < 250", name="result_fragment_index"),
+        CheckConstraint("size_bytes > 0 AND size_bytes <= 2000000", name="result_fragment_size"),
+    )
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    part_index: Mapped[int] = mapped_column(primary_key=True)
+    size_bytes: Mapped[int]
+    checksum: Mapped[str] = mapped_column(String(64))
+
+
+class ResultSection(Base):
+    __tablename__ = "result_sections"
+    __table_args__ = (
+        CheckConstraint("byte_offset >= 0 AND size_bytes > 0", name="result_section_range"),
+        Index("ix_result_sections_page", "run_id", "kind", "ordinal"),
+    )
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    kind: Mapped[str] = mapped_column(String(16), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    ordinal: Mapped[int]
+    byte_offset: Mapped[int] = mapped_column(BigInteger)
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    checksum: Mapped[str] = mapped_column(String(64))
+
+
+class ReviewDisposition(StrEnum):
+    UNREVIEWED = "unreviewed"
+    INVESTIGATING = "investigating"
+    ESCALATED = "escalated"
+    DISMISSED = "dismissed"
+
+
+class CandidateReview(Base):
+    __tablename__ = "candidate_reviews"
+    __table_args__ = (
+        CheckConstraint("version > 0", name="review_positive_version"),
+        CheckConstraint(
+            "disposition IN ('unreviewed', 'investigating', 'escalated', 'dismissed')",
+            name="review_disposition",
+        ),
+    )
+    run_id: Mapped[str] = mapped_column(ForeignKey("analysis_runs.id"), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    disposition: Mapped[str] = mapped_column(String(30))
+    version: Mapped[int]
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class ReviewAudit(Base):
+    """Append-only in application flows; no editing endpoint exists."""
+
+    __tablename__ = "review_audit"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["run_id", "candidate_id"],
+            ["candidate_reviews.run_id", "candidate_reviews.candidate_id"],
+        ),
+        UniqueConstraint("run_id", "candidate_id", "version"),
+        UniqueConstraint("run_id", "candidate_id", "idempotency_key"),
+    )
+    id: Mapped[str] = mapped_column(String(80), primary_key=True, default=new_id)
+    run_id: Mapped[str] = mapped_column(String(80))
+    candidate_id: Mapped[str] = mapped_column(String(100))
+    actor_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    previous_disposition: Mapped[str] = mapped_column(String(30))
+    disposition: Mapped[str] = mapped_column(String(30))
+    version: Mapped[int]
+    note: Mapped[str] = mapped_column(String(2000))
+    idempotency_key: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class StorageDeletion(Base):
+    """Durable cleanup work containing only opaque object keys, never case content."""
+
+    __tablename__ = "storage_deletions"
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    attempts: Mapped[int] = mapped_column(default=0)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error_code: Mapped[str | None] = mapped_column(String(40))
+
+
+class StoredBlob(Base):
+    """Private durable bytes; no HTTP route accepts or exposes these keys."""
+
+    __tablename__ = "stored_objects"
+    __table_args__ = (CheckConstraint("size_bytes >= 0", name="stored_object_size"),)
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    checksum: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class UploadSession(Identity, Base):
+    """Owner-scoped, resumable input admission; source chunks are never public."""
+
+    __tablename__ = "upload_sessions"
+    __table_args__ = (UniqueConstraint("investigation_id", "idempotency_key"),)
+    investigation_id: Mapped[str] = mapped_column(ForeignKey("investigations.id"), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(200))
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    checksum: Mapped[str] = mapped_column(String(64))
+    chunk_count: Mapped[int]
+    status: Mapped[str] = mapped_column(String(16))
+    active_slot: Mapped[str | None] = mapped_column(String(80), unique=True)
+    previous_status: Mapped[Status] = status_column()
+    artifact_id: Mapped[str | None] = mapped_column(ForeignKey("artifacts.id"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class UploadPart(Base):
+    __tablename__ = "upload_parts"
+    __table_args__ = (CheckConstraint("size_bytes > 0", name="upload_part_size"),)
+    upload_id: Mapped[str] = mapped_column(ForeignKey("upload_sessions.id"), primary_key=True)
+    part_index: Mapped[int] = mapped_column(primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    checksum: Mapped[str] = mapped_column(String(64))
+
+
+class AnalysisDispatch(Base):
+    """Transactional queue-delivery intent; no analyst token or payment bytes."""
+
+    __tablename__ = "analysis_dispatches"
+    run_id: Mapped[str] = mapped_column(ForeignKey("analysis_runs.id"), primary_key=True)
+    ticket: Mapped[str] = mapped_column(String(36))
+    budget_month: Mapped[str] = mapped_column(String(7))
+    attempts: Mapped[int] = mapped_column(default=0)
+    workflow_id: Mapped[str | None] = mapped_column(String(80))
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, index=True
+    )
+    last_error_code: Mapped[str | None] = mapped_column(String(40))
+
+
+class DispatchBudget(Base):
+    __tablename__ = "dispatch_budgets"
+    month: Mapped[str] = mapped_column(String(7), primary_key=True)
+    starts: Mapped[int] = mapped_column(default=0)
+
+
+class DispatchSchedule(Base):
+    """Daily reconciler registration, bounded even after an ambiguous start."""
+
+    __tablename__ = "dispatch_schedules"
+    day: Mapped[str] = mapped_column(String(10), primary_key=True)
+    attempts: Mapped[int] = mapped_column(default=0)
+    workflow_id: Mapped[str | None] = mapped_column(String(80))
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

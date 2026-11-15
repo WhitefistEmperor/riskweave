@@ -1,0 +1,118 @@
+{
+  "schema_version": "windows-worker-baseline-v1",
+  "production_ready": false,
+  "source_commit": "83e4bb190679173d1d33031f6b803b72ec25b307",
+  "measurement_driver_sha256": "bab67ac98c39e92229c083d1f1e43619658fd81cd0ad83701f848066147e11f5",
+  "python_version": "3.13.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "logical_cpus": 16,
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "data_origin": "synthetic-control",
+  "customer_id_padding": 0,
+  "density_control": "mixed-dense-infrastructure",
+  "samples": [
+    {
+      "requested_payments": 10000,
+      "events": 10207,
+      "entities": 15401,
+      "input_bytes": 8232845,
+      "result_bytes": 1573841,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "candidates": 1,
+      "distinct_customers": 3120,
+      "distinct_devices": 2,
+      "process_wall_seconds": 45.32817590003833,
+      "worker_main_seconds": 36.79033019999042,
+      "peak_working_set_bytes": 285020160,
+      "peak_commit_bytes": 253231104
+    },
+    {
+      "requested_payments": 10000,
+      "events": 10207,
+      "entities": 15401,
+      "input_bytes": 8232845,
+      "result_bytes": 1573841,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "candidates": 1,
+      "distinct_customers": 3120,
+      "distinct_devices": 2,
+      "process_wall_seconds": 44.18292729998939,
+      "worker_main_seconds": 35.756837899796665,
+      "peak_working_set_bytes": 283525120,
+      "peak_commit_bytes": 251719680
+    },
+    {
+      "requested_payments": 10000,
+      "events": 10207,
+      "entities": 15401,
+      "input_bytes": 8232845,
+      "result_bytes": 1573841,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "candidates": 1,
+      "distinct_customers": 3120,
+      "distinct_devices": 2,
+      "process_wall_seconds": 43.2305962999817,
+      "worker_main_seconds": 34.86653230013326,
+      "peak_working_set_bytes": 285052928,
+      "peak_commit_bytes": 253140992
+    }
+  ],
+  "repetition_summary": {
+    "worker_main_seconds": {
+      "sample_min": 34.86653230013326,
+      "sample_median": 35.756837899796665,
+      "sample_max": 36.79033019999042
+    },
+    "process_wall_seconds": {
+      "sample_min": 43.2305962999817,
+      "sample_median": 44.18292729998939,
+      "sample_max": 45.32817590003833
+    },
+    "peak_working_set_bytes": {
+      "sample_min": 283525120,
+      "sample_median": 285020160,
+      "sample_max": 285052928
+    },
+    "peak_commit_bytes": {
+      "sample_min": 251719680,
+      "sample_median": 253140992,
+      "sample_max": 253231104
+    }
+  },
+  "baseline": {
+    "source_commit": "3e0487b054d3811cb40c685bdf6104153b77b863",
+    "repetition_summary": {
+      "worker_main_seconds": {
+        "sample_min": 42.788869800046086,
+        "sample_median": 43.04426630004309,
+        "sample_max": 44.5761275999248
+      },
+      "process_wall_seconds": {
+        "sample_min": 51.2426649001427,
+        "sample_median": 51.56482979981229,
+        "sample_max": 55.13495089998469
+      },
+      "peak_working_set_bytes": {
+        "sample_min": 285954048,
+        "sample_median": 286183424,
+        "sample_max": 286609408
+      },
+      "peak_commit_bytes": {
+        "sample_min": 254418944,
+        "sample_median": 254439424,
+        "sample_max": 254836736
+      }
+    },
+    "all_input_and_saved_result_hashes_identical": true
+  },
+  "limitations": [
+    "Three sequential fresh worker processes on one ambient Windows desktop, one generated dataset/seed, single-thread OMP setting; no reliable percentiles or concurrency/hosted bounds.",
+    "Worker-main time excludes worker module import; process-wall includes child startup and saved-result checks but excludes earlier generation/upload.",
+    "Peak counters cover the worker child, not parent/API/frontend/PostgreSQL; SQLite/local objects were used.",
+    "One saved candidate at this topology; no observed fraud accuracy or higher candidate/fragment extreme claim.",
+    "No model retraining, production limits or hosted approval applied."
+  ]
+}

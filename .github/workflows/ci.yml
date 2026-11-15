@@ -11,6 +11,20 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: riskweave_backup_ci
+          POSTGRES_PASSWORD: ci-only-backup-drill
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U riskweave_backup_ci -d postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      RINGSENTINEL_TEST_AGE: ${{ github.workspace }}/work/age-ci/age
+      RINGSENTINEL_TEST_POSTGRES_URL: postgresql+psycopg://riskweave_backup_ci:ci-only-backup-drill@127.0.0.1:5432/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -19,8 +33,40 @@ jobs:
           python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked --extra dev
+      - name: Install digest-pinned standard encryption tool for isolated restore drills
+        run: uv run --no-sync python scripts/install_age_ci.py
+      - name: Use matching PostgreSQL 17 clients for isolated backup drills
+        shell: bash
+        run: |
+          mkdir -p work/bin
+          cat > work/bin/pg_dump <<'SH'
+          #!/bin/sh
+          exec docker run --rm --network host --user "$(id -u):$(id -g)" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=$GITHUB_WORKSPACE" \
+            --workdir "$GITHUB_WORKSPACE" \
+            --env PGHOST --env PGPORT --env PGUSER --env PGPASSWORD \
+            --env PGDATABASE --env PGCONNECT_TIMEOUT \
+            postgres:17-bookworm "$(basename "$0")" "$@"
+          SH
+          cp work/bin/pg_dump work/bin/pg_restore
+          chmod +x work/bin/pg_dump work/bin/pg_restore
+          echo "$PWD/work/bin" >> "$GITHUB_PATH"
       - run: uv run --no-sync ruff check .
-      - run: uv run --no-sync pytest
+      - run: uv run --no-sync pytest --basetemp work/ci-pytest
+      - name: Preserve aggregate isolated PostgreSQL worker capacity measurement
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-worker-capacity-${{ github.sha }}-${{ github.run_id }}
+          path: work/ci-pytest/postgres-worker-capacity.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve aggregate concurrent request admission and queue measurements
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-request-capacity-${{ github.sha }}-${{ github.run_id }}
+          path: work/ci-pytest/postgres-request-capacity.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Migrate a fresh database, then verify an idempotent second upgrade
         env:
           RINGSENTINEL_DATABASE_URL: sqlite:///./work/ci-migrations.db
@@ -28,6 +74,12 @@ jobs:
           uv run --no-sync ringsentinel-migrate
           uv run --no-sync ringsentinel-migrate
       - run: uv build
+      - name: Build and verify a cached release model with only production dependencies
+        run: |
+          uv sync --locked --no-dev --no-editable
+          uv run --no-sync python -m ringsentinel.platform.vercel_build
+          uv run --no-sync python -m ringsentinel.platform.vercel_build
+          uv run --no-sync python scripts/check_vercel_inventory.py
 
   frontend:
     runs-on: ubuntu-latest
@@ -54,6 +106,9 @@ jobs:
       - run: uv run --no-sync ringsentinel-migrate
       - run: npm ci --no-audit --no-fund
         working-directory: frontend
+      - name: Reject known moderate-or-higher dependency advisories
+        run: npm audit --audit-level=moderate
+        working-directory: frontend
       - run: npm run lint
         working-directory: frontend
       - run: npm run typecheck
@@ -77,6 +132,24 @@ jobs:
           exit 1
       - run: npm test
         working-directory: frontend
+      - name: Verify idle expiry and failed logout on isolated OIDC-configured production UI
+        env:
+          NEXT_PUBLIC_RISKWEAVE_OIDC_AUTHORITY: http://127.0.0.1:5174/fixture-issuer
+          NEXT_PUBLIC_RISKWEAVE_OIDC_CLIENT_ID: riskweave-session-browser-control
+          RISKWEAVE_OIDC_BROWSER_TEST: "1"
+          RINGSENTINEL_UI_URL: http://127.0.0.1:5174
+        run: |
+          uv run --no-sync python scripts/prepare_auth_browser_fixture.py work/auth-session-ui
+          (cd work/auth-session-ui && npm run build)
+          (cd work/auth-session-ui && node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 5174) > work/auth-session-ui.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5174/sign-in > /dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:5174/sign-in > /dev/null
+          (cd frontend && npx playwright test tests/session-boundary.spec.ts)
       - name: Retain failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
@@ -110,8 +183,20 @@ jobs:
           curl --fail http://127.0.0.1:8000/api/v1/health
           curl --fail http://127.0.0.1:8000/api/v1/ready
           curl --fail http://127.0.0.1:5173/ > /dev/null
+          curl --fail --silent --show-error http://127.0.0.1:5173/licenses/shadcn-MIT.txt > "$RUNNER_TEMP/riskweave-shadcn-MIT.txt"
+          cmp frontend/public/licenses/shadcn-MIT.txt "$RUNNER_TEMP/riskweave-shadcn-MIT.txt"
       - name: Run a real persisted investigation through the container API
-        run: uv run --locked --extra dev python scripts/smoke_platform.py --base-url http://127.0.0.1:8000
+        run: uv run --locked --extra dev python scripts/smoke_platform.py --base-url http://127.0.0.1:8000 --delete-created
+      - name: Verify request-scoped execution and durable PostgreSQL objects
+        run: |
+          docker compose -f compose.yaml -f compose.request.yml up --wait --wait-timeout 180 backend
+          curl --fail http://127.0.0.1:8000/api/v1/ready
+          uv run --locked --extra dev python scripts/smoke_platform.py --request-execution --delete-created
+      - name: Verify actual SDK background delivery with PostgreSQL and no browser execution
+        run: |
+          docker compose -f compose.yaml -f compose.background.yml up --wait --wait-timeout 180 backend
+          curl --fail http://127.0.0.1:8000/api/v1/ready
+          uv run --locked --extra dev python scripts/smoke_platform.py --background-execution --delete-created
       - name: Preserve stack logs on failure
         if: failure()
         run: docker compose logs --no-color

@@ -14,7 +14,13 @@ import { EvidenceValue } from '@/components/evidence-value';
 import { orderedEvents, type EvidenceQueries } from '@/lib/evidence';
 import { dateTime, money, shortId } from '@/lib/api';
 
-export function EvidenceTimeline({ queries }: { queries: EvidenceQueries }) {
+export function EvidenceTimeline({
+  queries,
+  currency = 'INR',
+}: {
+  queries: EvidenceQueries;
+  currency?: string | null;
+}) {
   const events = useMemo(
     () => orderedEvents(queries.get_transaction_timeline),
     [queries],
@@ -72,7 +78,7 @@ export function EvidenceTimeline({ queries }: { queries: EvidenceQueries }) {
                       </span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {money(event.amount_minor)}
+                      {money(event.amount_minor, currency)}
                     </TableCell>
                     <TableCell className="mono">
                       {shortId(event.customer_id)} →{' '}
@@ -120,7 +126,7 @@ export function EvidenceTimeline({ queries }: { queries: EvidenceQueries }) {
         {item && (
           <div className="event-detail">
             <h3>Event {shortId(item.event_id)}</h3>
-            <EvidenceValue value={item} />
+            <EvidenceValue value={item} currency={currency} />
             <p className="muted text-xs">
               Event risk score is a model output, not a fraud probability.
             </p>
@@ -133,7 +139,10 @@ export function EvidenceTimeline({ queries }: { queries: EvidenceQueries }) {
           Computed hourly buckets. Amount totals describe activity, not net
           exposure.
         </p>
-        <EvidenceValue value={queries.get_temporal_activity} />
+        <EvidenceValue
+          value={queries.get_temporal_activity}
+          currency={currency}
+        />
       </Card>
     </div>
   );

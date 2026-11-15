@@ -1,0 +1,38 @@
+{
+  "data_origin": "synthetic-control",
+  "production_ready": false,
+  "before_feature_source_sha256": "859275257eee8f78ad77cfacf9f78d00c766da40eb6f4e64f2815b9f87d407a3",
+  "after_feature_source_sha256": "726f622c8b8f136c9edd0b11e5a8a5f6828239d09355fd4bf23a0fa6597d8877",
+  "model_artifact": "unchanged",
+  "all_feature_vectors_identical": true,
+  "scope": "single local extraction per size/shape; not a hosted limit or accuracy test",
+  "controls": [
+    {
+      "requested_payments": 1000,
+      "dense": false,
+      "events": 1021,
+      "input_sha256": "cda130dbde94f575ca77e35b75b50077631542d6453918c0b5f29d635740f17c",
+      "feature_sha256": "9aab8faef2b1f1b78af0512bb534779abc898f6f210257cbd8253d9becd06384",
+      "before_seconds": 0.17477079993113875,
+      "after_seconds": 0.1439865999855101
+    },
+    {
+      "requested_payments": 250,
+      "dense": true,
+      "events": 257,
+      "input_sha256": "eb178fd6f3734cbdc5b1a441be8df6541cb854424908154101bdfe532cb376e6",
+      "feature_sha256": "3e71f6b62e824cdf4fa0a01a8b5ae7b3a58af8bb39006ba7fca2ed0d7d744892",
+      "before_seconds": 2.0098198999185115,
+      "after_seconds": 0.12519940012134612
+    },
+    {
+      "requested_payments": 500,
+      "dense": true,
+      "events": 512,
+      "input_sha256": "f32cbe32d618090d48d6272f52f4798b435971daba46adebc09c5734f0ecf45a",
+      "feature_sha256": "245374cbb2779ac0f5917d9cfc49bd2e40bbd18f71274a4145bea68b25bb1915",
+      "before_seconds": 15.379098900128156,
+      "after_seconds": 0.38693789998069406
+    }
+  ]
+}

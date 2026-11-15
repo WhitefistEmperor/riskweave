@@ -11,6 +11,7 @@
 **/.next
 **/.vinext
 **/.wrangler
+**/.vercel
 **/test-results
 **/playwright-report
 **/work

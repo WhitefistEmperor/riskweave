@@ -1,0 +1,114 @@
+{
+  "all_saved_results_identical": true,
+  "customers": 3120,
+  "data_origin": "synthetic-control",
+  "database_size_bytes_before": 8296115,
+  "density_control": "mixed-dense-infrastructure",
+  "entities": 15401,
+  "events": 10207,
+  "execution_mode": "local",
+  "input_bytes": 8232845,
+  "limitations": [
+    "Three sequential fresh workers on one ephemeral CI runner; not reliable percentiles, concurrency or hosted admission.",
+    "Worker-main excludes module import; child wall includes startup but excludes generation/upload and parent checksum checks.",
+    "VmHWM/VmRSS are approximate kernel counters for the current worker image; lifetime getrusage peak can retain pre-exec accounting. These do not measure PostgreSQL/API/parent/browser RAM. Database size is cumulative allocated disk, not RAM or storage quota usage.",
+    "Local execution with PostgreSQL object storage; not hosted HTTPS/Workflow delivery or observed model accuracy."
+  ],
+  "logical_cpus": 4,
+  "model_sha256": "044eabe5b79e0335dd099d73a2d5d6ee82f7a524ce87a864b2c9c303f2db3280",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "production_ready": false,
+  "python_version": "3.13.14",
+  "samples": [
+    {
+      "candidates": 1,
+      "database_size_bytes_after": 11409075,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "peak_rss_method": "proc-self-status-VmHWM",
+      "peak_worker_rss_bytes": 319664128,
+      "process_lifetime_peak_rss_bytes": 865239040,
+      "process_wall_seconds": 13.317585440000016,
+      "repetition": 1,
+      "result_bytes": 1573841,
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "worker_main_seconds": 11.22076407999998,
+      "worker_rss_after_bytes": 254636032,
+      "worker_system_cpu_seconds": 0.19599999999999998,
+      "worker_user_cpu_seconds": 12.590054
+    },
+    {
+      "candidates": 1,
+      "database_size_bytes_after": 14276275,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "peak_rss_method": "proc-self-status-VmHWM",
+      "peak_worker_rss_bytes": 319930368,
+      "process_lifetime_peak_rss_bytes": 866787328,
+      "process_wall_seconds": 13.701472071000012,
+      "repetition": 2,
+      "result_bytes": 1573841,
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "worker_main_seconds": 11.546099884,
+      "worker_rss_after_bytes": 255242240,
+      "worker_system_cpu_seconds": 0.219025,
+      "worker_user_cpu_seconds": 12.981502
+    },
+    {
+      "candidates": 1,
+      "database_size_bytes_after": 17143475,
+      "input_sha256": "b6480c6ae11e14e94a25ead0a9791efedd18ab6049bbc9d76a29b270afe3c8f3",
+      "peak_rss_method": "proc-self-status-VmHWM",
+      "peak_worker_rss_bytes": 319877120,
+      "process_lifetime_peak_rss_bytes": 868360192,
+      "process_wall_seconds": 13.309429307000073,
+      "repetition": 3,
+      "result_bytes": 1573841,
+      "result_sha256": "5cf5c763fd866df2ada343de48a0fcb49ca36cdb4e11c6ad0d350dc9d5007324",
+      "worker_main_seconds": 11.22293940499992,
+      "worker_rss_after_bytes": 254099456,
+      "worker_system_cpu_seconds": 0.225018,
+      "worker_user_cpu_seconds": 12.603031
+    }
+  ],
+  "schema_version": "linux-postgres-worker-baseline-v1",
+  "server_version": "17.11 (Debian 17.11-1.pgdg12+2)",
+  "source_commit": "3f2401bf9527f57f5591eb920b2060fa4dff100d",
+  "storage_backend": "database",
+  "ci_provenance": {
+    "event": "pr",
+    "run_id": 37329596214,
+    "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37329596214",
+    "requested_source": "350e0f5d35e8b69082efcaed4f9aa00454db73bc",
+    "actual_checkout_tree_matches": true,
+    "tree_sha": "3b17919ae34d77fb1be0b3c787dfece5099fde97",
+    "artifact_id": 11354405606,
+    "artifact_digest": "sha256:01cb7af5ac320032dedc2e62070b8f19b8addd0b1695db17135d4608c9a4961c",
+    "report_sha256": "637c5131e796d1d6421bca40bee941f9d11af29e8fb91fc0a3c38125e2f7cc3d"
+  },
+  "repetition_summary": {
+    "worker_main_seconds": {
+      "sample_min": 11.22076407999998,
+      "sample_median": 11.22293940499992,
+      "sample_max": 11.546099884
+    },
+    "process_wall_seconds": {
+      "sample_min": 13.309429307000073,
+      "sample_median": 13.317585440000016,
+      "sample_max": 13.701472071000012
+    },
+    "peak_worker_rss_bytes": {
+      "sample_min": 319664128,
+      "sample_median": 319877120,
+      "sample_max": 319930368
+    },
+    "worker_rss_after_bytes": {
+      "sample_min": 254099456,
+      "sample_median": 254636032,
+      "sample_max": 255242240
+    },
+    "process_lifetime_peak_rss_bytes": {
+      "sample_min": 865239040,
+      "sample_median": 866787328,
+      "sample_max": 868360192
+    }
+  }
+}

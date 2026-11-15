@@ -1,0 +1,91 @@
+{
+  "data_origin": "synthetic-control",
+  "production_ready": false,
+  "source_commit": "198d2dbd43b70935206897032d4440bc4b1d8a94",
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "all_nine_input_and_result_hashes_identical": true,
+  "scope": "Single local worker per shape/size; sparse memory overhead is recorded, not hidden. No hosted capacity or observed model accuracy approval.",
+  "samples": [
+    {
+      "shape": "mixed",
+      "events": 104,
+      "result_sha256": "a4ea5f6c1e149d8e81075e741f46bf0822919936514b300a2023e196bea85f90",
+      "before_worker_seconds": 0.37186129996553063,
+      "after_worker_seconds": 0.20338240009732544,
+      "before_peak_working_set_bytes": 194547712,
+      "after_peak_working_set_bytes": 193171456
+    },
+    {
+      "shape": "mixed",
+      "events": 257,
+      "result_sha256": "1eb94e3b0edc98f1a3d2358ea78fdfe5b5107150273e0ba1d2179640899af071",
+      "before_worker_seconds": 1.5000911999959499,
+      "after_worker_seconds": 0.26156080001965165,
+      "before_peak_working_set_bytes": 196939776,
+      "after_peak_working_set_bytes": 194748416
+    },
+    {
+      "shape": "mixed",
+      "events": 512,
+      "result_sha256": "17bddd4dd0c845d99cb2ce2e5a8cfab4ec9fb560f80e323a2e4e87bc829e5c5c",
+      "before_worker_seconds": 7.859142400091514,
+      "after_worker_seconds": 0.4093219998758286,
+      "before_peak_working_set_bytes": 206135296,
+      "after_peak_working_set_bytes": 197300224
+    },
+    {
+      "shape": "shared-device",
+      "events": 257,
+      "result_sha256": "ede63dfbba1a0c3eb076a1fb4c56de6f9a4cc5ffc57a6728c8327f97628013a1",
+      "before_worker_seconds": 0.41049129981547594,
+      "after_worker_seconds": 0.3093449999578297,
+      "before_peak_working_set_bytes": 197476352,
+      "after_peak_working_set_bytes": 195706880
+    },
+    {
+      "shape": "shared-device",
+      "events": 512,
+      "result_sha256": "35c8c8935863624896732d88613bdad1ac11a3da8d26fb660e49ac59017eda5e",
+      "before_worker_seconds": 0.8991578998975456,
+      "after_worker_seconds": 0.47479490004479885,
+      "before_peak_working_set_bytes": 207900672,
+      "after_peak_working_set_bytes": 198627328
+    },
+    {
+      "shape": "shared-device",
+      "events": 1021,
+      "result_sha256": "0d291e479474a04530a2f4269b329cdeafb81051dbae1545ac970b66f522542c",
+      "before_worker_seconds": 2.44276070012711,
+      "after_worker_seconds": 0.9505960999522358,
+      "before_peak_working_set_bytes": 244396032,
+      "after_peak_working_set_bytes": 203100160
+    },
+    {
+      "shape": "sparse",
+      "events": 1021,
+      "result_sha256": "bb3977a6d8dfaa71cb5190b83724d3c6fa11137bf700745336fb10278585f37c",
+      "before_worker_seconds": 0.3833687000442296,
+      "after_worker_seconds": 0.4071104999165982,
+      "before_peak_working_set_bytes": 202883072,
+      "after_peak_working_set_bytes": 203300864
+    },
+    {
+      "shape": "sparse",
+      "events": 5104,
+      "result_sha256": "f7afe87cc5f7ef91edff13c1b3ebbe0199ecfbc76d990102ebad76d06df03611",
+      "before_worker_seconds": 1.5468782999087125,
+      "after_worker_seconds": 1.6170274000614882,
+      "before_peak_working_set_bytes": 249741312,
+      "after_peak_working_set_bytes": 253026304
+    },
+    {
+      "shape": "sparse",
+      "events": 10207,
+      "result_sha256": "f87420618e9ce17161fbab0047319fdcb88329b481ad255e1b098c37ab019452",
+      "before_worker_seconds": 2.7138108999934047,
+      "after_worker_seconds": 2.8085730001330376,
+      "before_peak_working_set_bytes": 278904832,
+      "after_peak_working_set_bytes": 282853376
+    }
+  ]
+}

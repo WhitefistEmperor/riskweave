@@ -59,6 +59,14 @@ class ExecutorLease:
         self.storage_lock = FileLock(storage_root / ".executor.lock")
 
     def acquire(self):
+        from ringsentinel.platform.database import pooler_mode
+
+        if pooler_mode(self.database.engine.url.render_as_string(False)) == "transaction":
+            # A session advisory lock cannot be held through transaction pooling.
+            raise RuntimeError(
+                "Executor ownership needs a session connection; use the session pooler "
+                "(port 5432) for local execution, backup and maintenance commands"
+            )
         try:
             self.storage_lock.acquire()
             if self.database.engine.dialect.name == "postgresql":

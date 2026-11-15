@@ -1,0 +1,63 @@
+{
+  "schema_version": "windows-worker-baseline-v1",
+  "production_ready": false,
+  "source_commit": "b97cde2427ca37dba13ce626f2882767d29b38f8",
+  "measurement_driver_sha256": "bab67ac98c39e92229c083d1f1e43619658fd81cd0ad83701f848066147e11f5",
+  "python_version": "3.13.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "logical_cpus": 16,
+  "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+  "data_origin": "synthetic-control",
+  "customer_id_padding": 128,
+  "density_control": "all-events-share-one-device",
+  "samples": [
+    {
+      "requested_payments": 1000,
+      "events": 1021,
+      "entities": 2824,
+      "input_bytes": 1218792,
+      "result_bytes": 1411961,
+      "input_sha256": "82297fed658be464a221d39210c45c598f00475dcc54a3a0f47f1f28190c6b20",
+      "result_sha256": "6f3c026588749f048c3841dc7972b385a8bd82d0c478031d36eac99bec4fff8d",
+      "candidates": 1,
+      "distinct_customers": 595,
+      "distinct_devices": 1,
+      "process_wall_seconds": 9.76346360007301,
+      "worker_main_seconds": 0.8755779000930488,
+      "peak_working_set_bytes": 206848000,
+      "peak_commit_bytes": 174518272
+    },
+    {
+      "requested_payments": 2500,
+      "events": 2552,
+      "entities": 6978,
+      "input_bytes": 3027857,
+      "result_bytes": 2570587,
+      "input_sha256": "7d50f72c9a5bc00e4b2ca1daac029749af3a3be0329792127580e8b7aeb190d6",
+      "result_sha256": "9cc7407d7e9cc04866c007536afa3da8971286c377636d2f339b299a1211fe5d",
+      "candidates": 1,
+      "distinct_customers": 1426,
+      "distinct_devices": 1,
+      "process_wall_seconds": 11.079155399929732,
+      "worker_main_seconds": 3.001793999923393,
+      "peak_working_set_bytes": 221659136,
+      "peak_commit_bytes": 189337600
+    },
+    {
+      "requested_payments": 5000,
+      "events": 5104,
+      "entities": 14051,
+      "input_bytes": 6069814,
+      "result_bytes": 3200467,
+      "input_sha256": "ab8faea8628a484415352d52ddeee3803b901964dbb84d5c29a649b683365727",
+      "result_sha256": "f7b21215a4433fd63fc407fbc51484208987f924b2a63319e171567e93e70187",
+      "candidates": 1,
+      "distinct_customers": 2850,
+      "distinct_devices": 1,
+      "process_wall_seconds": 17.94326170021668,
+      "worker_main_seconds": 9.808007899904624,
+      "peak_working_set_bytes": 254124032,
+      "peak_commit_bytes": 221806592
+    }
+  ]
+}

@@ -27,6 +27,7 @@ import {
 import { Investigator } from '@/components/investigator';
 import { EvidenceValue } from '@/components/evidence-value';
 import { EvidenceTimeline } from '@/components/evidence-timeline';
+import { CandidateReviewPanel } from '@/components/candidate-review';
 import { LoadingState } from '@/components/workspace-states';
 import {
   evidenceGroups,
@@ -41,10 +42,13 @@ const EvidenceNetwork = lazy(() => import('@/components/evidence-graph'));
 export function PersistedFindings({
   result,
   runId,
+  detailOnly = false,
 }: {
   result: AnalysisResult;
   runId: string;
+  detailOnly?: boolean;
 }) {
+  const currency = result.currency ?? null;
   const ranked = useMemo(
     () =>
       [...result.rings].sort(
@@ -119,33 +123,35 @@ export function PersistedFindings({
   );
   return (
     <div className="findings-workspace">
-      <div className="findings-summary">
-        <div>
-          <h2>Persisted findings</h2>
-          <p className="muted">
-            Ranked for review, not confirmed fraud. Start with a candidate, then
-            inspect its connections.
-          </p>
+      {!detailOnly && (
+        <div className="findings-summary">
+          <div>
+            <h2>Persisted findings</h2>
+            <p className="muted">
+              Ranked for review, not confirmed fraud. Start with a candidate,
+              then inspect its connections.
+            </p>
+          </div>
+          <div className="summary-values">
+            <div>
+              <strong>{result.rings.length}</strong>
+              <span>Candidate rings</span>
+            </div>
+            <div>
+              <strong>{result.event_count.toLocaleString()}</strong>
+              <span>Events analyzed</span>
+            </div>
+            <div>
+              <strong>{result.entity_count.toLocaleString()}</strong>
+              <span>Entities in dataset</span>
+            </div>
+            <div>
+              <strong>{result.threshold.toFixed(2)}</strong>
+              <span>Detection threshold</span>
+            </div>
+          </div>
         </div>
-        <div className="summary-values">
-          <div>
-            <strong>{result.rings.length}</strong>
-            <span>Candidate rings</span>
-          </div>
-          <div>
-            <strong>{result.event_count.toLocaleString()}</strong>
-            <span>Events analyzed</span>
-          </div>
-          <div>
-            <strong>{result.entity_count.toLocaleString()}</strong>
-            <span>Entities in dataset</span>
-          </div>
-          <div>
-            <strong>{result.threshold.toFixed(2)}</strong>
-            <span>Detection threshold</span>
-          </div>
-        </div>
-      </div>
+      )}
       {!ranked.length ? (
         <Card className="panel workspace-empty">
           <Network size={30} />
@@ -160,118 +166,124 @@ export function PersistedFindings({
         </Card>
       ) : (
         <>
-          <Card className="panel">
-            <div className="section-heading">
-              <h3>Candidate review queue</h3>
-              <span className="muted text-xs">
-                Highest model score first · score is not a probability
-              </span>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Candidate</TableHead>
-                  <TableHead>Model score</TableHead>
-                  <TableHead>Customers</TableHead>
-                  <TableHead>Events</TableHead>
-                  <TableHead>Observed sharing</TableHead>
-                  <TableHead>Estimated exposure</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Inspect</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ranked
-                  .slice(page * 8, page * 8 + 8)
-                  .map(({ candidate, queries }, index) => (
-                    <TableRow
-                      key={candidate.candidate_id}
-                      data-selected={
-                        candidate.candidate_id === ringId || undefined
-                      }
-                    >
-                      <TableCell>
-                        <button
-                          className="candidate-link"
-                          onClick={() => openCandidate(candidate.candidate_id)}
-                          aria-label={`Inspect candidate ${shortId(candidate.candidate_id)}`}
-                        >
-                          <span className="rank-number">
-                            {String(page * 8 + index + 1).padStart(2, '0')}
+          {!detailOnly && (
+            <Card className="panel">
+              <div className="section-heading">
+                <h3>Candidate review queue</h3>
+                <span className="muted text-xs">
+                  Highest model score first · score is not a probability
+                </span>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Candidate</TableHead>
+                    <TableHead>Model score</TableHead>
+                    <TableHead>Customers</TableHead>
+                    <TableHead>Events</TableHead>
+                    <TableHead>Observed sharing</TableHead>
+                    <TableHead>Estimated exposure</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Inspect</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ranked
+                    .slice(page * 8, page * 8 + 8)
+                    .map(({ candidate, queries }, index) => (
+                      <TableRow
+                        key={candidate.candidate_id}
+                        data-selected={
+                          candidate.candidate_id === ringId || undefined
+                        }
+                      >
+                        <TableCell>
+                          <button
+                            className="candidate-link"
+                            onClick={() =>
+                              openCandidate(candidate.candidate_id)
+                            }
+                            aria-label={`Inspect candidate ${shortId(candidate.candidate_id)}`}
+                          >
+                            <span className="rank-number">
+                              {String(page * 8 + index + 1).padStart(2, '0')}
+                            </span>
+                            <span>{shortId(candidate.candidate_id)}</span>
+                          </button>
+                        </TableCell>
+                        <TableCell>
+                          <span className="score-value">
+                            {candidate.risk_score.toFixed(3)}
                           </span>
-                          <span>{shortId(candidate.candidate_id)}</span>
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <span className="score-value">
-                          {candidate.risk_score.toFixed(3)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {queries.compare_member_behavior.length}
-                      </TableCell>
-                      <TableCell>
-                        {candidate.related_event_ids.length}
-                      </TableCell>
-                      <TableCell className="sharing-summary">
-                        {[
-                          ['Devices', queries.get_shared_devices.length],
-                          ['IPs', queries.get_shared_ips.length],
-                          ['Cards', queries.get_shared_cards.length],
-                          [
-                            'Payouts',
-                            queries.get_shared_payout_accounts.length,
-                          ],
-                          ['Addresses', queries.get_shared_addresses.length],
-                        ]
-                          .filter(([, count]) => Number(count) > 0)
-                          .map(
-                            ([label, count]) =>
-                              `${count} ${String(label).toLowerCase()}`,
-                          )
-                          .join(' · ') || 'No shared resources reported'}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {money(candidate.estimated_exposure_minor)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={`Open ring ${shortId(candidate.candidate_id)}`}
-                          onClick={() => openCandidate(candidate.candidate_id)}
-                        >
-                          <ArrowUpRight size={16} />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-            <div className="list-pagination">
-              <span>
-                {page * 8 + 1}–{Math.min(page * 8 + 8, ranked.length)} of{' '}
-                {ranked.length} candidates
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!page}
-                onClick={() => setPage((n) => n - 1)}
-              >
-                Previous candidates
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={(page + 1) * 8 >= ranked.length}
-                onClick={() => setPage((n) => n + 1)}
-              >
-                Next candidates
-              </Button>
-            </div>
-          </Card>
+                        </TableCell>
+                        <TableCell>
+                          {queries.compare_member_behavior.length}
+                        </TableCell>
+                        <TableCell>
+                          {candidate.related_event_ids.length}
+                        </TableCell>
+                        <TableCell className="sharing-summary">
+                          {[
+                            ['Devices', queries.get_shared_devices.length],
+                            ['IPs', queries.get_shared_ips.length],
+                            ['Cards', queries.get_shared_cards.length],
+                            [
+                              'Payouts',
+                              queries.get_shared_payout_accounts.length,
+                            ],
+                            ['Addresses', queries.get_shared_addresses.length],
+                          ]
+                            .filter(([, count]) => Number(count) > 0)
+                            .map(
+                              ([label, count]) =>
+                                `${count} ${String(label).toLowerCase()}`,
+                            )
+                            .join(' · ') || 'No shared resources reported'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {money(candidate.estimated_exposure_minor, currency)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Open ring ${shortId(candidate.candidate_id)}`}
+                            onClick={() =>
+                              openCandidate(candidate.candidate_id)
+                            }
+                          >
+                            <ArrowUpRight size={16} />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+              <div className="list-pagination">
+                <span>
+                  {page * 8 + 1}–{Math.min(page * 8 + 8, ranked.length)} of{' '}
+                  {ranked.length} candidates
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!page}
+                  onClick={() => setPage((n) => n - 1)}
+                >
+                  Previous candidates
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={(page + 1) * 8 >= ranked.length}
+                  onClick={() => setPage((n) => n + 1)}
+                >
+                  Next candidates
+                </Button>
+              </div>
+            </Card>
+          )}
           {!selected && (
             <Card className="panel p-5" role="alert">
               <h3>Candidate not available in this run</h3>
@@ -301,7 +313,10 @@ export function PersistedFindings({
                 <div className="exposure-caption">
                   <span>Estimated exposure</span>
                   <strong>
-                    {money(selected.candidate.estimated_exposure_minor)}
+                    {money(
+                      selected.candidate.estimated_exposure_minor,
+                      currency,
+                    )}
                   </strong>
                   <small>Candidate-associated value · not confirmed loss</small>
                 </div>
@@ -352,7 +367,10 @@ export function PersistedFindings({
                   )}
                 </TabsContent>
                 <TabsContent value="timeline" key={`timeline-${ringId}`}>
-                  <EvidenceTimeline queries={selected.queries} />
+                  <EvidenceTimeline
+                    queries={selected.queries}
+                    currency={currency}
+                  />
                 </TabsContent>
                 <TabsContent value="evidence" key={`evidence-${ringId}`}>
                   <div className="grouped-evidence">
@@ -379,6 +397,7 @@ export function PersistedFindings({
                               <AccordionContent>
                                 <EvidenceValue
                                   value={queryValue(selected.queries, key)}
+                                  currency={currency}
                                 />
                               </AccordionContent>
                             </AccordionItem>
@@ -393,14 +412,26 @@ export function PersistedFindings({
                     key={`${runId}-${ringId}`}
                     runId={runId}
                     candidateId={ringId}
+                    currency={currency}
                   />
                 </TabsContent>
               </Tabs>
+              <CandidateReviewPanel
+                key={`review-${runId}-${ringId}`}
+                runId={runId}
+                candidateId={ringId}
+              />
             </section>
           )}
         </>
       )}
       <p className="model-scope">
+        Amount currency:{' '}
+        {currency ?? 'unknown; amounts are shown in minor units'}. No currency
+        conversion is applied.{' '}
+        {currency &&
+          currency !== 'INR' &&
+          'The model was trained on synthetic INR amounts; scoring for this currency has not been validated. '}
         {result.model_scope}. Evidence is limited to this run; no ground-truth
         labels are used to explain a finding.
       </p>

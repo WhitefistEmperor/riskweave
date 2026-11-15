@@ -1,0 +1,43 @@
+{
+  "schema_version": "dense-browser-baseline-v1",
+  "production_ready": false,
+  "data_origin": "synthetic-control",
+  "worker_source_commit": "343379cbe3725f964d20267ecd4bcc6966bea772",
+  "frontend_source_commit": "89ef246921d97122cd4967d584db0d5107556e29",
+  "scope": "Local production frontend + isolated real API/SQLite/storage. Playwright HTTP relay injects synthetic development owner; relay overhead included. Single sample per size; no hosted capacity claim.",
+  "samples": [
+    {
+      "events": 257,
+      "graph_entities": 513,
+      "graph_links": 323,
+      "evidence_ready_ms": 887.6758,
+      "network_ready_and_fit_ms": 5069.1929,
+      "evidence_js_heap_bytes": 10585540,
+      "network_js_heap_bytes": 16217296,
+      "max_long_task_ms": 4237,
+      "page_error_count": 0,
+      "http_error_statuses": [],
+      "entity_selection_and_return_to_evidence": true,
+      "no_horizontal_overflow": true
+    },
+    {
+      "events": 512,
+      "graph_entities": 1106,
+      "graph_links": 711,
+      "evidence_ready_ms": 900.8633,
+      "network_ready_and_fit_ms": 21371.6117,
+      "evidence_js_heap_bytes": 8622104,
+      "network_js_heap_bytes": 26809292,
+      "max_long_task_ms": 20190,
+      "page_error_count": 0,
+      "http_error_statuses": [],
+      "entity_selection_and_return_to_evidence": true,
+      "no_horizontal_overflow": true
+    },
+    {
+      "events": 1021,
+      "completed": false,
+      "failure": "Canvas did not become visible within60000ms; no final timing/heap sample is claimed"
+    }
+  ]
+}

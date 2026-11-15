@@ -1,0 +1,40 @@
+{
+  "schema_version": "review-capacity-release-verification-v1",
+  "date": "2026-10-06",
+  "requested_source_commit": "b4bb93b8eeda4e3993496ce874f81e409abd8854",
+  "production_ready": false,
+  "push_run": {"id": 37465688466, "conclusion": "success"},
+  "pr_run": {"id": 37465695028, "conclusion": "success"},
+  "jobs_each_run": {"backend": "success", "frontend": "success", "containers": "success"},
+  "inspected_job_log_results_each_run": {
+    "python_passed": 328,
+    "workspace_browser_passed": 80,
+    "separate_oidc_session_browser_passed": 4,
+    "npm_audit_vulnerabilities": 0
+  },
+  "local_checks": ["22 focused evaluation tests", "Ruff", "npm ci", "full npm audit", "lint", "typecheck", "production build", "formatter write/check and control execution"],
+  "dependency_patch": {"source-map-js": "1.2.2", "oxfmt_tinypool_override": "2.1.2"},
+  "superseded_source": {
+    "commit": "18da064e60c63f5c882860a0b73041870768a3cd",
+    "push_run": 37464767703,
+    "pr_run": 37464773313,
+    "both_backend_and_containers_passed": true,
+    "both_frontends_failed_at": "Reject known moderate-or-higher dependency advisories",
+    "local_refreshed_audit_affected_packages": 3
+  },
+  "pinned_model_cli_control": {
+    "data_origin": "synthetic-control",
+    "model_sha256": "182c06741a7fae5c389e79c8ea7c2888027528ab92ddde4479588805e0187c74",
+    "synthetic_label_resolution": "event time plus one minute",
+    "validation_events": 55,
+    "test_events": 49,
+    "max_validation_review_fraction": 0.25,
+    "selected_threshold": 0.66,
+    "selected_validation_flags": 10,
+    "selected_test_flags": 16,
+    "held_out_demand_retuned_threshold": false,
+    "older_fixture_rejection": "NO_RESOLVED_LABELS_IN_WINDOW",
+    "production_threshold_changed": false
+  },
+  "remaining_blockers": ["Vercel workspace 403 and no CLI on PATH", "authorized observed exports and independently matured labels unavailable", "hosted TLS database, live identity and HTTPS workflow unverified", "deployed concurrent capacity and external monitoring/backups/recovery unverified", "original Instinct requirements inaccessible"]
+}

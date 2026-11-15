@@ -4,11 +4,12 @@ from concurrent.futures import ThreadPoolExecutor
 from uuid import UUID
 
 import pytest
+from sqlalchemy import event
 
 from ringsentinel import GenerationConfig, SyntheticPaymentGenerator
 from ringsentinel.platform.database import Database
 from ringsentinel.platform.errors import ProductError
-from ringsentinel.platform.models import Status
+from ringsentinel.platform.models import Artifact, Status
 from ringsentinel.platform.service import InvestigationService, Principal
 from ringsentinel.platform.settings import Settings
 from ringsentinel.platform.storage import LocalStorageBackend
@@ -51,6 +52,25 @@ def test_storage_safety(tmp_path):
     storage.delete(obj.key)
     with pytest.raises(FileNotFoundError):
         storage.read(obj.key)
+
+
+def test_failed_artifact_flush_removes_uncommitted_local_bytes(service, dataset_bytes):
+    owner = Principal("alice")
+    case = service.create(owner, "Metadata failure")
+
+    def reject_artifact(session, *_):
+        if any(isinstance(item, Artifact) for item in session.new):
+            raise RuntimeError("Injected metadata failure")
+
+    event.listen(service.database.session, "before_flush", reject_artifact)
+    try:
+        with pytest.raises(RuntimeError, match="Injected metadata failure"):
+            service.attach(owner, case.id, dataset_bytes, "source.json", "application/json")
+    finally:
+        event.remove(service.database.session, "before_flush", reject_artifact)
+    assert not list(service.storage.root.glob("*.json"))
+    assert service.artifacts(owner, case.id) == []
+    assert service.get(owner, case.id).status == Status.CREATED
 
 
 def test_owner_lifecycle_idempotency_and_reopen(service, dataset_bytes):

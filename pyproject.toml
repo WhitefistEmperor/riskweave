@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = [
+  "vercel-workflow==0.11.0",
   "pyjwt[crypto]>=2.13,<3",
   "alembic>=1.16,<2",
   "sqlalchemy>=2.0,<3",
@@ -21,6 +22,7 @@ dependencies = [
   "pydantic>=2.8,<3",
   "scikit-learn>=1.5,<2",
   "uvicorn>=0.35,<1",
+  "joblib>=1.5,<2",
 ]
 
 [project.optional-dependencies]
@@ -39,7 +41,7 @@ packages = ["src/ringsentinel"]
 "results/phase3/phase3_results.json" = "ringsentinel/resources/phase3_results.json"
 
 [tool.hatch.build.targets.sdist]
-only-include = ["src", "tests", "docs", "results", "schemas", "scripts", "pyproject.toml", "uv.lock", "README.md", "LICENSE", ".env.example"]
+only-include = ["src", "tests", "docs", "results", "schemas", "scripts", "pyproject.toml", "uv.lock", "README.md", "LICENSE", ".env.example", "app.py", "vercel.json", ".python-version"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
@@ -51,3 +53,12 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.vercel]
+entrypoint = "app:app"
+
+[tool.vercel.scripts]
+build = "python -m ringsentinel.platform.vercel_build"
+
+[[tool.vercel.workflows]]
+entrypoint = "ringsentinel.platform.workflows:wf"

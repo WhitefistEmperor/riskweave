@@ -1,3 +1,4 @@
+import { validMinorAmount } from '@/lib/exact-money';
 /** Validate the fields the UI consumes. Unknown fields remain forward-compatible. */
 export const object = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -14,7 +15,8 @@ export const list = (validate: (v: unknown) => boolean) => (v: unknown) =>
 export const validSession = (v: unknown) =>
   object(v) &&
   str(v.user_id) &&
-  ((v.authentication_mode === 'development' && v.production_authentication === false) ||
+  ((v.authentication_mode === 'development' &&
+    v.production_authentication === false) ||
     (v.authentication_mode === 'jwt' && v.production_authentication === true));
 export const validInvestigation = (v: unknown) =>
   object(v) &&
@@ -44,12 +46,17 @@ export const validRun = (v: unknown) =>
   nullable(v.error_code, str) &&
   nullable(v.error_message_safe, str) &&
   nullable(v.result_checksum, str) &&
+  (v.dispatch_state === undefined ||
+    v.dispatch_state === null ||
+    v.dispatch_state === 'pending' ||
+    v.dispatch_state === 'accepted' ||
+    v.dispatch_state === 'failed') &&
   object(v.configuration_snapshot);
 export const validCandidate = (v: unknown) =>
   object(v) &&
   str(v.candidate_id) &&
   num(v.risk_score) &&
-  num(v.estimated_exposure_minor) &&
+  validMinorAmount(v.estimated_exposure_minor) &&
   strings(v.member_entity_ids) &&
   strings(v.related_event_ids) &&
   object(v.evidence) &&
@@ -57,7 +64,16 @@ export const validCandidate = (v: unknown) =>
 const fields = (v: unknown, text: string[], numbers: string[] = []) =>
   object(v) &&
   text.every((key) => str(v[key])) &&
-  numbers.every((key) => num(v[key]));
+  numbers.every((key) =>
+    [
+      'amount_minor',
+      'estimated_exposure_minor',
+      'refund_amount_minor',
+      'total_amount_minor',
+    ].includes(key)
+      ? validMinorAmount(v[key])
+      : num(v[key]),
+  );
 const nullable = (v: unknown, check: (v: unknown) => boolean) =>
   v === null || check(v);
 const shared = (v: unknown) =>
@@ -168,6 +184,9 @@ export const validResult = (v: unknown) =>
   num(v.event_count) &&
   num(v.entity_count) &&
   str(v.model_scope) &&
+  (v.currency === undefined ||
+    v.currency === null ||
+    (typeof v.currency === 'string' && /^[A-Z]{3}$/.test(v.currency))) &&
   Array.isArray(v.rings) &&
   v.rings.every(
     (r) =>
@@ -177,4 +196,30 @@ export const validResult = (v: unknown) =>
       str(r.candidate.first_suspicious_timestamp) &&
       strings(r.candidate.suspicious_relationships) &&
       validQueries(r.queries),
+  );
+
+const reviewDisposition = (value: unknown) =>
+  ['unreviewed', 'investigating', 'escalated', 'dismissed'].includes(
+    String(value),
+  );
+export const validReview = (v: unknown) =>
+  object(v) &&
+  str(v.run_id) &&
+  str(v.candidate_id) &&
+  reviewDisposition(v.disposition) &&
+  Number.isSafeInteger(v.version) &&
+  Number(v.version) >= 0 &&
+  nullable(v.updated_at, str) &&
+  Array.isArray(v.history) &&
+  v.history.every(
+    (event) =>
+      object(event) &&
+      str(event.id) &&
+      str(event.actor_id) &&
+      reviewDisposition(event.previous_disposition) &&
+      reviewDisposition(event.disposition) &&
+      Number.isSafeInteger(event.version) &&
+      Number(event.version) > 0 &&
+      str(event.note) &&
+      str(event.created_at),
   );

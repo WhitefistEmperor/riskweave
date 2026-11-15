@@ -3,7 +3,7 @@
 ## Scope
 
 The root Dockerfiles prepare two non-root runtime images: a locked-uv Python
-3.13 backend and the existing Node 24.19.0/Vinext production frontend. The
+3.13 backend and the Node 24.19.0/Next.js production frontend. The
 backend wheel installation includes migrations and the frozen Phase 3 reference
 artifact. It runs Uvicorn without a reloader, with **one worker** and a 20-second
 graceful shutdown budget. One worker owns the local scheduler and its single
@@ -20,12 +20,12 @@ and the demo disabled: protected APIs fail closed until a real principal provide
 exists. Compose explicitly opts into the **local development identity** and demo.
 It is a production-like process/storage topology, not production authentication.
 
-The frontend uses `vinext start`, not Vite's development server. Its rewrite
+The frontend runs the generated standalone Next.js `server.js`. Its rewrite
 target is a non-secret **build-time** `RINGSENTINEL_API_PROXY_TARGET` argument,
 set to `http://backend:8000` inside Compose. Rebuild the frontend to change this
 same-origin proxy destination. Secrets must never be passed as frontend build
-arguments. The runtime image retains the tested Vinext CLI dependency closure;
-tool peers have not been assumed safe to prune.
+arguments. The runtime image copies `.next/standalone`, `.next/static` and public
+assets from the tested build and runs as the non-root Node user.
 
 ## Commands (require an installed, running Docker engine)
 

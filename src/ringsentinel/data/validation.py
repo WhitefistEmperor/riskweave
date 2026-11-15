@@ -44,55 +44,9 @@ def calculate_ring_exposure(
 def validate_dataset(bundle: DatasetBundle) -> None:
     """Validate identity, referential, temporal, and ground-truth invariants."""
 
+    validate_payment_records(bundle.entities, bundle.events)
     entity_by_id = {entity.entity_id: entity for entity in bundle.entities}
     event_by_id = {event.event_id: event for event in bundle.events}
-    if len(entity_by_id) != len(bundle.entities):
-        raise DatasetValidationError("duplicate entity_id")
-    if len(event_by_id) != len(bundle.events):
-        raise DatasetValidationError("duplicate event_id")
-
-    transaction_ids = [
-        event.transaction_id for event in bundle.events if event.event_type is EventType.PAYMENT
-    ]
-    if len(set(transaction_ids)) != len(transaction_ids):
-        raise DatasetValidationError("duplicate payment transaction_id")
-
-    expected_types = {
-        "customer_id": EntityType.CUSTOMER,
-        "merchant_id": EntityType.MERCHANT,
-        "card_id": EntityType.CARD,
-        "device_id": EntityType.DEVICE,
-        "ip_id": EntityType.IP,
-        "address_id": EntityType.ADDRESS,
-        "merchant_bank_account_id": EntityType.BANK_ACCOUNT,
-    }
-    payment_by_transaction = {
-        event.transaction_id: event
-        for event in bundle.events
-        if event.event_type is EventType.PAYMENT
-    }
-    for event in bundle.events:
-        for field, expected_type in expected_types.items():
-            entity_id = getattr(event, field)
-            entity = entity_by_id.get(entity_id)
-            if entity is None:
-                raise DatasetValidationError(
-                    f"{event.event_id} references missing {field}={entity_id}"
-                )
-            if entity.entity_type is not expected_type:
-                raise DatasetValidationError(
-                    f"{event.event_id} {field} expected {expected_type}, got {entity.entity_type}"
-                )
-        if event.timestamp < entity_by_id[event.customer_id].created_at:
-            raise DatasetValidationError(f"{event.event_id} predates its customer")
-        if event.event_type is EventType.REFUND:
-            original = payment_by_transaction.get(event.original_transaction_id or "")
-            if original is None:
-                raise DatasetValidationError(f"{event.event_id} references missing payment")
-            if event.timestamp <= original.timestamp:
-                raise DatasetValidationError(f"{event.event_id} does not follow original payment")
-            if event.amount_minor > original.amount_minor:
-                raise DatasetValidationError(f"{event.event_id} exceeds original payment amount")
 
     entity_labels = {label.subject_id: label for label in bundle.entity_labels}
     event_labels = {label.subject_id: label for label in bundle.event_labels}
@@ -168,3 +122,65 @@ def validate_dataset(bundle: DatasetBundle) -> None:
     )
     if actual != declared:
         raise DatasetValidationError(f"manifest counts {declared} do not match actual {actual}")
+
+
+def validate_payment_records(entities, events) -> None:
+    """Validate observed identities and links without requiring or inventing labels."""
+    entity_by_id = {entity.entity_id: entity for entity in entities}
+    event_by_id = {event.event_id: event for event in events}
+    if len(entity_by_id) != len(entities):
+        raise DatasetValidationError("duplicate entity_id")
+    if len(event_by_id) != len(events):
+        raise DatasetValidationError("duplicate event_id")
+
+    transaction_ids = [
+        event.transaction_id for event in events if event.event_type is EventType.PAYMENT
+    ]
+    if len(set(transaction_ids)) != len(transaction_ids):
+        raise DatasetValidationError("duplicate payment transaction_id")
+
+    expected_types = {
+        "customer_id": EntityType.CUSTOMER,
+        "merchant_id": EntityType.MERCHANT,
+        "card_id": EntityType.CARD,
+        "device_id": EntityType.DEVICE,
+        "ip_id": EntityType.IP,
+        "address_id": EntityType.ADDRESS,
+        "merchant_bank_account_id": EntityType.BANK_ACCOUNT,
+    }
+    payment_by_transaction = {
+        event.transaction_id: event for event in events if event.event_type is EventType.PAYMENT
+    }
+    refund_totals: Counter[str] = Counter()
+    for event in events:
+        for field, expected_type in expected_types.items():
+            entity_id = getattr(event, field)
+            entity = entity_by_id.get(entity_id)
+            if entity is None:
+                raise DatasetValidationError(
+                    f"{event.event_id} references missing {field}={entity_id}"
+                )
+            if entity.entity_type is not expected_type:
+                raise DatasetValidationError(
+                    f"{event.event_id} {field} expected {expected_type}, got {entity.entity_type}"
+                )
+        if event.timestamp < entity_by_id[event.customer_id].created_at:
+            raise DatasetValidationError(f"{event.event_id} predates its customer")
+        if event.event_type is EventType.REFUND:
+            original = payment_by_transaction.get(event.original_transaction_id or "")
+            if original is None:
+                raise DatasetValidationError(f"{event.event_id} references missing payment")
+            if event.timestamp <= original.timestamp:
+                raise DatasetValidationError(f"{event.event_id} does not follow original payment")
+            if event.amount_minor > original.amount_minor:
+                raise DatasetValidationError(f"{event.event_id} exceeds original payment amount")
+            if any(
+                getattr(event, field) != getattr(original, field)
+                for field in ("customer_id", "merchant_id", "card_id", "currency")
+            ):
+                raise DatasetValidationError(
+                    f"{event.event_id} refund identity or currency mismatch"
+                )
+            refund_totals[original.transaction_id] += event.amount_minor
+            if refund_totals[original.transaction_id] > original.amount_minor:
+                raise DatasetValidationError("Cumulative refunds exceed the original payment")

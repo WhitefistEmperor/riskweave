@@ -1,0 +1,56 @@
+{
+  "data_origin": "synthetic-control",
+  "production_ready": false,
+  "feature_source_sha256": "073855773c7a9880cdb745a503a7260cb92e450dcf63fffb341cf937e2cf31b1",
+  "driver_sha256": "ebcfe7cc6f4a30ae2942286df42832bf81fdaeb4bca9c169654323da93001fdb",
+  "scope": "One local extraction per shape/size; not a hosted limit or accuracy test",
+  "controls": [
+    {
+      "requested_payments": 1000,
+      "dense": false,
+      "mixed": false,
+      "events": 1021,
+      "input_sha256": "cda130dbde94f575ca77e35b75b50077631542d6453918c0b5f29d635740f17c",
+      "feature_sha256": "9aab8faef2b1f1b78af0512bb534779abc898f6f210257cbd8253d9becd06384",
+      "feature_seconds": 0.08124339999631047
+    },
+    {
+      "requested_payments": 250,
+      "dense": true,
+      "mixed": false,
+      "events": 257,
+      "input_sha256": "eb178fd6f3734cbdc5b1a441be8df6541cb854424908154101bdfe532cb376e6",
+      "feature_sha256": "3e71f6b62e824cdf4fa0a01a8b5ae7b3a58af8bb39006ba7fca2ed0d7d744892",
+      "feature_seconds": 0.030369600048288703
+    },
+    {
+      "requested_payments": 500,
+      "dense": true,
+      "mixed": false,
+      "events": 512,
+      "input_sha256": "f32cbe32d618090d48d6272f52f4798b435971daba46adebc09c5734f0ecf45a",
+      "feature_sha256": "245374cbb2779ac0f5917d9cfc49bd2e40bbd18f71274a4145bea68b25bb1915",
+      "feature_seconds": 0.0772720999084413
+    },
+    {
+      "requested_payments": 250,
+      "dense": false,
+      "mixed": true,
+      "events": 257,
+      "input_sha256": "136a0a7a4f5e23fff27c67ded0359ba8e528313252524ebb1402f22654e5d552",
+      "feature_sha256": "f1f3ab13a1f77b45a376e871a63e8f0eb421383f44102f87e25fe5da4a3b3f68",
+      "feature_seconds": 0.039994999999180436
+    },
+    {
+      "requested_payments": 500,
+      "dense": false,
+      "mixed": true,
+      "events": 512,
+      "input_sha256": "d2bdfe3ea33a2b44e9194daa1ace022d8b4dedea2c3ff8f6fcc9f7412edac900",
+      "feature_sha256": "78850c4bd73fb6e6d00b49f94edd831f30458c416ed97c11ac38fcb313f258ad",
+      "feature_seconds": 0.11113850004039705
+    }
+  ],
+  "all_feature_vectors_identical": true,
+  "source_commit": "83e4bb190679173d1d33031f6b803b72ec25b307"
+}

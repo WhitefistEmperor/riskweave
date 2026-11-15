@@ -1,3 +1,4 @@
+import type { MinorAmount } from '@/lib/exact-money';
 import type { JsonValue, GraphNode } from '@/lib/api';
 import type { PersistedCandidate } from '@/lib/platform-api';
 
@@ -25,7 +26,7 @@ export type EvidenceEvent = {
   event_type: string;
   transaction_id: string;
   timestamp: string;
-  amount_minor: number;
+  amount_minor: MinorAmount;
   status: string;
   customer_id: string;
   merchant_id: string;
@@ -46,12 +47,12 @@ export type EvidenceQueries = {
   get_transaction_timeline: EvidenceEvent[];
   get_refund_patterns: {
     refund_count: number;
-    refund_amount_minor: number;
+    refund_amount_minor: MinorAmount;
     refunds: {
       refund_event_id: string;
       original_transaction_id: string | null;
       timestamp: string;
-      amount_minor: number;
+      amount_minor: MinorAmount;
       refund_fraction: number | null;
       delay_hours: number | null;
     }[];
@@ -62,12 +63,12 @@ export type EvidenceQueries = {
     event_count: number;
     payment_count: number;
     refund_count: number;
-    amount_minor: number;
+    amount_minor: MinorAmount;
     unique_customers: number;
   }[];
   calculate_exposure: {
     candidate_id: string;
-    estimated_exposure_minor: number;
+    estimated_exposure_minor: MinorAmount;
     definition: string;
   };
   compare_member_behavior: {
@@ -75,7 +76,7 @@ export type EvidenceQueries = {
     event_count: number;
     payment_count: number;
     refund_count: number;
-    total_amount_minor: number;
+    total_amount_minor: MinorAmount;
     mean_amount_minor: number;
     merchant_count: number;
     device_count: number;

@@ -1,0 +1,68 @@
+{
+  "schema_version": "source-verification-v1",
+  "source_commit": "350e0f5d35e8b69082efcaed4f9aa00454db73bc",
+  "production_ready": false,
+  "runs": [
+    {
+      "event": "push",
+      "id": 37329580404,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37329580404",
+      "source": "350e0f5d35e8b69082efcaed4f9aa00454db73bc",
+      "jobs": [
+        {
+          "name": "backend",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "containers",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 319,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0,
+      "postgres_module_cases_executed": 7,
+      "fresh_worker_repetitions": 3
+    },
+    {
+      "event": "pr",
+      "id": 37329596214,
+      "url": "https://github.com/WhitefistEmperor/riskweave/actions/runs/37329596214",
+      "source": "350e0f5d35e8b69082efcaed4f9aa00454db73bc",
+      "jobs": [
+        {
+          "name": "containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "backend",
+          "conclusion": "success"
+        }
+      ],
+      "python_tests_passed": 319,
+      "workspace_browser_tests_passed": 80,
+      "oidc_session_browser_tests_passed": 4,
+      "audit_vulnerabilities": 0,
+      "postgres_module_cases_executed": 7,
+      "fresh_worker_repetitions": 3
+    }
+  ],
+  "six_results_match_windows_control": true,
+  "model_sha256": "044eabe5b79e0335dd099d73a2d5d6ee82f7a524ce87a864b2c9c303f2db3280",
+  "scope": "Two ephemeral Linux CI runners with PostgreSQL17 database object storage, three fresh local worker processes each. Exact saved input/result checksums, owner isolation and model/source provenance; canonical aggregate artifacts and matching PR merge/source Git trees.",
+  "limitations": [
+    "VmHWM/VmRSS are approximate current-image kernel counters; lifetime peak is separate and includes pre-exec effects.",
+    "No database/API/parent/browser peak RAM, concurrency, reliable percentiles or hosted HTTPS/Workflow admission approval.",
+    "Database size is cumulative allocated disk, not raw object quota or WAL/backup/provider billing.",
+    "Build-owned synthetic model and generated data do not prove observed fraud validity."
+  ]
+}
