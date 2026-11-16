@@ -54,3 +54,8 @@ services:
         value: https://riskweave-api.onrender.com
       - key: RINGSENTINEL_PUBLIC_DEMO
         value: "true"
+      # Sent from the visitor's browser while the API is asleep: Render only
+      # wakes a free service for requests arriving from the internet, not for
+      # ones forwarded from inside its network by this frontend.
+      - key: RINGSENTINEL_DEMO_WAKE_URL
+        value: https://riskweave-api.onrender.com/api/v1/health

@@ -77,7 +77,7 @@ const navigation = [
   { id: 'hard-negatives', label: 'Hard negatives', icon: ShieldCheck },
 ] as const;
 
-export function AnalystConsole() {
+export function AnalystConsole({ wakeUrl }: { wakeUrl?: string } = {}) {
   const [data, setData] = useState<ConsoleData | null>(null);
   const [error, setError] = useState('');
   const [waking, setWaking] = useState(false);
@@ -92,7 +92,13 @@ export function AnalystConsole() {
   useEffect(() => {
     let active = true;
     loadConsoleData(() => {
-      if (active) setWaking(true);
+      if (!active) return;
+      setWaking(true);
+      // An opaque browser request to the API's public address: it only has
+      // to arrive to wake a sleeping host, so the response is not read.
+      if (wakeUrl) {
+        fetch(wakeUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+      }
     })
       .then((result) => {
         if (active) setData(result);
@@ -103,7 +109,7 @@ export function AnalystConsole() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [wakeUrl]);
   useEffect(() => {
     if (!running || !data) return;
     const timer = window.setInterval(
