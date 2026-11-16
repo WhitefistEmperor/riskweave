@@ -2,6 +2,10 @@
 
 Network-aware payment-abuse detection, with evidence an analyst can inspect.
 
+**Live demo: https://riskweave.onrender.com** (read-only synthetic replay; free hosting,
+so the first visit can take about a minute to wake up). Uploads and saved investigations
+are switched off in the public demo because it has no sign-in; see `render.yaml`.
+
 Coordinated abuse can hide inside individually ordinary payments. RiskWeave connects
 transactions through shared infrastructure and activity patterns, ranks suspicious candidate
 rings, and makes the relationships, timeline, and financial exposure reviewable.
