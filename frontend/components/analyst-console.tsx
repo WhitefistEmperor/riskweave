@@ -91,12 +91,16 @@ export function AnalystConsole({ wakeUrl }: { wakeUrl?: string } = {}) {
   const [speed, setSpeed] = useState('1');
   useEffect(() => {
     let active = true;
+    let lastWake = 0;
     loadConsoleData(() => {
       if (!active) return;
       setWaking(true);
-      // An opaque browser request to the API's public address: it only has
-      // to arrive to wake a sleeping host, so the response is not read.
-      if (wakeUrl) {
+      // An opaque browser request to the API's public address: it wakes a
+      // sleeping host and starts the slow first model build, without the
+      // short timeout of the frontend's proxy. The response is not read.
+      // At most one every 45 seconds, so builds are not started twice.
+      if (wakeUrl && Date.now() - lastWake > 45_000) {
+        lastWake = Date.now();
         fetch(wakeUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
       }
     })

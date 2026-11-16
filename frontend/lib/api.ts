@@ -128,7 +128,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 // errors, or no connection at all) while the backend starts and rebuilds the
 // model, which can take over a minute. These statuses mean "not up yet".
 const WAKING_STATUSES = new Set([0, 502, 503, 504]);
-const WAKE_TIMEOUT_MS = 180_000;
+const WAKE_TIMEOUT_MS = 240_000;
 
 async function loadOverviewWhenAwake(onWaking?: () => void): Promise<Overview> {
   const deadline = Date.now() + WAKE_TIMEOUT_MS;
