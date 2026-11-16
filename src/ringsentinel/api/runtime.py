@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import pickle
 from collections import Counter
 from dataclasses import replace
 from datetime import datetime, timedelta
@@ -565,8 +568,81 @@ class DemoRuntime:
         return output
 
 
+PREBUILT_ENV = "RINGSENTINEL_PREBUILT_RUNTIME"
+PREBUILT_FORMAT = 1
+# Computed once and saved. Everything else is cheap to derive from these.
+_WARM_PROPERTIES = (
+    "phase3",
+    "test_dataset",
+    "model_and_threshold",
+    "scores",
+    "candidates",
+    "evidence",
+    "truth_by_candidate",
+)
+# Not saved: a lock cannot be pickled, and the five generated datasets are only
+# needed to train the model, which is already done once it has been saved.
+_TRANSIENT_STATE = ("_dataset_lock", "_prepared", "datasets")
+
+
+def save_prebuilt_runtime(path: Path, runtime: DemoRuntime | None = None) -> Path:
+    """Train the demo model once and save the finished runtime to ``path``.
+
+    Hosted demos start with a cold, small CPU where retraining takes minutes;
+    loading this file instead takes seconds and gives identical answers.
+    """
+
+    runtime = runtime or DemoRuntime()
+    for name in _WARM_PROPERTIES:
+        getattr(runtime, name)
+    state = {key: value for key, value in runtime.__dict__.items() if key not in _TRANSIENT_STATE}
+    payload = {
+        "format": PREBUILT_FORMAT,
+        "seeds": runtime.seeds,
+        "transactions": runtime.transactions,
+        "state": state,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    with temporary.open("wb") as handle:
+        pickle.dump(payload, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    temporary.replace(path)
+    return path
+
+
+def load_prebuilt_runtime(path: Path) -> DemoRuntime:
+    """Load a runtime saved by :func:`save_prebuilt_runtime`.
+
+    Only ever load a file produced by this project's own build: pickle can run
+    code, so the path must not come from user input.
+    """
+
+    with path.open("rb") as handle:
+        payload = pickle.load(handle)  # noqa: S301 - trusted, build-time artifact
+    runtime = DemoRuntime()
+    if (
+        payload.get("format") != PREBUILT_FORMAT
+        or payload.get("seeds") != runtime.seeds
+        or payload.get("transactions") != runtime.transactions
+    ):
+        raise ValueError("prebuilt runtime does not match this version of the demo")
+    runtime.__dict__.update(payload["state"])
+    return runtime
+
+
 @lru_cache(maxsize=1)
 def get_demo_runtime() -> DemoRuntime:
-    """Return the process-wide deterministic demo runtime."""
+    """Return the process-wide deterministic demo runtime.
 
+    If ``RINGSENTINEL_PREBUILT_RUNTIME`` names an existing file, load it instead
+    of retraining. A missing or unusable file silently falls back to training,
+    so the default behaviour (and local development) is unchanged.
+    """
+
+    configured = os.environ.get(PREBUILT_ENV)
+    if configured and Path(configured).is_file():
+        try:
+            return load_prebuilt_runtime(Path(configured))
+        except Exception:  # noqa: BLE001 - any problem means "train as usual"
+            logging.getLogger(__name__).exception("Ignoring unusable prebuilt demo runtime")
     return DemoRuntime()

@@ -8,6 +8,14 @@ COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src ./src
 COPY results/phase3 ./results/phase3
 RUN uv sync --locked --no-dev --no-editable
+# Optional: train the demo model now and ship it inside the image, so a hosted
+# demo that wakes from sleep loads it in seconds instead of retraining for minutes.
+# Off by default (local and compose builds are unchanged): --build-arg PREBUILD_RUNTIME=true
+ARG PREBUILD_RUNTIME=false
+RUN mkdir -p /app/prebuilt \
+    && if [ "$PREBUILD_RUNTIME" = "true" ]; then \
+         /app/.venv/bin/python -m ringsentinel.api.prebuild /app/prebuilt/demo_runtime.pkl; \
+       fi
 
 FROM python:3.13-slim-bookworm AS runtime
 ARG BUILD_COMMIT=unknown
@@ -28,6 +36,8 @@ RUN groupadd --gid 10001 ringsentinel \
     && mkdir -p /app/work/storage \
     && chown -R ringsentinel:ringsentinel /app/work
 COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/prebuilt /app/prebuilt
+ENV RINGSENTINEL_PREBUILT_RUNTIME=/app/prebuilt/demo_runtime.pkl
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \

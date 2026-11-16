@@ -39,6 +39,11 @@ services:
         value: '["riskweave-api.onrender.com","localhost","127.0.0.1"]'
       - key: RINGSENTINEL_FRONTEND_ORIGINS
         value: '["https://riskweave.onrender.com"]'
+      # Render passes this to the Docker build (the Dockerfile's ARG): the demo
+      # model is trained once at build time and shipped in the image, because
+      # retraining on a woken free instance took about three minutes.
+      - key: PREBUILD_RUNTIME
+        value: "true"
 
   - type: web
     name: riskweave
