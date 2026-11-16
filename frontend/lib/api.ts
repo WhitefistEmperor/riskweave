@@ -1,4 +1,4 @@
-import { apiRequest } from '@/lib/client';
+import { ApiError, apiRequest } from '@/lib/client';
 
 export type Metric = { mean: number; std: number };
 export type Metrics = Record<string, Metric>;
@@ -124,9 +124,33 @@ export type RingSnapshot = {
 export async function apiGet<T>(path: string): Promise<T> {
   return apiRequest<T>(path);
 }
-export async function loadConsoleData(): Promise<ConsoleData> {
+// A hosted demo can be asleep: the first request then fails fast (gateway
+// errors, or no connection at all) while the backend starts and rebuilds the
+// model, which can take over a minute. These statuses mean "not up yet".
+const WAKING_STATUSES = new Set([0, 502, 503, 504]);
+const WAKE_TIMEOUT_MS = 180_000;
+
+async function loadOverviewWhenAwake(onWaking?: () => void): Promise<Overview> {
+  const deadline = Date.now() + WAKE_TIMEOUT_MS;
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await apiGet<Overview>('/overview');
+    } catch (error: unknown) {
+      const status = error instanceof ApiError ? error.status : -1;
+      if (!WAKING_STATUSES.has(status) || Date.now() > deadline) throw error;
+      onWaking?.();
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(2000 * attempt, 8000)),
+      );
+    }
+  }
+}
+
+export async function loadConsoleData(
+  onWaking?: () => void,
+): Promise<ConsoleData> {
   // Warm the single local runtime before issuing concurrent queries.
-  const overview = await apiGet<Overview>('/overview');
+  const overview = await loadOverviewWhenAwake(onWaking);
   const [benchmark, simulation, candidates] = await Promise.all([
     apiGet<Benchmark>('/benchmark'),
     apiGet<Simulation>('/simulation'),

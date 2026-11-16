@@ -80,6 +80,7 @@ const navigation = [
 export function AnalystConsole() {
   const [data, setData] = useState<ConsoleData | null>(null);
   const [error, setError] = useState('');
+  const [waking, setWaking] = useState(false);
   const [screen, setScreen] = useState<Screen>('overview');
   const [explorerPrefix, setExplorerPrefix] = useState<number | undefined>();
   const [explorerCandidate, setExplorerCandidate] = useState<
@@ -90,7 +91,9 @@ export function AnalystConsole() {
   const [speed, setSpeed] = useState('1');
   useEffect(() => {
     let active = true;
-    loadConsoleData()
+    loadConsoleData(() => {
+      if (active) setWaking(true);
+    })
       .then((result) => {
         if (active) setData(result);
       })
@@ -242,12 +245,16 @@ export function AnalystConsole() {
                 <h1>
                   {error
                     ? 'Backend connection unavailable'
-                    : 'Preparing the evidence workspace'}
+                    : waking
+                      ? 'Waking up the demo server'
+                      : 'Preparing the evidence workspace'}
                 </h1>
                 <p className="muted">
                   {error
                     ? 'Start the Python service with uv run ringsentinel-api, then retry.'
-                    : 'Reproducing the held-out seed 105 model. First startup may take around 20 seconds.'}
+                    : waking
+                      ? 'The hosted demo sleeps when nobody is using it. Starting it and rebuilding the model takes about a minute; this page loads by itself.'
+                      : 'Reproducing the held-out seed 105 model. First startup may take around 20 seconds.'}
                 </p>
               </div>
               {error ? (
